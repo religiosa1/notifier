@@ -1,4 +1,4 @@
-import { app } from "index";
+import { app } from "../index";
 import type { Update, SendMessageOptions } from "node-telegram-bot-api";
 import TelegramBot from "node-telegram-bot-api";
 import { botRoutes } from "./BotRoutes";
