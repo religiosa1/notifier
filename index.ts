@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fastify from "fastify";
 import type { Update, SendMessageOptions } from "node-telegram-bot-api";
-import { BotMock } from "./src/BotMock";
+import { Bot } from "./src/Bot";
 import { authenticator } from "./src/authentication";
 
 const TOKEN = process.env.BOT_TOKEN;
@@ -10,7 +10,7 @@ const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT) || 8085;
 
 const app = fastify({ logger: true });
-const bot = new BotMock(TOKEN!);
+const bot = new Bot(TOKEN!);
 
 app.register(...authenticator);
 
@@ -20,12 +20,7 @@ app.after(() => {
     url: '/notify',
     onRequest: app.basicAuth,
     handler: async (req) => {
-      const {
-        chatId,
-        text,
-        ...options
-      } = req.body as { chatId: number | string, text: string } & SendMessageOptions;
-      return bot.sendMessage(chatId, text, options);
+      return bot.sendMessage(req.body as { text: string } & SendMessageOptions);
     }
   });
 
