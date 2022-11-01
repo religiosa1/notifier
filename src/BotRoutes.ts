@@ -11,7 +11,7 @@ export const botRoutes: Route[] = [
     pattern: /^\/start/,
     handler(this: TelegramBot, msg: Message) {
       this.sendMessage(msg.chat.id, "Спасибо, мы подумаем и решим, достойны ли вы пользоваться нашим ботом.");
-      app.log.info("start command", msg.chat);
+      app.log.info({ event: "start command", chat: msg.chat });
     }
   }
 ];
