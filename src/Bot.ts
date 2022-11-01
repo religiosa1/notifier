@@ -41,8 +41,6 @@ export class Bot {
     if (!process.env.CHATID) {
       throw new Error("Recepients chat id is not defined");
     }
-    for (const chat of chats) {
-      return this.bot.sendMessage(chat, text, options);
-    }
+    return Promise.all(chats.map(chat => this.bot.sendMessage(chat, text, options)));
   }
 }
