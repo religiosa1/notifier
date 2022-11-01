@@ -1,3 +1,4 @@
+import { app } from "index";
 import type { Update, SendMessageOptions } from "node-telegram-bot-api";
 import TelegramBot from "node-telegram-bot-api";
 import { botRoutes } from "./BotRoutes";
@@ -33,7 +34,7 @@ export class Bot {
   processUpdate(update: Update) {
     return this.bot.processUpdate(update);
   }
-  sendMessage(opts: SendMessageProps) {
+  async sendMessage(opts: SendMessageProps) {
     const {
       text,
       ...options
@@ -41,6 +42,12 @@ export class Bot {
     if (!process.env.CHATID) {
       throw new Error("Recepients chat id is not defined");
     }
-    return Promise.all(chats.map(chat => this.bot.sendMessage(chat, text, options)));
+    const msgs = await Promise.all(
+      chats.map(chat => this.bot.sendMessage(chat, text, options).catch(e => {
+        app.log.error({event:"error", detail: chat, text: text, error: e});
+      }))
+    );
+    app.log.info({ massSend: msgs });
+    return msgs;
   }
 }
