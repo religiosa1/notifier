@@ -1,5 +1,11 @@
 import type { Update, SendMessageOptions } from "node-telegram-bot-api";
 import TelegramBot from "node-telegram-bot-api";
+import { botRoutes } from "./BotRoutes";
+
+export const chats = (process.env.CHATID ?? "")
+  .split(',')
+  .map(i => i.trim())
+  .filter(i => i);
 
 type SendMessageProps = {
   text: string;
@@ -13,6 +19,13 @@ export class Bot {
       throw new Error("Bot token isn't supplied! (is it defined in env variables?)");
     }
     this.bot = new TelegramBot(token);
+
+    botRoutes.forEach(route => {
+      this.bot.onText(
+        route.pattern,
+        (...args) => route.handler.call(this.bot, ...args)
+      );
+    });
   }
   setWebHook(token: string) {
     return this.bot.setWebHook(token);
@@ -28,6 +41,8 @@ export class Bot {
     if (!process.env.CHATID) {
       throw new Error("Recepients chat id is not defined");
     }
-    return this.bot.sendMessage(process.env.CHATID, text, options);
+    for (const chat of chats) {
+      return this.bot.sendMessage(chat, text, options);
+    }
   }
 }

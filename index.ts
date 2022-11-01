@@ -9,7 +9,7 @@ const url = process.env.URL || "";
 const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT) || 8085;
 
-const app = fastify({ logger: true });
+export const app = fastify({ logger: true });
 const bot = new Bot(TOKEN!);
 
 app.register(...authenticator);
