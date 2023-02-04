@@ -1,0 +1,5 @@
+.env
+.env.*
+passwds
+node_modules
+build
