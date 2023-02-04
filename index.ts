@@ -11,9 +11,10 @@ const port = Number(process.env.PORT) || 8085;
 
 export const app = fastify({ logger: true });
 registerLogger(app.log)
+app.register(...authenticator);
+
 const bot = new Bot(TOKEN!);
 
-app.register(...authenticator);
 
 app.after(() => {
   app.route({

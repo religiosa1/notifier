@@ -11,7 +11,7 @@ export async function getCredentials() {
   const entries = cont.split(/\r?\n/);
   const pwdMap = new Map<string, string>();
   for (const line of entries) {
-    const [ username, password ] = line.split(':');
+    const [ username, password ] = line.split(':', 2);
     if (password) {
       pwdMap.set(username, password);
     }
@@ -24,14 +24,18 @@ export async function hash(value: string) {
 }
 
 let passwds: Map<string, string> | undefined;
-async function validate(username: string, password: string) {
+export async function validate(
+  username: string,
+  password: string,
+) {
   if (!passwds) {
     passwds = await getCredentials();
   }
   const stored = passwds.get(username);
-  const match = stored && bcrypt.compare(password, stored);
+  const match = stored && await bcrypt.compare(password, stored);
+  console.log("COMPARE", match);
   if (!match) {
-    return new Error('Incorrect username or password');
+    throw new Error('Incorrect username or password');
   }
 }
 
