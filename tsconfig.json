@@ -7,6 +7,8 @@
     }
   },
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "outDir": "build",
+    "declaration": true
   }
 }

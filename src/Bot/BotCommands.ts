@@ -1,17 +1,18 @@
 import TelegramBot, { Message } from "node-telegram-bot-api";
-import { app } from "../index";
+import { logger } from "src/logger";
 
-interface Route {
+interface BotCommand {
   pattern: RegExp,
   handler: (this: TelegramBot, msg: Message, match: RegExpExecArray | null) => void;
 }
 
-export const botRoutes: Route[] = [
+/** Available bot commands */
+export const botCommands: BotCommand[] = [
   {
     pattern: /^\/start/,
     handler(this: TelegramBot, msg: Message) {
       this.sendMessage(msg.chat.id, "Спасибо, мы подумаем и решим, достойны ли вы пользоваться нашим ботом.");
-      app.log.info({ event: "start command", chat: msg.chat });
+      logger.info({ event: "start command", chat: msg.chat });
     }
   }
 ];

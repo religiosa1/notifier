@@ -1,25 +1,30 @@
 {
   "name": "notifier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Telegram notifier bot",
-  "main": "index.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
-    "start": "ts-node index.ts",
+    "dev": "ts-node index.ts",
+    "start": "node build/index.js",
+    "build": "tsc",
     "salt": "ts-node salt.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Viacheslav Azarov",
+  "license": "MIT",
   "dependencies": {
-    "@fastify/basic-auth": "^4.0.0",
-    "@types/node-telegram-bot-api": "^0.57.6",
+    "@fastify/basic-auth": "^5.0.0",
     "bcrypt": "^5.1.0",
     "dotenv": "^16.0.3",
-    "fastify": "^4.9.2",
-    "node-telegram-bot-api": "^0.59.0",
+    "fastify": "^4.12.0",
+    "node-telegram-bot-api": "^0.61.0",
+    "pino": "^8.8.0",
     "ts-node": "^10.9.1"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.0"
+    "@types/bcrypt": "^5.0.0",
+    "@types/node-telegram-bot-api": "^0.57.6",
+    "typescript": "^4.9.5"
   }
 }

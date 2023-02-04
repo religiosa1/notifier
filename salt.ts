@@ -1,3 +1,5 @@
+#!/usr/bin/env ts-node
+/** Script for manually generating passwords for API keys */
 import readline from "readline";
 import { hash } from "./src/authentication";
 import { Writable } from "stream";
