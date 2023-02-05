@@ -10,4 +10,9 @@ declare module "fastify" {
     authorizeJWT(): void;
     authorizeKey(): void;
   }
+
+  // TODO Implement model for JWT payload
+  export interface FastifyRequest {
+    user: { name: string, id: number, iat: number, exp: number }
+  }
 }

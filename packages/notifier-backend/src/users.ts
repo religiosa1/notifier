@@ -21,7 +21,7 @@ export default fp(async function(fastify) {
       const { skip, take } = {...paginationDefaults, ...req.query };
       const users = await db.user.findMany({
         skip,
-        take
+        take,
       });
       return reply.send({
         success: true as true,

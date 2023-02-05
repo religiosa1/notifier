@@ -1,10 +1,12 @@
 import fp from "fastify-plugin";
 import { FastifyReply, FastifyRequest } from "fastify";
 import bcrypt from "bcrypt";
+import z from "zod";
 import { AuthorizationEnum } from "src/Models/AuthorizationEnum";
-import { ResultError } from "src/Models/Result";
+import { result, ResultError, resultSuccessSchema } from "src/Models/Result";
 import { db } from "src/db";
-import { parseApiKey } from "./apiKey";
+import { parseApiKey, generateApiKey } from "./apiKey";
+import { hash } from "./hash";
 
 export default fp(async function (fastify) {
   fastify.decorate(
@@ -15,9 +17,9 @@ export default fp(async function (fastify) {
     ) {
       try {
         const key = (
-          Array.isArray(request.raw.headers['X-API-Key'])
-            ? request.raw.headers['X-API-Key'].at(-1)
-            : request.raw.headers['X-API-Key']
+          Array.isArray(request.headers['x-api-key'])
+            ? request.headers['x-api-key'].at(-1)
+            : request.headers['x-api-key']
         ) || (
           fastify.parseCookie(request.headers.cookie || "")['X-API-KEY']
         ) || "";
@@ -34,7 +36,7 @@ export default fp(async function (fastify) {
           }
         });
         if (apiKey.user.authorizationStatus !== AuthorizationEnum.accepted) {
-          throw new ResultError(401, "The user hasn't passed the verification procedure or was declined");
+          throw new ResultError(403, "The user hasn't passed the verification procedure or was declined");
         }
         const match = await bcrypt.compare(id, apiKey.hash);
         if (!match) {
@@ -46,4 +48,36 @@ export default fp(async function (fastify) {
       }
     }
   );
+
+  /** Technical route, for admin */
+  fastify.route({
+    method: "PUT",
+    url: "/api-key",
+    schema: {
+      response: {
+        200: resultSuccessSchema(z.object({
+          apiKey: z.string(),
+        }))
+      },
+      // TODO accept user id in request
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(request, reply) {
+      const apiKey = generateApiKey();
+      const [ prefix, key ] = parseApiKey(apiKey);
+      const hashedKey = await hash(key);
+      const userId = request.user.id;
+      if (!userId) {
+        throw new ResultError(403, "Mallformed JWT token, 'id' field is missing");
+      }
+      await db.apiKey.create({
+        data: {
+          prefix: prefix,
+          hash: hashedKey,
+          userId
+        }
+      });
+      return result({ apiKey });
+    }
+  });
 });

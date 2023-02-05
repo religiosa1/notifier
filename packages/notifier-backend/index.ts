@@ -6,6 +6,7 @@ import authorizeJWT from "src/Authorization/pluginJWT";
 import authorizeKey from "src/Authorization/pluginKey";
 import { registerLogger } from "src/logger";
 import { Bot, SendMessageProps, Update } from "src/Bot";
+import usersRoutes from "src/users";
 
 const TOKEN = process.env.BOT_TOKEN;
 const url = process.env.URL || "";
@@ -22,6 +23,7 @@ app.register(authorizeJWT);
 app.register(authorizeKey);
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
+app.register(usersRoutes);
 
 const bot = new Bot(TOKEN!);
 

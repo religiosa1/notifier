@@ -17,7 +17,7 @@ export default fp(async function(fastify) {
   }
 
   fastify.register(fastifyJwt, {
-    secret: process.env.JWT_SECRET
+    secret: process.env.JWT_SECRET,
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
@@ -48,7 +48,8 @@ export default fp(async function(fastify) {
         throw new ResultError(401, "Wrong name/password pair");
       }
       const token = fastify.jwt.sign({
-        name: user.name
+        name: user.name,
+        id: user.id,
       }, { expiresIn: 1_200_000 });
 
       return reply.send(result({ token }));
