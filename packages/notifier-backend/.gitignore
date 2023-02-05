@@ -3,3 +3,6 @@
 passwds
 node_modules
 build
+prisma/dev.db
+prisma/dev.db-journal
+prisma/generated

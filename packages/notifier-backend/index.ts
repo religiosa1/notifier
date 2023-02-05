@@ -1,8 +1,11 @@
 import "dotenv/config";
 import fastify from "fastify";
-import { Bot, SendMessageProps, Update } from "src/Bot";
-import { authenticator } from "src/authentication";
+import cookie, { FastifyCookieOptions } from '@fastify/cookie'
+import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import authorizeJWT from "src/Authorization/pluginJWT";
+import authorizeKey from "src/Authorization/pluginKey";
 import { registerLogger } from "src/logger";
+import { Bot, SendMessageProps, Update } from "src/Bot";
 
 const TOKEN = process.env.BOT_TOKEN;
 const url = process.env.URL || "";
@@ -11,16 +14,22 @@ const port = Number(process.env.PORT) || 8085;
 
 export const app = fastify({ logger: true });
 registerLogger(app.log)
-app.register(...authenticator);
+app.register(cookie, {
+  secret: process.env.JWT_SECRET,
+  hook: false,
+} satisfies FastifyCookieOptions);
+app.register(authorizeJWT);
+app.register(authorizeKey);
+app.setValidatorCompiler(validatorCompiler);
+app.setSerializerCompiler(serializerCompiler);
 
 const bot = new Bot(TOKEN!);
-
 
 app.after(() => {
   app.route({
     method: 'POST',
     url: '/notify',
-    onRequest: app.basicAuth,
+    onRequest: app.authorizeKey,
     handler: async (req) => {
       return bot.sendMessage(req.body as SendMessageProps);
     }

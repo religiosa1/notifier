@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 /** Script for manually generating passwords for API keys */
 import readline from "readline";
-import { hash } from "./src/authentication";
+import { hash } from "src/Authorization/hash";
 import { Writable } from "stream";
 
 class MutableStdout extends Writable {

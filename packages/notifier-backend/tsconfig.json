@@ -9,6 +9,8 @@
   },
   "include": [
     "./src/",
+    "./scripts/",
+    "./prisma",
     "./index.ts"
   ],
   "compilerOptions": {

@@ -8,19 +8,31 @@
     "dev": "nodemon index.ts",
     "start": "NODE_ENV=production node build/index.js",
     "build": "tsc",
-    "salt": "ts-node salt.ts",
+    "salt": "ts-node scripts/salt.ts",
+    "generate-jwt-secret": "node -e \"console.log(require('crypto').randomBytes(256).toString('base64'));\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Viacheslav Azarov",
   "license": "MIT",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@fastify/basic-auth": "^5.0.0",
+    "@fastify/cookie": "^8.3.0",
+    "@fastify/jwt": "^6.5.0",
+    "@prisma/client": "^4.9.0",
     "bcrypt": "^5.1.0",
     "dotenv": "^16.0.3",
     "fastify": "^4.12.0",
+    "fastify-plugin": "^4.5.0",
+    "fastify-type-provider-zod": "^1.1.9",
     "node-telegram-bot-api": "^0.61.0",
     "pino": "^8.8.0",
-    "ts-node": "^10.9.1"
+    "prisma": "^4.9.0",
+    "rfc4648": "^1.5.2",
+    "ts-node": "^10.9.1",
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
