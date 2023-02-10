@@ -37,6 +37,9 @@ export default fp(async function(fastify) {
       },
     },
     async handler(req, reply) {
+      if (req.validationError) {
+        throw new ResultError(400, "Request body does not match the required schema");
+      }
       const { name, password } = req.body;
       const user = await db.user.findUnique({ where: { name }});
       if (

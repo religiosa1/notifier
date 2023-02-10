@@ -10,3 +10,12 @@ export const userSchema = z.object({
 });
 
 export type User = z.infer<typeof userSchema>;
+
+export const userWithGroupSchema = userSchema.extend({
+  groups: z.array(z.object({
+    id: z.number().int(),
+    name: z.string(),
+  })),
+});
+
+export type UserWithGroups = z.infer<typeof userWithGroupSchema>;

@@ -1,0 +1,48 @@
+:root {
+  --clr-txt: #222;
+  --clr-bg: #ddc;
+  --clr-hbg: #ffffff;
+  --clr-primary: #2b2560;
+  --clr-error: red;
+  @media (prefers-color-scheme: dark) {
+    --clr-txt: #fff;
+    --clr-bg: #1a1c1e;
+    --clr-hbg: #04100f;
+    --clr-brd: #2b3740;
+  }
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  color: var(--clr-txt);
+  background: var(--clr-bg);
+  font-size: 16px;
+}
+
+input {
+  background-color: var(--clr-hbg);
+  border: 1px solid transparent;
+  padding: 0.3rem;
+  color: var(--clr-txt);
+  border-radius: 0.3rem;
+}
+
+button,
+.button {
+  all: unset;
+  background: var(--clr-primary);
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.table {
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+  th,td {
+    border: 1px solid var(--clr-brd);
+    padding: 0.5rem;
+  }
+}
