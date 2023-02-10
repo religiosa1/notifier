@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Pagination from "~/components/pagination.svelte";
   import type { PageData } from "./$types";
   export let data: PageData;
 </script>
@@ -16,7 +17,7 @@
     </tr>
   </thead>
   <tbody>
-  {#each data.users.data as user (user.id)}
+  {#each data.users as user (user.id)}
     <tr>
       <td>{user.name}</td>
       <td>{user.telegramId}</td>
@@ -33,11 +34,14 @@
     </tr>
   {:else}
   <tr>
-    <td colspan="4">No user is present in the response!</td>
+    <td colspan="5">No user is present in the response!</td>
   </tr>
   {/each}
   </tbody>
 </table>
+
+<Pagination {...data.pagination} />
+
 <a class="button" href="./new">
   Add a new user
 </a>

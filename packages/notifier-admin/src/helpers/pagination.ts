@@ -1,3 +1,6 @@
+import { patchSearch } from "./patchSearch";
+
+const DEFAULT_TAKE = 20;
 interface Pagination {
   skip: number;
   take: number;
@@ -10,7 +13,7 @@ interface Pagination {
  * @param defaultTake take to use, if url's take param is not defined or invalid
  * @returns pagination data
  */
-export function getPaginationParams(url: URL, defaultTake = 20): Pagination {
+export function getPaginationParams(url: URL, defaultTake = DEFAULT_TAKE): Pagination {
   const page = coerceParam(url.searchParams.get("page"), 1);
   const take = coerceParam(url.searchParams.get("take"), defaultTake);
 
@@ -22,8 +25,8 @@ export function getPaginationParams(url: URL, defaultTake = 20): Pagination {
 }
 
 /**
- * Appending pagination data retived from URL or passed as Pagination object
- * to url searchParams.
+ * Appending server-side pagination data retived from URL or passed as Pagination
+ * object to url searchParams.
  *
  * If pagination data exists in the url, it will be overwritten.
  *
@@ -32,51 +35,14 @@ export function getPaginationParams(url: URL, defaultTake = 20): Pagination {
  * @returns url with pagination data appended to its search
  */
 export function paginate(source: URL | Pagination, url: string): string {
-  const pagination = isPagination(source)
+  const { skip, take } = isPagination(source)
     ? source
     : getPaginationParams(source);
-  const [ search, noSearchUrl ] = extractSearch(url);
-
-  const searchParams = new URLSearchParams(search);
-  while (searchParams.has("skip")) {
-    searchParams.delete("skip");
-  }
-  while (searchParams.has("take")) {
-    searchParams.delete("take");
-  }
-  searchParams.set("skip", pagination.skip.toString());
-  searchParams.set("take", pagination.take.toString());
-
-  let hashIndex = noSearchUrl.lastIndexOf("#");
-  if (hashIndex < 0) {
-    hashIndex = noSearchUrl.length;
-  }
-
-  return (
-    noSearchUrl.substring(0, hashIndex) +
-    `?${searchParams}` +
-    noSearchUrl.substring(hashIndex)
-  );
+  return patchSearch(url, { skip, take });
 }
 
-
-function extractSearch(url: string): [
-  search: string,
-  urlWithoutSearch: string,
-]{
-  let searchEnd = url.indexOf('#');
-  if (searchEnd < 0) {
-    searchEnd = url.length;
-  }
-  let searchStart = url.lastIndexOf('?', searchEnd);
-  if (searchStart < 0) {
-    searchStart = searchEnd;
-  }
-
-  return [
-    url.substring(searchStart, searchEnd),
-    url.substring(0, searchStart) + url.substring(searchEnd),
-  ];
+export function pageUrl(url: string, page: number): string {
+  return patchSearch(url, "page", page);
 }
 
 function isPagination(obj: unknown): obj is Pagination {

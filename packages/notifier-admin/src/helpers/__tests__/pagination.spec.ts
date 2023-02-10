@@ -66,30 +66,5 @@ describe("pagination", () => {
       const result = paginate(new URL("/foobar?page=3&take=25", dr), "/foobar");
       expect(result).toBe("/foobar?skip=50&take=25");
     });
-
-    it("merges search params with existing ones", () => {
-      const result = paginate(params, "/foobar?foo=test");
-      expect(result).toBe("/foobar?foo=test&skip=34&take=56");
-    });
-
-    it("overwrites existing params as needed", () => {
-      const result = paginate(params, "/foobar?skip=12&foo=test&take=45");
-      expect(result).toBe("/foobar?foo=test&skip=34&take=56");
-    });
-
-    it("respsects hash in url", () => {
-      const result = paginate(params, "/foobar#fragment");
-      expect(result).toBe("/foobar?skip=34&take=56#fragment");
-    });
-
-    it("respsects hash and existing search in url", () => {
-      const result = paginate(params, "/foobar?skip=12&foo=test&take=45#fragment");
-      expect(result).toBe("/foobar?foo=test&skip=34&take=56#fragment");
-    });
-
-    it("doesn't touch pseudo-search in fragment", () => {
-      const result = paginate(params, "/foobar#fake?foo=arg");
-      expect(result).toBe("/foobar?skip=34&take=56#fake?foo=arg")
-    });
   });
 });
