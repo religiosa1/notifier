@@ -1,9 +1,13 @@
 {
-  "name": "notifier",
+  "name": "tg-notifier",
   "version": "1.0.0",
   "description": "Telegram notifier monorepo",
   "main": "index.js",
   "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspace packages/admin & npm run start --workspace packages/server",
+    "dev": "concurrently \"npm:dev --workspace packages/admin\" \"npm:dev --workspace packages/server\"",
+    "db:migrate": "npm run db:migrate --workspace packages/server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,7 +21,9 @@
   },
   "homepage": "https://github.com/religiosa1/notifier#readme",
   "workspaces": [
-    "packages/notifier-admin",
-    "packages/notifier-backend"
-  ]
+    "packages/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
 }

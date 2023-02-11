@@ -1,6 +1,6 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
-	"references": [{ "path": "../notifier-models/tsconfig.json"}],
+	"references": [{ "path": "../models/tsconfig.json"}],
 	"compilerOptions": {
 		"allowJs": true,
 		"checkJs": true,
@@ -12,7 +12,7 @@
 		"strict": true,
 		"paths": {
 			"~/*": ["./src/*"],
-			"~/models/*": ["./src/models/*", "../notifier-models/src/*"],
+			"~/models/*": ["./src/models/*", "../models/src/*"],
 
 		},
 	}

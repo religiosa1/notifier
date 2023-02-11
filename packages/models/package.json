@@ -1,5 +1,5 @@
 {
-  "name": "notifier-models",
+  "name": "@tg-notifier/models",
   "version": "1.0.0",
   "description": "common models for notiffier project",
   "main": "dist/index.js",
@@ -9,6 +9,10 @@
   },
   "author": "Viacheslav Azarov",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/religiosa1/notifier.git"
+  },
   "dependencies": {
     "zod": "^3.20.6"
   }

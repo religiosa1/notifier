@@ -1,19 +1,24 @@
 {
-  "name": "notifier-backend",
+  "name": "@tg-notifier/server",
   "version": "2.0.0",
   "description": "Telegram notifier bot",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
     "dev": "nodemon index.ts",
-    "start": "NODE_ENV=production node dist/index.js",
     "build": "tsc",
+    "start": "NODE_ENV=production node dist/index.js",
     "salt": "ts-node scripts/salt.ts",
     "generate-jwt-secret": "node -e \"console.log(require('crypto').randomBytes(256).toString('base64'));\"",
+    "db:migrate": "prisma migrate dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Viacheslav Azarov",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/religiosa1/notifier.git"
+  },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },

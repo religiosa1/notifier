@@ -1,5 +1,5 @@
 {
-	"name": "notifier-admin",
+	"name": "@tg-notifier/admin",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -12,6 +12,12 @@
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
 		"format": "prettier --plugin-search-dir . --write ."
 	},
+	"author": "Viacheslav Azarov",
+  "license": "MIT",
+	"repository": {
+    "type": "git",
+    "url": "git+https://github.com/religiosa1/notifier.git"
+  },
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^1.0.0",
 		"@sveltejs/kit": "^1.0.0",

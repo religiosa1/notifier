@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
-import { resultSuccessSchema } from "src/Models/Result";
+import { resultSuccessSchema } from "src/models/Result";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
 import { userWithGroupsSchema, UserWithGroups } from "src/models/User";
 import { db } from "src/db";
@@ -14,7 +14,7 @@ export default fp(async function(fastify) {
     schema: {
       querystring: paginationSchema,
       response: {
-        200: resultSuccessSchema(counted(z.array(userWithGroupSchema))),
+        200: resultSuccessSchema(counted(z.array(userWithGroupsSchema))),
       }
     },
     onRequest: fastify.authorizeJWT,

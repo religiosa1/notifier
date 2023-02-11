@@ -1,4 +1,4 @@
-import { getStatusPhrase, StatusCodes } from "src/Models/StatusCodes";
+import { getStatusPhrase, StatusCodes } from "../StatusCodes";
 import { z } from "zod";
 
 export const resultFailureSchema = z.object({

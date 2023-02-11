@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { hash } from 'src/Authorization/hash';
-import { AuthorizationEnum } from 'src/Models/AuthorizationEnum'
+import { AuthorizationEnum } from 'src/models/AuthorizationEnum'
 
 const prisma = new PrismaClient()
 
