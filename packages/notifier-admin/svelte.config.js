@@ -9,7 +9,7 @@ const config = {
 
 	kit: {
 		alias: {
-			"~/*": "./src/*"
+			"~/*": "./src/*",
 		},
 		adapter: adapter()
 	}

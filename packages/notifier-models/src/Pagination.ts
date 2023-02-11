@@ -6,6 +6,7 @@ export const paginationSchema = z.object({
 });
 
 export type Pagination = z.infer<typeof paginationSchema>;
+
 export const paginationDefaults = {
   skip: 0,
   take: 20

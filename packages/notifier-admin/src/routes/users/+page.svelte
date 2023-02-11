@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Pagination from "~/components/pagination.svelte";
   import type { PageData } from "./$types";
   export let data: PageData;
@@ -18,9 +19,10 @@
   </thead>
   <tbody>
   {#each data.users as user (user.id)}
+    {@const link = `${$page.url.href}/${encodeURIComponent(user.id)}/`}
     <tr>
-      <td>{user.name}</td>
-      <td>{user.telegramId}</td>
+      <td><a href={link}>{user.name}</a></td>
+      <td><a href={link}>{user.telegramId}</a></td>
       <td>{user.authorizationStatus}</td>
       <td>{!!user.password}</td>
       <td>
@@ -41,7 +43,3 @@
 </table>
 
 <Pagination {...data.pagination} />
-
-<a class="button" href="./new">
-  Add a new user
-</a>

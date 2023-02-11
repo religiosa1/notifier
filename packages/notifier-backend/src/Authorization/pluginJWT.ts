@@ -4,8 +4,7 @@ import fastifyJwt from "@fastify/jwt";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
 import bcrypt from "bcrypt";
-import { ResultError, resultFailureSchema, resultSuccessSchema } from "src/Models/Result";
-import { result } from "src/Models/Result";
+import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "src/models/Result";
 import { db } from "src/db";
 
 export default fp(async function(fastify) {

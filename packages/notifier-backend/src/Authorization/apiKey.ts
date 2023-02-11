@@ -1,7 +1,7 @@
 
 import { randomBytes } from "crypto";
 import { base32, base64 } from 'rfc4648';
-import { apiKeySchema } from "src/Models/ApiKey";
+import { apiKeySchema } from "src/models/ApiKey";
 
 export function generateApiKey(): string {
   const key = base64.stringify(randomBytes(30))

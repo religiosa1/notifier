@@ -2,10 +2,10 @@ import fp from "fastify-plugin";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
 import { resultSuccessSchema } from "src/Models/Result";
-import { paginationSchema, paginationDefaults } from "src/Models/Pagination";
-import { userWithGroupSchema, UserWithGroups } from "src/Models/User";
+import { paginationSchema, paginationDefaults } from "src/models/Pagination";
+import { userWithGroupsSchema, UserWithGroups } from "src/models/User";
 import { db } from "src/db";
-import { counted } from "./Models/counted";
+import { counted } from "src/models/Counted";
 
 export default fp(async function(fastify) {
   fastify.withTypeProvider<ZodTypeProvider>().route({
