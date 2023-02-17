@@ -2,8 +2,8 @@ import type { PageServerLoad } from './$types';
 import { server_base } from '~/constants';
 import { unwrapResult } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
-import type { UserWithGroups } from "~/models/User";
-import type { Counted } from "~/models/Counted";
+import type { UserWithGroups } from "@shared/models/User";
+import type { Counted } from "@shared/models/Counted";
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
   const pagination = getPaginationParams(url);

@@ -1,12 +1,20 @@
 <script lang="ts">
 	import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
+	import { userSchema } from "@shared/models/User";
 	import { UserRoleEnum } from "@shared/models/UserRoleEnum";
+	import type { ActionData } from "./$types";
+  import type { User } from "@shared/models/User";
+  const userShape = Object.fromEntries(
+    Object.keys(userSchema.shape).map(k => [k, ""])
+  ) as Record<keyof User, unknown>;
 
   export let form: ActionData;
 
   const user = {
+    ...userShape,
     ...form,
   };
+  console.log("FORM", form)
 </script>
 
 <h2>Create a new user</h2>
@@ -19,10 +27,15 @@
 </p>
 {#if form?.error}
   <p class="error">
-    {form?.error}
+    {form.error}
+    {#if form.error === "Validation error"}
+      {#each form.errorDetails.allErrors as err}
+        <pre>{err.path}: {err.message}</pre>
+      {/each}
+    {:else}
+      <pre>{form.errorDetails}</pre>
+    {/if}
   </p>
-  <pre>{JSON.stringify(form?.errorDetails, undefined, 2)}</pre>
-
 {/if}
 <form method="POST"  action="?/create">
   <p class="input-group">
@@ -31,10 +44,14 @@
       <input
         name="name"
         type="text"
-        value={user.name || ""}
-        required
+        value={user.name}
         autocomplete="username"
       />
+      {#if form?.error === "Validation error" && form.errorDetails.fields.name}
+      <p class="error">
+        {form.errorDetails.fields.name.message}
+      </p>
+      {/if}
     </label>
   </p>
   <p class="input-group">
@@ -43,7 +60,7 @@
       <input
         name="telegramId"
         type="text"
-        value={user.telegramId || ""}
+        value={user.telegramId}
         required
       />
     </label>
@@ -58,7 +75,7 @@
         type="radio"
         required
         value={status}
-        checked={status === user.authorizationStatus}
+        checked={status == user.authorizationStatus}
       />
     </label>
     {/each}
@@ -73,7 +90,7 @@
         type="radio"
         required
         value={status}
-        checked={status === user.userRole}
+        checked={status == user.role}
       />
     </label>
     {/each}

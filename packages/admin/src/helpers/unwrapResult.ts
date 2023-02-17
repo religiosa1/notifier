@@ -41,54 +41,63 @@ function getStatusCode(e: unknown, fallback = 500): number {
   return fallback;
 }
 
-type Unwrapped<T, K> = ActionFailure<T & { error: string, errorDetails: unknown } & K>;
-
-type UnwrappedErrorReturn<T> = Unwrapped<T, { name: "Unexpected error"}>;
+type UnwrappedError<T> = ActionFailure<T & { error: "Unexpected error", errorDetails: string }>;
 export function unwrapError<T extends Record<string, unknown>>(
   e: unknown,
   additionalData?: T
-): UnwrappedErrorReturn<T> {
+): UnwrappedError<T> {
   return fail(getStatusCode(e), {
     ...(additionalData as T),
-    name: "Unexpected error" as const,
-    error: String(e),
-    errorDetails: JSON.parse(JSON.stringify(e ?? null)),
+    error: "Unexpected error" as const,
+    errorDetails: String(e)
   });
 }
 
-type UnwrappedServerErrorReturn<T> = Unwrapped<T, { name: "Server request error" }>;
+type UnwrappedServerError<T> = ActionFailure<T & {
+  error: "Server request error";
+  errorDetails: string;
+}>;
 export function unwrapServerError<T extends Record<string, unknown>>(
   e: unknown,
   additionalData?: T
-): UnwrappedServerErrorReturn<T> | UnwrappedErrorReturn<T> {
+): UnwrappedServerError<T> | UnwrappedError<T> {
   if (isServerErrorLike(e)) {
     return fail(e.statusCode || 500, {
       ...(additionalData as T),
-      name: "Server request error" as const,
-      error: e.detail ?? e.message,
-      errorDetails: JSON.parse(JSON.stringify(e)),
+      error: "Server request error",
+      errorDetails: e.detail ?? e.message,
     });
   }
   return unwrapError(e, additionalData);
 }
 
-type UnwrappedValidationErrorReturn<T> = Unwrapped<T, {
-  name: "Validation error";
-  errorDetails: Record<string, ZodIssue>;
+type UnwrappedValidationError<T> = ActionFailure<T & {
+  error: "Validation error";
+  errorDetails: {
+    fields: Record<string, ZodIssue>,
+    unknownErrors: ZodIssue[],
+    allErrors: ZodIssue[]
+  }
 }>;
 export function unwrapValidationError<T extends Record<string, unknown>>(
   e: unknown,
-  additionalData?: T
-): UnwrappedValidationErrorReturn<T> | UnwrappedErrorReturn<T> {
+  formData?: T,
+): UnwrappedValidationError<T> {
   if (e instanceof ZodError) {
+    const knownKeys = Object.keys( formData || {});
+    const unknownErrors = e.errors.filter(i => !knownKeys.includes(i.path.toString()));
+    const fields: Record<string, ZodIssue> = Object.fromEntries(e.errors.map(i => [
+      i.path.toString(), i
+    ] satisfies [ string, ZodIssue ]));
     return fail( 422, {
-      ...(additionalData as T),
-      name: "Validation error" as const,
-      error: e.name,
-      errorDetails: Object.fromEntries(e.errors.map(i => [
-        i.path, i
-      ]))
+      ...(formData as T),
+      error: "Validation error" as const,
+      errorDetails: {
+        fields,
+        unknownErrors,
+        allErrors: e.errors,
+      }
     });
   }
-  return unwrapError(e, additionalData);
+  throw e;
 }

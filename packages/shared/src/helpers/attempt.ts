@@ -34,9 +34,13 @@ export function attempt<TRet, TDef = undefined>(
     const value = action();
     return [value, undefined]
   } catch(e) {
-    const fallback = defaultValue instanceof Function
+    const fallback = isFuntion(defaultValue)
       ? defaultValue(e)
       : defaultValue as TDef
     return [ fallback, e ?? new Error("Nullish error")];
   }
+}
+
+function isFuntion(t: unknown): t is Function {
+  return typeof t === "function";
 }

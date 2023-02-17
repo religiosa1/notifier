@@ -1,4 +1,3 @@
-import { it, describe, expect, vi } from "vitest";
 import { attempt } from "../attempt";
 
 describe("attempt", () => {
@@ -21,7 +20,7 @@ describe("attempt", () => {
   });
 
   it("calls the function provided as default value and uses its return if error happened", () => {
-    const errorMap = vi.fn((v) => v * 2);
+    const errorMap = jest.fn((v) => v * 2);
     const [ data, error ] = attempt(() => { throw 2 }, errorMap);
     expect(errorMap).toBeCalledWith(2);
     expect(data).toBe(4);

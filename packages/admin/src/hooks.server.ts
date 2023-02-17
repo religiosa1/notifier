@@ -7,6 +7,7 @@ import { uri } from "./helpers/uri";
 export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
   if (request.url.startsWith(server_base)) {
     request.headers.set('Authorization', event.cookies.get('Authorization') || "");
+    request.headers.set('Content-Type', 'application/json');
   }
 
   if (event.url.pathname ==="/login") {

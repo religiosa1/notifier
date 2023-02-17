@@ -5,8 +5,8 @@ import { UserRoleEnum } from "./UserRoleEnum";
 export const userSchema = z.object({
   id: z.number().int().gt(0),
   telegramId: z.string().min(1),
-  name: z.string().nullable(),
-  password: z.string().nullable(),
+  name: z.string().min(1).nullable(),
+  password: z.string().min(6).nullable(),
   authorizationStatus: z.nativeEnum(AuthorizationEnum),
   role: z.nativeEnum(UserRoleEnum),
 });
@@ -28,7 +28,7 @@ export const userDetailSchema = userWithGroupsSchema.extend({
 });
 export type UserDetail = z.infer<typeof userDetailSchema>;
 
-export const userCreateSchema = userSchema.extend({
+export const userCreateSchema = userSchema.omit({ id: true }).extend({
   groups: z.array(z.number().int().gt(0)).optional(),
   channels: z.array(z.number().int().gt(0)).optional(),
 })
