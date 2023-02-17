@@ -1,6 +1,6 @@
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { server_base } from '~/constants';
-import { unwrapResult } from '~/helpers/unwrapResult';
+import { unwrapError, unwrapResult } from '~/helpers/unwrapResult';
 import { uri } from '~/helpers/uri';
 import type { UserDetail } from "~/models/User";
 
@@ -12,3 +12,26 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
     user
   };
 };
+
+export const actions: Actions = {
+  async edit({ fetch, request, url, cookies }) {
+    // TODO
+    // const formData = await request.formData();
+    // let serverData;
+    // try {
+    //   serverData = await fetch(new URL("/login", server_base), {
+    //     method: "POST",
+    //     headers: {
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify(data),
+    //   });
+    // } catch(err) {
+    //   console.error("ERRORED", err);
+    //   return unwrapError(err, data);
+    // }
+  },
+  async resetPassword() {
+    return {};
+  },
+}

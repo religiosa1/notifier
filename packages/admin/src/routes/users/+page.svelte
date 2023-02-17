@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from "$app/paths";
   import { page } from "$app/stores";
   import Pagination from "~/components/pagination.svelte";
   import type { PageData } from "./$types";
@@ -43,3 +44,9 @@
 </table>
 
 <Pagination {...data.pagination} />
+
+<p>
+  <a class="button" href="{base}/users/new">
+    Add a new user
+  </a>
+</p>

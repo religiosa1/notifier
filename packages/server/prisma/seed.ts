@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { hash } from 'src/Authorization/hash';
 import { AuthorizationEnum } from 'src/models/AuthorizationEnum'
+import { UserRoleEnum } from 'src/models/UserRoleEnum';
 
 const prisma = new PrismaClient()
 
@@ -11,9 +12,9 @@ async function main() {
     create: {
       telegramId: process.env.ROOT_TELEGRAM_ID || "1234567",
       name: 'admin',
-      // only admin users can have password, so if the password exists it's an admin
       password: await hash("1234567"),
-      authorizationStatus: AuthorizationEnum.accepted
+      authorizationStatus: AuthorizationEnum.accepted,
+      role: UserRoleEnum.admin,
     },
   });
 }

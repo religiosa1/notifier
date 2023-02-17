@@ -1,6 +1,8 @@
+import { base } from "$app/paths";
 import type { HandleFetch } from "@sveltejs/kit";
 import { redirect } from "@sveltejs/kit";
 import { server_base } from "./constants";
+import { uri } from "./helpers/uri";
 
 export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
   if (request.url.startsWith(server_base)) {
@@ -12,7 +14,7 @@ export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
   }
   return fetch(request).then(r => {
     if (r.status === 403 || r.status === 401) {
-      throw redirect(303, `/login?referer=${event.url.pathname}`);
+      throw redirect(303, base + uri`/login?referer=${event.url.pathname}`);
     }
     return r;
   });

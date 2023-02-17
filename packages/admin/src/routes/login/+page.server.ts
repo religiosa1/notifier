@@ -4,12 +4,11 @@ import { unwrapError, unwrapResult } from "~/helpers/unwrapResult";
 import { server_base } from "~/constants";
 
 export const actions: Actions = {
-  default: async ({ fetch, request, url, cookies }) => {
-    const data = await request.formData();
-    const name = data.get("name");
-    const password = data.get("password");
+  async default({ fetch, request, url, cookies }) {
+    const formData = await request.formData();
+    const name = formData.get("name");
+    const password = formData.get("password");
     let serverData;
-    console.log({ name, password });
     try {
       serverData = await fetch(new URL("/login", server_base), {
         method: "POST",

@@ -3,7 +3,7 @@
   export let form: ActionData;
 </script>
 <form method="POST">
-  <h1>Log in</h1>
+  <h2>Log in</h2>
   <p class="input-group">
     <label>
       Name

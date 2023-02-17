@@ -23,7 +23,9 @@ model User {
   // Authorization status doesn't impact admin page log-ins,
   // only telegram bot functionality
   authorizationStatus  Int       @default(0)
-  ChannelSubscriptions Channel[]
+  // UserRoleEnum
+  role                 Int       @default(0)
+  channels             Channel[]
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 }

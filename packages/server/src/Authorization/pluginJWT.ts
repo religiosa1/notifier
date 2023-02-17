@@ -6,6 +6,7 @@ import z from "zod";
 import bcrypt from "bcrypt";
 import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "src/models/Result";
 import { db } from "src/db";
+import { UserRoleEnum } from "src/models/UserRoleEnum";
 
 export default fp(async function(fastify) {
   if (!process.env.JWT_SECRET) {
@@ -48,6 +49,9 @@ export default fp(async function(fastify) {
         !await bcrypt.compare(password, user.password)
       ) {
         throw new ResultError(401, "Wrong name/password pair");
+      }
+      if (user.role !== UserRoleEnum.admin) {
+        throw new ResultError(403, "You don't have required permissions");
       }
       const token = fastify.jwt.sign({
         name: user.name,

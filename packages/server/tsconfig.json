@@ -1,6 +1,6 @@
 {
   "extends": "ts-node/node16/tsconfig.json",
-  "references": [{ "path": "../models/tsconfig.json"}],
+  "references": [{ "path": "../shared/tsconfig.json"}],
   "ts-node": {
     "require": ["tsconfig-paths/register"],
     "transpileOnly": true,
@@ -19,7 +19,7 @@
     "outDir": "dist",
     "declaration": true,
     "paths": {
-      "src/models/*": [ "src/models/*", "../models/src/*" ]
+      "src/*": [ "src/*", "../shared/src/*" ]
     }
   }
 }

@@ -62,7 +62,7 @@ export default fp(async function (fastify) {
       // TODO accept user id in request
     },
     onRequest: fastify.authorizeJWT,
-    async handler(request, reply) {
+    async handler(request) {
       const apiKey = generateApiKey();
       const [ prefix, key ] = parseApiKey(apiKey);
       const hashedKey = await hash(key);

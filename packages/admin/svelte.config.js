@@ -10,6 +10,7 @@ const config = {
 	kit: {
 		alias: {
 			"~/*": "./src/*",
+			"@shared/*": "../shared/src/*",
 		},
 		adapter: adapter()
 	}
