@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { base } from "$app/paths";
-	import { page } from "$app/stores";
 	import BatchStatsPanel from "~/components/BatchStatsPanel.svelte";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
 	import Pagination from "~/components/pagination.svelte";
 	import type { ActionData, PageData } from "./$types";
+	import { uri } from "~/helpers/uri";
+	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	export let data: PageData;
 	export let form: ActionData;
 
@@ -32,6 +33,8 @@
 
 <h2>Users</h2>
 
+<BreadCrumbs cur="Users" />
+
 <BatchStatsPanel action={form} />
 <ErrorPanel action={form} />
 
@@ -45,15 +48,19 @@
 				<th>Is admin?</th>
 				<th>Groups</th>
 				<th>
-					<button type="button" title="select/deselect" on:click={toggleCurrent}/>
+					<button
+						type="button"
+						class="secondary"
+						title="select/deselect"
+						on:click={toggleCurrent}
+					/>
 				</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each data.users as user (user.id)}
-				{@const link = `${$page.url.href}/${encodeURIComponent(user.id)}/`}
 				<tr>
-					<td><a href={link}>{user.name}</a></td>
+					<td><a href={base + uri`/users/${user.id}`}>{user.name}</a></td>
 					<td>{user.telegramId}</td>
 					<td>{user.authorizationStatus}</td>
 					<td>{!!user.password}</td>
@@ -89,14 +96,17 @@
 		</tbody>
 	</table>
 
-	{#if selectedUsers.size > 0}
-		Selected {selectedUsers.size} elements. <button on:click={() => selectedUsers = new Set()} type="button">deselect all</button>
-	{/if}
-
 	<Pagination {...data.pagination} />
 
 	<div class="form-controls">
 		<a class="button" href="{base}/users/new"> Add a new user </a>
-		<button>Delete selected</button>
+		<button class="danger" disabled={selectedUsers.size === 0}>Delete selected</button>
 	</div>
+
+	{#if selectedUsers.size > 0}
+	<p>
+		Selected {selectedUsers.size} elements.
+		<button class="inline" on:click={() => selectedUsers = new Set()} type="button">deselect all</button>
+	</p>
+	{/if}
 </form>

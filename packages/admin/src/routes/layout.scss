@@ -2,13 +2,23 @@
 	--clr-txt: #222;
 	--clr-bg: #ddc;
 	--clr-hbg: #ffffff;
-	--clr-primary: #2b2560;
+	--clr-primary: hsl(246, 44%, 26%);
+	--clr-primary-hover: hsl(246, 52%, 34%);
+	--clr-danger: hsl(350, 60%, 20%);
+	--clr-danger-hover: hsl(350, 68%, 28%);
+	--clr-focus: hsl(217, 90%, 95%);
 	--clr-error: red;
+	--clr-bg-disabled: #555;
+	--clr-link: #4156e1;
+	--clr-link-hover: #6189F1;
+	--clr-link-visited: #7159C1;
 	@media (prefers-color-scheme: dark) {
 		--clr-txt: #fff;
 		--clr-bg: #1a1c1e;
 		--clr-hbg: #04100f;
+		--clr-hbg-hover: #0c0c2b;
 		--clr-brd: #2b3740;
+		--clr-bg-disabled: #333;
 	}
 }
 
@@ -19,6 +29,13 @@ body {
 	color: var(--clr-txt);
 	background: var(--clr-bg);
 	font-size: 16px;
+	font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
+
+a {
+	color: var(--clr-link);
+	&:visited { color: var(--clr-link-visited);}
+	&:hover { color: var(--clr-link-hover);}
 }
 
 input {
@@ -27,6 +44,9 @@ input {
 	padding: 0.3rem;
 	color: var(--clr-txt);
 	border-radius: 0.3rem;
+	&:focus {
+		box-shadow: 0 0 0 2px var(--clr-focus);
+	}
 }
 .input-group {
 	display: block;
@@ -37,14 +57,54 @@ input {
 	margin: 0.7em 0;
 }
 
+a.button,
 button,
 .button {
 	all: unset;
 	background: var(--clr-primary);
+	color: var(--clr-txt);
 	padding: 0.3rem 0.7rem;
 	border-radius: 0.3rem;
+	transition: 0.15s ease-in-out;
+	transition-property: background-color, text-decoration;
 	cursor: pointer;
 	display: inline-block;
+
+	&:focus {
+		box-shadow: 0 0 0 2px var(--clr-focus);
+	}
+
+	&:active {
+		translate: 1px 1px;
+	}
+
+	&:hover {
+		background-color: var(--clr-primary-hover);
+	}
+
+	&.secondary {
+		background-color: var(--clr-hbg);
+		&:hover { background-color: var(--clr-hbg-hover); }
+	}
+	&.danger {
+		background-color: var(--clr-danger);
+		&:hover { background-color: var(--clr-danger-hover);}
+	}
+
+	&:disabled, &:disabled:hover,
+	&.disabled, &.disabled:hover {
+		cursor: not-allowed;
+		background-color: var(--clr-bg-disabled);
+	}
+
+	&.inline {
+		all: unset;
+		display: inline;
+		text-decoration: underline dotted;
+		transition: color 0.15s;
+		cursor: pointer;
+		&:hover { color: var(--clr-link-hover)}
+	}
 }
 
 .table {
@@ -53,6 +113,6 @@ button,
 	th,
 	td {
 		border: 1px solid var(--clr-brd);
-		padding: 0.5rem;
+		padding: 0.3rem 0.5rem;
 	}
 }

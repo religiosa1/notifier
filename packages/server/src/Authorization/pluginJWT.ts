@@ -7,8 +7,9 @@ import bcrypt from "bcrypt";
 import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "src/models/Result";
 import { db } from "src/db";
 import { UserRoleEnum } from "src/models/UserRoleEnum";
+import { tokenPayloadSchema } from "src/models/TokenPayload";
 
-export default fp(async function(fastify) {
+export default fp(async function (fastify) {
   if (!process.env.JWT_SECRET) {
     throw new Error(
       "JWT secret is missing in env. Please, generate a secret with " +
@@ -31,7 +32,7 @@ export default fp(async function(fastify) {
       }),
       response: {
         200: resultSuccessSchema(z.object({
-          token: z.string(),
+          token: z.string()
         })),
         401: resultFailureSchema
       },
@@ -41,7 +42,7 @@ export default fp(async function(fastify) {
         throw new ResultError(400, "Request body does not match the required schema");
       }
       const { name, password } = req.body;
-      const user = await db.user.findUnique({ where: { name }});
+      const user = await db.user.findUnique({ where: { name } });
       if (
         req.validationError ||
         !user ||
@@ -53,18 +54,16 @@ export default fp(async function(fastify) {
       if (user.role !== UserRoleEnum.admin) {
         throw new ResultError(403, "You don't have required permissions");
       }
-      const token = fastify.jwt.sign({
-        name: user.name,
-        id: user.id,
-      }, { expiresIn: 1_200_000 });
+      const payload = tokenPayloadSchema.parse(user);
+      const token = fastify.jwt.sign(payload, { expiresIn: 1_200_000 });
 
-      return reply.send(result({ token }));
+      return reply.send(result({ token, user }));
     }
   });
 
   fastify.decorate(
     "authorizeJWT",
-    async function(
+    async function (
       request: FastifyRequest,
       reply: FastifyReply
     ) {

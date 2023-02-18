@@ -27,7 +27,7 @@
   </p>
   {#if form?.error}
     <p class="error">
-      {form?.error}
+      {form?.errorDetails}
     </p>
   {/if}
   <p class="input-group">

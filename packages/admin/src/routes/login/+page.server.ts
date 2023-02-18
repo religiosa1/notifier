@@ -2,6 +2,7 @@ import { fail, redirect } from "@sveltejs/kit";
 import type { Actions } from "./$types";
 import { unwrapServerError, unwrapResult } from "~/helpers/unwrapResult";
 import { server_base } from "~/constants";
+import { hasField } from "~/helpers/hasField";
 
 export const actions: Actions = {
   async default({ fetch, request, url, cookies }) {
@@ -19,7 +20,7 @@ export const actions: Actions = {
       return unwrapServerError(e, { name });
     }
 
-    if (!serverData || typeof serverData !== "object" || !("token" in  serverData)) {
+    if (!hasField(serverData, "token", "string")) {
       throw fail(500, { error: "Bad server response, missing `token` field." });
     }
     cookies.set("Authorization", `Bearer ${serverData.token}`);
