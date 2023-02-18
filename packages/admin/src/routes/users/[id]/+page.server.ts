@@ -1,13 +1,20 @@
 import type { Actions, PageServerLoad } from './$types';
 import { server_base } from '~/constants';
-import { unwrapError, unwrapResult } from '~/helpers/unwrapResult';
+import { unwrapServerError, unwrapResult } from '~/helpers/unwrapResult';
 import { uri } from '~/helpers/uri';
-import type { UserDetail } from "~/models/User";
+import type { UserDetail } from "@shared/models/User";
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
-  const user = await fetch(new URL(uri`/users/${params.id}/`, server_base))
-    .then(unwrapResult) as UserDetail;
+  console.log("PARAMS", uri`/users/${params.id}`);
+  try {
+    var user = await fetch(new URL(uri`/users/${params.id}`, server_base))
+      .then(unwrapResult) as UserDetail;
+  } catch(err) {
+    console.error("ERRORED", err);
+    return unwrapServerError(err);
+  }
 
+  console.log("usesr", user);
   return {
     user
   };

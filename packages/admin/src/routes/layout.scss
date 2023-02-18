@@ -27,7 +27,10 @@ input {
   color: var(--clr-txt);
   border-radius: 0.3rem;
 }
-
+.input-group {
+  display: block;
+  margin: 1rem 0;
+}
 button,
 .button {
   all: unset;

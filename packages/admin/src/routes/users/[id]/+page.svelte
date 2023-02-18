@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { ActionData } from "./$types";
-  import { AuthorizationEnum } from "~/models/AuthorizationEnum";
+  import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 	import type { PageData } from "./$types";
+	import { UserRoleEnum } from "@shared/models/UserRoleEnum";
   export let data: PageData;
   export let form: ActionData;
 
@@ -11,9 +12,9 @@
   };
 </script>
 
-<form method="POST" action="?/edit">
-  <h2>Edit user</h2>
+<h2>Edit user</h2>
 
+<form method="POST" action="?/edit">
   <p class="input-group">
     <label>
       Name
@@ -21,7 +22,7 @@
         name="name"
         type="text"
         value={user.name}
-        required
+        autocomplete="username"
       />
     </label>
   </p>
@@ -44,8 +45,24 @@
       <input
         name="authorizationStatus"
         type="radio"
+        required
         value={status}
-        checked={status === user.authorizationStatus}
+        checked={status == user.authorizationStatus}
+      />
+    </label>
+    {/each}
+  </fieldset>
+  <fieldset class="input-group">
+    <legend>User role</legend>
+    {#each Object.entries(UserRoleEnum) as [roleName, status]}
+    <label>
+      {roleName}
+      <input
+        name="role"
+        type="radio"
+        required
+        value={status}
+        checked={status == user.role}
       />
     </label>
     {/each}

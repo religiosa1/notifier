@@ -41,7 +41,8 @@ function getStatusCode(e: unknown, fallback = 500): number {
   return fallback;
 }
 
-type UnwrappedError<T> = ActionFailure<T & { error: "Unexpected error", errorDetails: string }>;
+export type ActionError = { error: "Unexpected error", errorDetails: string };
+export type UnwrappedError<T> = ActionFailure<T & ActionError>;
 export function unwrapError<T extends Record<string, unknown>>(
   e: unknown,
   additionalData?: T
@@ -49,14 +50,17 @@ export function unwrapError<T extends Record<string, unknown>>(
   return fail(getStatusCode(e), {
     ...(additionalData as T),
     error: "Unexpected error" as const,
-    errorDetails: String(e)
+    errorDetails: e?.toString === Object.prototype.toString
+      ? JSON.stringify(e)
+      : String(e)
   });
 }
 
-type UnwrappedServerError<T> = ActionFailure<T & {
+export type ActionServerError = {
   error: "Server request error";
   errorDetails: string;
-}>;
+}
+export type UnwrappedServerError<T> = ActionFailure<T & ActionServerError>;
 export function unwrapServerError<T extends Record<string, unknown>>(
   e: unknown,
   additionalData?: T
@@ -71,14 +75,15 @@ export function unwrapServerError<T extends Record<string, unknown>>(
   return unwrapError(e, additionalData);
 }
 
-type UnwrappedValidationError<T> = ActionFailure<T & {
+export type ActionValidationError = {
   error: "Validation error";
   errorDetails: {
     fields: Record<string, ZodIssue>,
     unknownErrors: ZodIssue[],
     allErrors: ZodIssue[]
   }
-}>;
+};
+export type UnwrappedValidationError<T> = ActionFailure<T & ActionValidationError>;
 export function unwrapValidationError<T extends Record<string, unknown>>(
   e: unknown,
   formData?: T,

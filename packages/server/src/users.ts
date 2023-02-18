@@ -3,6 +3,7 @@ import z from "zod";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { result, ResultError, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
+import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import * as UserModel from "src/models/User";
 import { db } from "src/db";
 import { counted } from "src/models/Counted";
@@ -37,7 +38,7 @@ export default fp(async function(fastify) {
         }),
       ]);
       return reply.send({
-        success: true as true,
+        success: true,
         data: {
           count,
           data: users as UserModel.UserWithGroups[],
@@ -47,9 +48,41 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
+    method: "DELETE",
+    url: "/users",
+    schema: {
+      querystring: z.object({ id: z.string().regex(/^\d+(?:,\d+)*$/)}),
+      response: {
+        200: resultSuccessSchema(batchOperationStatsSchema),
+      }
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(req, reply) {
+      const ids = req.query.id.split(",").map(Number);
+      const { count } = await db.user.deleteMany({
+          where: {
+            id: { in: ids }
+          }
+      });
+      const data = {
+        count,
+        outOf: ids.length,
+      };
+      fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, data);
+      return reply.send({
+        success: true,
+        data
+      });
+    }
+  });
+
+  fastify.withTypeProvider<ZodTypeProvider>().route({
     method: "GET",
     url: "/users/:userId",
     schema: {
+      params: z.object({
+        userId: z.number({ coerce: true})
+      }),
       response: {
         200: resultSuccessSchema(UserModel.userDetailSchema),
         404: resultFailureSchema
@@ -57,7 +90,7 @@ export default fp(async function(fastify) {
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
-      const id = req.id;
+      const id = req.params.userId;
       const user = await db.user.findUnique({
         where: { id },
         include: {
@@ -76,6 +109,9 @@ export default fp(async function(fastify) {
     method: "POST",
     url: "/users/:userId",
     schema: {
+      params: z.object({
+        userId: z.number({ coerce: true})
+      }),
       body: UserModel.userUpdateSchema,
       response: {
         200: resultSuccessSchema(UserModel.userDetailSchema),
@@ -84,7 +120,7 @@ export default fp(async function(fastify) {
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
-      const id = req.id;
+      const id = req.params.userId;
       const user = await db.user.update({
         where: { id },
         data: {
@@ -134,6 +170,9 @@ export default fp(async function(fastify) {
     method: "DELETE",
     url: "/users/:userId",
     schema: {
+      params: z.object({
+        userId: z.number({ coerce: true})
+      }),
       response: {
         200: resultSuccessSchema(z.null()),
         404: resultFailureSchema
@@ -141,7 +180,7 @@ export default fp(async function(fastify) {
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
-      const id = req.id;
+      const id = req.params.userId;
       const user = await db.user.delete({
         where: { id },
       });

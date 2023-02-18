@@ -4,6 +4,7 @@
 	import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 	import type { ActionData } from "./$types";
   import type { User } from "@shared/models/User";
+	import ErrorPanel from "~/components/ErrorPanel.svelte";
   const userShape = Object.fromEntries(
     Object.keys(userSchema.shape).map(k => [k, ""])
   ) as Record<keyof User, unknown>;
@@ -14,7 +15,6 @@
     ...userShape,
     ...form,
   };
-  console.log("FORM", form)
 </script>
 
 <h2>Create a new user</h2>
@@ -25,18 +25,9 @@
   enter telegramId manually. It's not the same as telegram user handle, it's
   an id. I hope you know what you're doing.
 </p>
-{#if form?.error}
-  <p class="error">
-    {form.error}
-    {#if form.error === "Validation error"}
-      {#each form.errorDetails.allErrors as err}
-        <pre>{err.path}: {err.message}</pre>
-      {/each}
-    {:else}
-      <pre>{form.errorDetails}</pre>
-    {/if}
-  </p>
-{/if}
+
+<ErrorPanel action={form} />
+
 <form method="POST"  action="?/create">
   <p class="input-group">
     <label>

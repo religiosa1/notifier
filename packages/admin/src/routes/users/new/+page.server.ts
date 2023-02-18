@@ -11,13 +11,12 @@ import { getFormData } from '~/helpers/getFormData';
 export const actions: Actions = {
   async create({ request, fetch }) {
     const formData = await request.formData();
-    let serverData;
     const [ data, valErr ] = attempt(() => getFormData(formData, userCreateSchema));
     if (valErr != null) {
       return unwrapValidationError(valErr, Object.fromEntries(formData));
     }
     try {
-      serverData = await fetch(new URL("/users", server_base), {
+      var serverData = await fetch(new URL("/users", server_base), {
         method: "PUT",
         body: JSON.stringify(data),
       }).then(unwrapResult) as UserDetail;
