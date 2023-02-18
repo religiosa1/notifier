@@ -5,7 +5,6 @@ import { uri } from '~/helpers/uri';
 import type { UserDetail } from "@shared/models/User";
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
-  console.log("PARAMS", uri`/users/${params.id}`);
   try {
     var user = await fetch(new URL(uri`/users/${params.id}`, server_base))
       .then(unwrapResult) as UserDetail;
@@ -14,7 +13,6 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
     return unwrapServerError(err);
   }
 
-  console.log("usesr", user);
   return {
     user
   };

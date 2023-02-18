@@ -31,7 +31,7 @@ export function getFormData<T extends z.AnyZodObject>(
           return [key, defaultCoerce(values, key, schema)]
         }
         return [key, values[0]] as const;
-      })
+      }).filter(i => Array.isArray(i) && i.length === 2 && i[1] !== undefined)
   );
   return schema.parse(rawObject);
 }
