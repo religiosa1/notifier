@@ -10,11 +10,33 @@
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	import Modal from "~/components/Modal.svelte";
 	import type { ActionResult } from "@sveltejs/kit";
+	import { tristate } from "~/helpers/tristate";
 	export let data: PageData;
 	export let form: ActionData;
 
 	let selectedUsers = new Set<number>();
 	let showConfirmation = false;
+
+	$: availableUsers = data.users?.filter((i) => i.id !== data.user?.id);
+	$: allChecked = availableUsers
+		?.filter((i) => i.id !== data.user?.id)
+		.every((i) => selectedUsers.has(i.id));
+
+	$: checkboxState = allChecked
+		? true
+		: availableUsers.some((i) => selectedUsers.has(i.id))
+		? null
+		: false;
+
+	function toggleCurrent() {
+		if (allChecked) {
+			availableUsers.forEach((i) => selectedUsers.delete(i.id));
+			selectedUsers = new Set(selectedUsers);
+		} else {
+			availableUsers.forEach((i) => selectedUsers.add(i.id));
+			selectedUsers = new Set(selectedUsers);
+		}
+	}
 
 	function handleSubmit() {
 		showConfirmation = true;
@@ -32,17 +54,6 @@
 		await invalidateAll();
 		selectedUsers = new Set();
 		applyAction(result);
-	}
-
-	function toggleCurrent() {
-		const availableUsers = data.users.filter((i) => i.id !== data.user?.id);
-		if (availableUsers.every((i) => selectedUsers.has(i.id))) {
-			availableUsers.forEach((i) => selectedUsers.delete(i.id));
-			selectedUsers = new Set(selectedUsers);
-		} else {
-			availableUsers.forEach((i) => selectedUsers.add(i.id));
-			selectedUsers = new Set(selectedUsers);
-		}
 	}
 </script>
 
@@ -63,10 +74,11 @@
 				<th>Is admin?</th>
 				<th>Groups</th>
 				<th>
-					<button
-						type="button"
-						class="secondary"
-						title="select/deselect"
+					<input
+						role="button"
+						type="checkbox"
+						title={allChecked ? "deselect all" : "select all"}
+						use:tristate={checkboxState}
 						on:click={toggleCurrent}
 					/>
 				</th>
@@ -114,7 +126,6 @@
 			{/each}
 		</tbody>
 	</table>
-
 	<Pagination {...data.pagination} />
 
 	<div class="form-controls">
