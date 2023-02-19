@@ -11,6 +11,8 @@
 	import Modal from "~/components/Modal.svelte";
 	import type { ActionResult } from "@sveltejs/kit";
 	import { tristate } from "~/helpers/tristate";
+	import { getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
+	import { getRoleName } from "@shared/models/UserRoleEnum";
 	export let data: PageData;
 	export let form: ActionData;
 
@@ -71,7 +73,7 @@
 				<th>Name</th>
 				<th>Telegram ID</th>
 				<th>Authorization Status</th>
-				<th>Is admin?</th>
+				<th>Role</th>
 				<th>Groups</th>
 				<th>
 					<input
@@ -89,9 +91,9 @@
 				<tr>
 					<td><a href={base + uri`/users/${user.id}`}>{user.name}</a></td>
 					<td>{user.telegramId}</td>
-					<td>{user.authorizationStatus}</td>
-					<td>{!!user.password}</td>
-					<td>
+					<td class="text-center">{getAuthorizationStatusName(user.authorizationStatus)}</td>
+					<td class="text-center">{getRoleName(user.role)}</td>
+					<td class="text-center">
 						{#each user.groups.slice(0, 10) as group (group.id)}
 							{group.name}
 						{/each}
@@ -99,7 +101,7 @@
 							{user.groups.length - 10} more.
 						{/if}
 					</td>
-					<td>
+					<td class="text-center">
 						{#if user.id !== data.user?.id}
 							<input
 								type="checkbox"

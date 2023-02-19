@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { base } from "$app/paths";
 	import type { ActionData } from "./$types";
-	import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
+	import { AuthorizationEnum, getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
 	import type { PageData } from "./$types";
-	import { UserRoleEnum } from "@shared/models/UserRoleEnum";
+	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	export let data: PageData;
 	export let form: ActionData;
@@ -33,9 +33,9 @@
 	</p>
 	<fieldset class="input-group">
 		<legend>Authorizarion status</legend>
-		{#each Object.entries(AuthorizationEnum) as [statusName, status]}
+		{#each Object.values(AuthorizationEnum) as status}
 			<label>
-				{statusName}
+				{getAuthorizationStatusName(status)}
 				<input
 					name="authorizationStatus"
 					type="radio"
@@ -48,10 +48,10 @@
 	</fieldset>
 	<fieldset class="input-group">
 		<legend>User role</legend>
-		{#each Object.entries(UserRoleEnum) as [roleName, status]}
+		{#each Object.values(UserRoleEnum) as role}
 			<label>
-				{roleName}
-				<input name="role" type="radio" required value={status} checked={status == user.role} />
+				{getRoleName(role)}
+				<input name="role" type="radio" required value={role} checked={role == user.role} />
 			</label>
 		{/each}
 	</fieldset>

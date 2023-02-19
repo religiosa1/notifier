@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import { base } from "$app/paths";
-	import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
+	import { AuthorizationEnum, getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
 	import { userSchema } from "@shared/models/User";
-	import { UserRoleEnum } from "@shared/models/UserRoleEnum";
+	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
 	import type { User } from "@shared/models/User";
 	import type { ActionData } from "./$types";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
@@ -66,9 +66,9 @@
 	</p>
 	<fieldset class="input-group">
 		<legend>Authorizarion status</legend>
-		{#each Object.entries(AuthorizationEnum) as [statusName, status]}
+		{#each Object.values(AuthorizationEnum) as status}
 			<label>
-				{statusName}
+				{getAuthorizationStatusName(status)}
 				<input
 					name="authorizationStatus"
 					type="radio"
@@ -81,10 +81,10 @@
 	</fieldset>
 	<fieldset class="input-group">
 		<legend>User role</legend>
-		{#each Object.entries(UserRoleEnum) as [roleName, status]}
+		{#each Object.values(UserRoleEnum) as role}
 			<label>
-				{roleName}
-				<input name="role" type="radio" required value={status} checked={status == user.role} />
+				{getRoleName(role)}
+				<input name="role" type="radio" required value={role} checked={role == user.role} />
 			</label>
 		{/each}
 	</fieldset>
