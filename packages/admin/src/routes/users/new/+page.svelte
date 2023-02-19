@@ -1,13 +1,14 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
+	import { base } from "$app/paths";
 	import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 	import { userSchema } from "@shared/models/User";
 	import { UserRoleEnum } from "@shared/models/UserRoleEnum";
-	import type { ActionData } from "./$types";
 	import type { User } from "@shared/models/User";
+	import type { ActionData } from "./$types";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
 	import Panel from "~/components/Panel.svelte";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
-	import { base } from "$app/paths";
 
 	const userShape = Object.fromEntries(Object.keys(userSchema.shape).map((k) => [k, ""])) as Record<
 		keyof User,
@@ -45,7 +46,7 @@
 {/if}
 <ErrorPanel action={form} />
 
-<form method="POST" action="?/create">
+<form method="POST" action="?/create" use:enhance>
 	<p class="input-group">
 		<label>
 			Name

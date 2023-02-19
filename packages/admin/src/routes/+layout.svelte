@@ -14,7 +14,7 @@
 
 		{#if data.user}
 			<div class="user-block">
-				{data.user.name}
+				<a href="{base}/users/{data.user.id}">{data.user.name}</a>
 				<form method="post" action="/logout">
 					<button class="inline">Log out</button>
 				</form>
@@ -42,10 +42,10 @@
 		margin: auto;
 		min-height: 100vh;
 		min-height: 100dvh;
+		box-sizing: border-box;
 	}
 	.main-grid__header {
 		grid-area: header;
-		display: grid;
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: 1fr;

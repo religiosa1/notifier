@@ -1,31 +1,46 @@
 <script lang="ts">
+	import { invalidateAll } from "$app/navigation";
+	import { applyAction, deserialize } from "$app/forms";
 	import { base } from "$app/paths";
+	import type { ActionData, PageData } from "./$types";
+	import { uri } from "~/helpers/uri";
 	import BatchStatsPanel from "~/components/BatchStatsPanel.svelte";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
 	import Pagination from "~/components/pagination.svelte";
-	import type { ActionData, PageData } from "./$types";
-	import { uri } from "~/helpers/uri";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
+	import Modal from "~/components/Modal.svelte";
+	import type { ActionResult } from "@sveltejs/kit";
 	export let data: PageData;
 	export let form: ActionData;
 
 	let selectedUsers = new Set<number>();
+	let showConfirmation = false;
 
-	function handleSubmit(e: SubmitEvent & { currentTarget: HTMLFormElement }) {
+	function handleSubmit() {
+		showConfirmation = true;
+	}
+
+	async function handleConfirmationClick() {
+		showConfirmation = false;
 		const formData = new FormData();
-		selectedUsers.forEach(i => formData.append("id", i.toString()));
-		// FIXME custom modal for that purpose instead of blocking confirm calls
-		if (confirm("You're about to irreversibly delete the following user. Are you sure?")) {
-		  e.currentTarget.submit();
-		}
+		selectedUsers.forEach((i) => formData.append("id", i.toString()));
+		const response = await fetch("?/delete", {
+			method: "POST",
+			body: formData,
+		});
+		const result: ActionResult = deserialize(await response.text());
+		await invalidateAll();
+		selectedUsers = new Set();
+		applyAction(result);
 	}
 
 	function toggleCurrent() {
-		if (data.users.every(i => selectedUsers.has(i.id))) {
-			data.users.forEach(i => selectedUsers.delete(i.id));
+		const availableUsers = data.users.filter((i) => i.id !== data.user?.id);
+		if (availableUsers.every((i) => selectedUsers.has(i.id))) {
+			availableUsers.forEach((i) => selectedUsers.delete(i.id));
 			selectedUsers = new Set(selectedUsers);
 		} else {
-			data.users.forEach(i => selectedUsers.add(i.id));
+			availableUsers.forEach((i) => selectedUsers.add(i.id));
 			selectedUsers = new Set(selectedUsers);
 		}
 	}
@@ -73,19 +88,23 @@
 						{/if}
 					</td>
 					<td>
-						<input
-							type="checkbox"
-							value={user.id}
-							name="id"
-							checked={selectedUsers.has(user.id)}
-							on:change={(e) => {
+						{#if user.id !== data.user?.id}
+							<input
+								type="checkbox"
+								value={user.id}
+								name="id"
+								checked={selectedUsers.has(user.id)}
+								on:change={(e) => {
 									if (e.currentTarget.checked) {
 										selectedUsers = new Set(selectedUsers.add(user.id));
 									} else if (selectedUsers.delete(user.id)) {
 										selectedUsers = new Set(selectedUsers);
 									}
-							}}
-						/>
+								}}
+							/>
+						{:else}
+							you
+						{/if}
 					</td>
 				</tr>
 			{:else}
@@ -104,9 +123,20 @@
 	</div>
 
 	{#if selectedUsers.size > 0}
-	<p>
-		Selected {selectedUsers.size} elements.
-		<button class="inline" on:click={() => selectedUsers = new Set()} type="button">deselect all</button>
-	</p>
+		<p>
+			Selected {selectedUsers.size} elements.
+			<button class="inline" on:click={() => (selectedUsers = new Set())} type="button"
+				>deselect all</button
+			>
+		</p>
 	{/if}
 </form>
+
+<Modal bind:open={showConfirmation} let:close>
+	<p>You're about to irreversibly delete those entries.</p>
+	<p>Are you sure?</p>
+	<p>
+		<button type="button" class="danger" on:click={handleConfirmationClick}> Yes </button>
+		<button type="button" class="secondary" on:click={close}> No </button>
+	</p>
+</Modal>

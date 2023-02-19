@@ -10,7 +10,7 @@
 
 	const user = {
 		...data?.user,
-		...form
+		...form,
 	};
 </script>
 

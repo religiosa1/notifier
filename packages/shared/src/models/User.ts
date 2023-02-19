@@ -2,11 +2,13 @@ import z from "zod";
 import { AuthorizationEnum } from "./AuthorizationEnum";
 import { UserRoleEnum } from "./UserRoleEnum";
 
+export const passwordSchema = z.string().min(6).nullable()
+
 export const userSchema = z.object({
 	id: z.number().int().gt(0),
 	telegramId: z.string().min(1),
 	name: z.string().min(1).nullable(),
-	password: z.string().min(6).nullable(),
+	password: passwordSchema,
 	authorizationStatus: z.nativeEnum(AuthorizationEnum),
 	role: z.nativeEnum(UserRoleEnum)
 });

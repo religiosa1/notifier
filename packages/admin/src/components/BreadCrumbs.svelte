@@ -16,7 +16,7 @@
 		? [
 				{ href: base + "/", name: "Home" },
 				{ href: href.startsWith("/") ? base + href : href, name },
-			]
+		  ]
 		: [{ href: base + "/", name: "Home" }];
 </script>
 
@@ -35,13 +35,14 @@
 	.breadcrumbs {
 		font-size: 0.8rem;
 		all: unset;
-		display: block;
+		display: flex;
 		margin: 0.7rem 0;
 	}
 
 	.breadcrumbs__item {
 		all: unset;
 		display: inline-block;
+		vertical-align: middle;
 	}
 	.breadcrumbs__item_link::after {
 		content: "|";
