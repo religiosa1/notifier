@@ -49,7 +49,7 @@
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: 1fr;
-		grid-gap: 10px;
+		grid-gap: 1rem;
 		align-items: center;
 	}
 	.user-block {

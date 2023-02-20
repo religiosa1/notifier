@@ -6,7 +6,9 @@ import authorizeJWT from "src/Authorization/pluginJWT";
 import authorizeKey from "src/Authorization/pluginKey";
 import { registerLogger } from "src/logger";
 import { Bot, SendMessageProps, Update } from "src/Bot";
-import usersRoutes from "src/users";
+import usersRoutes from "src/routes/users";
+import groupsRoutes from "src/routes/groups";
+import { ResultError } from "src/models/Result";
 
 const TOKEN = process.env.BOT_TOKEN;
 const url = process.env.URL || "";
@@ -24,6 +26,13 @@ app.register(authorizeKey);
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 app.register(usersRoutes);
+app.register(groupsRoutes);
+
+app.setErrorHandler(function (error, request, reply) {
+  this.log.error(error);
+  const err = error instanceof ResultError ? error :  ResultError.from(error);
+  reply.status(err.statusCode).send(err.toJson());
+})
 
 const bot = new Bot(TOKEN!);
 

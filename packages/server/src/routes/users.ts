@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, ResultError, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
 import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import * as UserModel from "src/models/User";
@@ -9,8 +9,11 @@ import { db } from "src/db";
 import { counted } from "src/models/Counted";
 import { omit } from "src/helpers/omit";
 import { hash } from 'src/Authorization/hash';
+import { parseIds, batchIdsSchema } from "src/models/batchIds";
+import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 
 export default fp(async function(fastify) {
+  const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
   fastify.withTypeProvider<ZodTypeProvider>().route({
     method: "GET",
     url: "/users",
@@ -37,13 +40,10 @@ export default fp(async function(fastify) {
           }
         }),
       ]);
-      return reply.send({
-        success: true,
-        data: {
-          count,
-          data: users as UserModel.UserWithGroups[],
-        },
-      });
+      return reply.send(result({
+        count,
+        data: users as UserModel.UserWithGroups[],
+      }));
     }
   });
 
@@ -51,14 +51,14 @@ export default fp(async function(fastify) {
     method: "DELETE",
     url: "/users",
     schema: {
-      querystring: z.object({ id: z.string().regex(/^\d+(?:,\d+)*$/)}),
+      querystring: z.object({ id: batchIdsSchema}),
       response: {
         200: resultSuccessSchema(batchOperationStatsSchema),
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
-      const ids = req.query.id.split(",").map(Number);
+      const ids = parseIds(req.query.id);
       const { count } = await db.user.deleteMany({
           where: {
             id: { in: ids }
@@ -69,10 +69,7 @@ export default fp(async function(fastify) {
         outOf: ids.length,
       };
       fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, data);
-      return reply.send({
-        success: true,
-        data
-      });
+      return reply.send(result(data));
     }
   });
 
@@ -91,16 +88,13 @@ export default fp(async function(fastify) {
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.userId;
-      const user = await db.user.findUnique({
+      const user = await db.user.findUniqueOrThrow({
         where: { id },
         include: {
           groups: { select: { id: true, name: true }},
           channels: { select: { id: true, name: true }},
         }
-      }) as UserModel.UserDetail | null;
-      if (!user) {
-        throw new ResultError(404, `user with id '${id}' doesn't exist`);
-      }
+      }).catch(handlerDbNotFound(userNotFound(id))) as UserModel.UserDetail;
       return reply.send(result(user));
     }
   });
@@ -133,7 +127,7 @@ export default fp(async function(fastify) {
           groups: { select: { id: true, name: true }},
           channels: { select: { id: true, name: true }},
         }
-      }) as UserModel.UserDetail;
+      }).catch(handlerDbNotFound(userNotFound(id))) as UserModel.UserDetail;
       fastify.log.info(`User edit by ${req.user.id}-${req.user.name}`, req.body);
       return reply.send(result(user));
     }
@@ -146,7 +140,6 @@ export default fp(async function(fastify) {
       body: UserModel.userCreateSchema,
       response: {
         200: resultSuccessSchema(UserModel.userDetailSchema),
-        404: resultFailureSchema
       },
     },
     onRequest: fastify.authorizeJWT,
@@ -183,7 +176,7 @@ export default fp(async function(fastify) {
       const id = req.params.userId;
       const user = await db.user.delete({
         where: { id },
-      });
+      }).catch(handlerDbNotFound(userNotFound(id)));
       fastify.log.info(`User delete by ${req.user.id}-${req.user.name}`, user);
       return reply.send(result(null));
     }

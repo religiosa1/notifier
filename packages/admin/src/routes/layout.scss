@@ -46,26 +46,12 @@ a {
 	}
 }
 
-input {
-	background-color: var(--clr-hbg);
-	border: 1px solid transparent;
-	padding: 0.3rem;
-	color: var(--clr-txt);
-	border-radius: 0.3rem;
-
-	&:focus {
-		box-shadow: 0 0 0 2px var(--clr-focus);
-	}
+h2 {
+	margin: 0.3em 0 0.83em;
 }
 
-.input-group {
-	display: block;
-	margin: 1rem 0;
-}
-
-.input-group small {
-	display: block;
-	margin: 0.7em 0;
+h3, h4, p {
+	margin: 0.3em 0 1em;
 }
 
 a.button,
@@ -144,3 +130,45 @@ button,
 .text-center {
 	text-align: center;
 }
+
+
+.input-group {
+	display: block;
+	margin: 0.3em 0 1em;
+}
+
+.input-group small {
+	display: block;
+	margin: 0.7em 0;
+}
+
+.form-label {
+	display: block;
+	margin: 0 0 0.3em;
+}
+
+input {
+	background-color: var(--clr-hbg);
+	border: 1px solid transparent;
+	padding: 0.5rem;
+	color: var(--clr-txt);
+	border-radius: 0.3rem;
+	font-size: 1rem;
+
+	&:focus {
+		box-shadow: 0 0 0 2px var(--clr-focus);
+	}
+}
+
+input:not([type="checkbox"], [type="radio"], [type="submit"]) {
+	min-width: min(20rem, 100%);
+}
+
+.card {
+	padding: 1rem;
+	margin: 1rem auto;
+	border-radius: 0.3rem;
+	border: 1px solid var(--clr-brd);
+	max-width: 40rem;
+}
+.card_form *:first-child { margin-top: 0;}

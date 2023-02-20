@@ -6,25 +6,37 @@ export const resultFailureSchema = z.object({
   error: z.string(),
   statusCode: z.number().int().gte(400),
   message: z.string().optional(),
+  details: z.unknown().optional(),
 });
 
 export type ResultFaliure = z.infer<typeof resultFailureSchema>;
 
+interface ResultErrorOptions {
+  cause?: unknown;
+}
 export class ResultError extends Error implements ResultFaliure {
   success = false as const;
   error: string = StatusCodes[500];
   statusCode = 500;
   message: string = "";
+  details?: unknown;
 
-  constructor(statusCode?: number, message?: string) {
+  constructor(statusCode?: number, message?: string, { cause }: ResultErrorOptions = {}) {
     super(message);
-    if (message) {
-      this.message = message;
-    }
     if (statusCode) {
       this.statusCode = statusCode;
       this.error = getStatusPhrase(statusCode, StatusCodes[500]);
     }
+    if (message) {
+      this.message = message;
+    }
+    if (cause != null) {
+      this.details = cause;
+    }
+  }
+
+  toJson(){
+    return JSON.stringify({ ...this, message: this.message });
   }
 
   static from(err: unknown): ResultError{
@@ -32,6 +44,7 @@ export class ResultError extends Error implements ResultFaliure {
     if (err instanceof Error) {
       e.error = err.name;
       e.message = err.message;
+      e.details = err;
     } else if (typeof err === "string") {
       e.message = err;
     } else if (typeof err === "number" && Number.isInteger(err)) {
@@ -48,6 +61,7 @@ export class ResultError extends Error implements ResultFaliure {
       if ("message" in err && typeof err.message === "string") {
         e.message = err.message;
       }
+      e.details = err;
     }
     return e;
   }
