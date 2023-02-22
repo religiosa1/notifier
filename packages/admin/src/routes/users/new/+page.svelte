@@ -2,25 +2,16 @@
 	import { enhance } from "$app/forms";
 	import { base } from "$app/paths";
 	import { AuthorizationEnum, getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
-	import { userSchema } from "@shared/models/User";
 	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
-	import type { User } from "@shared/models/User";
 	import type { ActionData } from "./$types";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
 	import Panel from "~/components/Panel.svelte";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
-
-	const userShape = Object.fromEntries(Object.keys(userSchema.shape).map((k) => [k, ""])) as Record<
-		keyof User,
-		unknown
-	>;
-
 	export let form: ActionData;
 
-	const user = {
-		...userShape,
-		...form,
-	};
+	const user = form;
+
+	$: console.log("user", user);
 </script>
 
 <h2>Create a new user</h2>
@@ -51,7 +42,7 @@
 		<p class="input-group">
 			<label class="form-input">
 				<span class="form-label">Name</span>
-				<input name="name" type="text" value={user.name} autocomplete="username" />
+				<input name="name" type="text" value={user?.name ?? ""} autocomplete="username" />
 				{#if form?.error === "Validation error" && form.errorDetails.fields.name}
 					<p class="error">
 						{form.errorDetails.fields.name.message}
@@ -62,7 +53,7 @@
 		<p class="input-group">
 			<label class="form-input">
 				<span class="form-label">Telegram Id</span>
-				<input name="telegramId" type="text" value={user.telegramId} required />
+				<input name="telegramId" type="text" value={user?.telegramId ?? ""} required />
 			</label>
 		</p>
 		<fieldset class="input-group">
@@ -75,7 +66,7 @@
 						type="radio"
 						required
 						value={status}
-						checked={status == user.authorizationStatus}
+						checked={status == (user?.authorizationStatus || 0)}
 					/>
 				</label>
 			{/each}
@@ -85,7 +76,13 @@
 			{#each Object.values(UserRoleEnum) as role}
 				<label>
 					{getRoleName(role)}
-					<input name="role" type="radio" required value={role} checked={role == user.role} />
+					<input
+						name="role"
+						type="radio"
+						required
+						value={role}
+						checked={role == (user?.role || 0)}
+					/>
 				</label>
 			{/each}
 		</fieldset>

@@ -2,14 +2,14 @@ import fp from "fastify-plugin";
 import z from "zod";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import { db } from "src/db";
+import * as GroupModel from "src/models/Group";
+import { counted } from "src/models/Counted";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
 import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import * as GroupModel from "src/models/Group";
-import { db } from "src/db";
-import { counted } from "src/models/Counted";
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-// import { omit } from "src/helpers/omit";
+import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
 
 export default fp(async function(fastify) {
   const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
@@ -69,6 +69,7 @@ export default fp(async function(fastify) {
       body: GroupModel.groupCreateSchema,
       response: {
         200: resultSuccessSchema(GroupModel.groupSchema),
+        409: resultFailureSchema,
       }
     },
     onRequest: fastify.authorizeJWT,
@@ -77,7 +78,7 @@ export default fp(async function(fastify) {
         data: {
           name: req.body.name,
         }
-      });
+      }).catch(handlerUniqueViolation());
       fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
       return reply.send(result(group));
     }
@@ -116,7 +117,8 @@ export default fp(async function(fastify) {
       body: GroupModel.groupUpdateSchema,
       response: {
         200: resultSuccessSchema(GroupModel.groupSchema),
-        404: resultFailureSchema
+        404: resultFailureSchema,
+        409: resultFailureSchema,
       }
     },
     onRequest: fastify.authorizeJWT,
@@ -125,7 +127,9 @@ export default fp(async function(fastify) {
       const group = await db.group.update({
         where: { id },
         data: req.body,
-      }).catch(handlerDbNotFound(groupNotFound(id)));
+      })
+        .catch(handlerDbNotFound(groupNotFound(id)))
+        .catch(handlerUniqueViolation());
       fastify.log.info(`Group update by ${req.user.id}-${req.user.name}`, group);
       return reply.send(result(group));
     }

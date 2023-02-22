@@ -11,7 +11,6 @@
 			if (open && !el.open) {
 				el.showModal();
 			} else if (!open && el.open) {
-				console.log("WTF");
 				el.close();
 			}
 		}

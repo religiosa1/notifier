@@ -1,16 +1,17 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
+import { db } from "src/db";
+import { omit } from "src/helpers/omit";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
-import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import * as UserModel from "src/models/User";
-import { db } from "src/db";
 import { counted } from "src/models/Counted";
-import { omit } from "src/helpers/omit";
-import { hash } from 'src/Authorization/hash';
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
+import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
+import { hash } from 'src/Authorization/hash';
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
+import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
 
 export default fp(async function(fastify) {
   const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
@@ -109,7 +110,8 @@ export default fp(async function(fastify) {
       body: UserModel.userUpdateSchema,
       response: {
         200: resultSuccessSchema(UserModel.userDetailSchema),
-        404: resultFailureSchema
+        404: resultFailureSchema,
+        409: resultFailureSchema,
       },
     },
     onRequest: fastify.authorizeJWT,
@@ -127,7 +129,9 @@ export default fp(async function(fastify) {
           groups: { select: { id: true, name: true }},
           channels: { select: { id: true, name: true }},
         }
-      }).catch(handlerDbNotFound(userNotFound(id))) as UserModel.UserDetail;
+      })
+        .catch(handlerDbNotFound(userNotFound(id)))
+        .catch(handlerUniqueViolation()) as UserModel.UserDetail;
       fastify.log.info(`User edit by ${req.user.id}-${req.user.name}`, req.body);
       return reply.send(result(user));
     }
@@ -140,6 +144,7 @@ export default fp(async function(fastify) {
       body: UserModel.userCreateSchema,
       response: {
         200: resultSuccessSchema(UserModel.userDetailSchema),
+        409: resultFailureSchema,
       },
     },
     onRequest: fastify.authorizeJWT,
@@ -153,7 +158,7 @@ export default fp(async function(fastify) {
           groups: { select: { id: true, name: true }},
           channels: { select: { id: true, name: true }},
         }
-      }) as UserModel.UserDetail;
+      }).catch(handlerUniqueViolation()) as UserModel.UserDetail;
       fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
       return reply.send(result(user));
     }
