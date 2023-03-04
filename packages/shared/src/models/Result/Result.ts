@@ -1,5 +1,5 @@
 import { ResultError } from "./ResultError";
-import { ResultSuccess } from "./ResultSuccess";
+import type { ResultSuccess } from "./ResultSuccess";
 
 export type Result<T> = ResultSuccess<T> | ResultError;
 

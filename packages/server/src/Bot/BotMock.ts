@@ -9,8 +9,8 @@ export class BotMock {
     }
     logger.info(`Telegram bot MOCK initialized with token "${token}"`)
   }
-  setWebHook(token: string) {}
-  processUpdate(...args: Parameters<Bot['processUpdate']>) {}
+  setWebHook(_: string) {}
+  processUpdate(..._: Parameters<Bot['processUpdate']>) {}
   sendMessage(...args: Parameters<Bot['sendMessage']>): ReturnType<Bot['sendMessage']> {
     logger.trace('sending a telegram message', ...args);
     return Promise.allSettled([

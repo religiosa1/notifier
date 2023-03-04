@@ -1,6 +1,6 @@
 import fp from "fastify-plugin";
 import z from "zod";
-import { ZodTypeProvider } from "fastify-type-provider-zod";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { db } from "src/db";
 import * as GroupModel from "src/models/Group";

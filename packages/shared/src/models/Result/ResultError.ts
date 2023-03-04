@@ -18,7 +18,6 @@ export class ResultError extends Error implements ResultFaliure {
   success = false as const;
   error: string = StatusCodes[500];
   statusCode = 500;
-  message: string = "";
   details?: unknown;
 
   constructor(statusCode?: number, message?: string, { cause }: ResultErrorOptions = {}) {
@@ -45,6 +44,9 @@ export class ResultError extends Error implements ResultFaliure {
       e.error = err.name;
       e.message = err.message;
       e.details = err;
+      if ("statusCode" in err && typeof err.statusCode === "number") {
+        e.statusCode = err.statusCode;
+      }
     } else if (typeof err === "string") {
       e.message = err;
     } else if (typeof err === "number" && Number.isInteger(err)) {

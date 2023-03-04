@@ -1,4 +1,5 @@
-import TelegramBot, { Message } from "node-telegram-bot-api";
+import type TelegramBot from "node-telegram-bot-api";
+import type { Message } from "node-telegram-bot-api";
 import { logger } from "src/logger";
 
 interface BotCommand {

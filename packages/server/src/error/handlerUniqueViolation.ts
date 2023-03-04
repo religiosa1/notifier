@@ -15,7 +15,7 @@ export function handlerUniqueViolation(
   const handler = (err: unknown) => {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === 'P2002') {
-        const mes = typeof message === "function" ? message(err.meta?.target as string[] | undefined) : message;
+        const mes = typeof message === "function" ? message(err.meta?.['target'] as string[] | undefined) : message;
         throw new ResultError(409, mes);
       }
     }

@@ -28,9 +28,9 @@ app.setSerializerCompiler(serializerCompiler);
 app.register(usersRoutes);
 app.register(groupsRoutes);
 
-app.setErrorHandler(function (error, request, reply) {
+app.setErrorHandler(function (error, _, reply) {
   this.log.error(error);
-  const err = error instanceof ResultError ? error :  ResultError.from(error);
+  const err = error instanceof ResultError ? error : ResultError.from(error);
   reply.status(err.statusCode).send(err.toJson());
 })
 
