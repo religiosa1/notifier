@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
   import type { ActionData } from "./$types";
   export let form: ActionData;
 </script>
-<form method="POST">
+<form method="POST" use:enhance>
   <h2>Log in</h2>
   <p class="input-group">
     <label>
