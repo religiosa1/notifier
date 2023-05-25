@@ -1,6 +1,6 @@
 import z from "zod";
 
-export const groupNameSchema = z.string().min(1).regex(/[a-zA-Z]\w+/)
+export const groupNameSchema = z.string().min(1).regex(/[a-zA-Z]\w*/)
 
 export const groupSchema = z.object({
   id: z.number().int().min(1),

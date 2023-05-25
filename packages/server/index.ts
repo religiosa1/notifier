@@ -8,6 +8,7 @@ import { registerLogger } from "src/logger";
 import { Bot, SendMessageProps, Update } from "src/Bot";
 import usersRoutes from "src/routes/users";
 import groupsRoutes from "src/routes/groups";
+import channelsRoutes from "src/routes/channels";
 import { ResultError } from "src/models/Result";
 
 const TOKEN = process.env.BOT_TOKEN;
@@ -27,6 +28,7 @@ app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 app.register(usersRoutes);
 app.register(groupsRoutes);
+app.register(channelsRoutes);
 
 app.setErrorHandler(function (error, _, reply) {
   this.log.error(error);

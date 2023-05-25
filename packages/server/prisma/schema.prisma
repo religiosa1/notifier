@@ -51,9 +51,9 @@ model Group {
 
 model Channel {
   id        Int      @id @default(autoincrement())
-  name      String
+  name      String   @unique
   Groups    Group[]
-  User      User?    @relation(fields: [userId], references: [id])
+  Users     User[]
   userId    Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

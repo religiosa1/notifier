@@ -19,32 +19,32 @@
 	}
 </script>
 
-<h2>Groups</h2>
+<h2>Channels</h2>
 
-<BreadCrumbs cur="Groups" />
+<BreadCrumbs cur="Channels" />
 
 <BatchStatsPanel action={form} />
 <ErrorPanel action={form} />
 
 <form method="post" action="?/delete" on:submit|preventDefault={handleSubmit}>
 	<SelectableTable
-		items={data.groups}
+		items={data.channels}
 		bind:selected={selectedGroups}
 	>
 		<svelte:fragment slot="header">
 			<th>Name</th>
-			<!-- TODO number of connected users here -->
+			<!-- TODO number of connected groups here -->
 		</svelte:fragment>
 
-		<svelte:fragment slot="body" let:item={group}>
-			<td><a href={base + uri`/groups/${group.id}`}>{group.name}</a></td>
+		<svelte:fragment slot="body" let:item={channel}>
+			<td><a href={base + uri`/channels/${channel.id}`}>{channel.name}</a></td>
 		</svelte:fragment>
 	</SelectableTable>
 
 	<Pagination {...data.pagination} />
 
 	<div class="form-controls">
-		<a class="button" href="{base}/groups/new"> Add a new group </a>
+		<a class="button" href="{base}/channels/new"> Add a new channel </a>
 		<button class="danger" disabled={selectedGroups.size === 0}>Delete selected</button>
 	</div>
 </form>

@@ -240,13 +240,26 @@ export default fp(async function(fastify) {
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const { userId, groupId } = req.params;
-      await db.user.update({
-        where: { id: userId },
-        data: {
-          groups: {
-            disconnect: { id: groupId }
+      await db.$transaction(async (tx) => {
+        const droppedChannels = await tx.channel.findMany({
+          select: { id: true },
+          where: {
+            Users: { some: { id: userId } },
+            Groups: { none: { id: groupId } },
           }
-        }
+        });
+        const update = await tx.user.update({
+          where: { id: userId },
+          data: {
+            groups: {
+              disconnect: { id: groupId }
+            },
+            channels: {
+              disconnect: droppedChannels.map(c => ({ id: c.id}))
+            }
+          }
+        });
+        return update;
       }).catch(handlerDbNotFound("Failed to delete the group"))
       return reply.send(result(null));
     }
@@ -271,7 +284,9 @@ export default fp(async function(fastify) {
       await db.user.update({
         where: { id },
         data: {
-          groups: { set: [] }
+          groups: { set: [] },
+          // If we removed all of the users groups, than he has no permissions for any channels
+          channels: { set: [] }
         }
       }).catch(handlerDbNotFound(userNotFound(id)))
       return reply.send(result(null));
