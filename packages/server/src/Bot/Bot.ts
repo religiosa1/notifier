@@ -1,19 +1,11 @@
-import type { Update, SendMessageOptions } from "node-telegram-bot-api";
-export type { Update };
 import TelegramBot from "node-telegram-bot-api";
+import type { Update, Message } from "node-telegram-bot-api";
+export type { Update };
+import type { IBot, SendMessageProps } from "src/Bot/Models";
 import { botCommands } from "./BotCommands";
 import { logger } from "src/logger";
 
-export const chats = (process.env.CHATID ?? "")
-  .split(',')
-  .map(i => i.trim())
-  .filter(i => i);
-
-export interface SendMessageProps extends SendMessageOptions {
-  text: string;
-};
-
-export class Bot {
+export class Bot implements IBot {
   bot: TelegramBot;
 
   constructor(token: string) {
@@ -30,24 +22,24 @@ export class Bot {
     });
     logger.info(`Telegram bot initialized with token "${token}"`)
   }
-  setWebHook(token: string) {
-    return this.bot.setWebHook(token);
+  async setWebHook(token: string): Promise<void> {
+    await this.bot.setWebHook(token);
   }
-  processUpdate(update: Update) {
+  processUpdate(update: Update): void {
     return this.bot.processUpdate(update);
   }
-  async sendMessage(opts: SendMessageProps) {
-    logger.trace('sending a telegram message', opts);
+  async sendMessage(
+    chats: Array<string | number>, opts: SendMessageProps
+  ): Promise<PromiseSettledResult<void | Message>[]> {
+    logger.trace("sending a telegram message", opts);
     const {
       text,
       ...options
     } = opts || {};
-    if (!process.env.CHATID) {
-      throw new Error("Recepients chat id is not defined");
-    }
+		// TODO PromisePool to process sends in chunks
     const msgs = await Promise.allSettled(
       chats.map(chat => this.bot.sendMessage(chat, text, options).catch(e => {
-        logger.error({event:"error", detail: chat, text: text, error: e});
+        logger.error({event: "error", detail: chat, text: text, error: e});
       }))
     );
     logger.info({ massSend: msgs });

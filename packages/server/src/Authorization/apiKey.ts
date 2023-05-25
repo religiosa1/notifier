@@ -12,5 +12,6 @@ export function generateApiKey(): string {
 export function parseApiKey(apiKey: string): [prefix: string, key: string] {
   const validated = apiKeySchema.parse(apiKey);
   const [ prefix, key ] = validated.split('.', 2);
-  return [ prefix, key ];
+  // fields validated by the regex
+  return [ prefix!, key! ];
 }

@@ -5,11 +5,12 @@ import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod
 import authorizeJWT from "src/Authorization/pluginJWT";
 import authorizeKey from "src/Authorization/pluginKey";
 import { registerLogger } from "src/logger";
-import { Bot, SendMessageProps, Update } from "src/Bot";
+import { Bot, Update } from "src/Bot";
 import usersRoutes from "src/routes/users";
 import groupsRoutes from "src/routes/groups";
 import channelsRoutes from "src/routes/channels";
 import { ResultError } from "src/models/Result";
+import notify from "src/routes/notify";
 
 const TOKEN = process.env.BOT_TOKEN;
 const url = process.env.URL || "";
@@ -37,17 +38,9 @@ app.setErrorHandler(function (error, _, reply) {
 })
 
 const bot = new Bot(TOKEN!);
+app.register(notify, { bot });
 
 app.after(() => {
-  app.route({
-    method: 'POST',
-    url: '/notify',
-    onRequest: app.authorizeKey,
-    handler: async (req) => {
-      return bot.sendMessage(req.body as SendMessageProps);
-    }
-  });
-
   app.route({
     method: 'POST',
     url: `/bot${TOKEN}`,

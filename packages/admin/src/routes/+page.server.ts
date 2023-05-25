@@ -1,6 +1,6 @@
-import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
-import { uri } from '~/helpers/uri';
+import { redirect } from "@sveltejs/kit";
+import type { PageServerLoad } from "./$types";
+import { uri } from "~/helpers/uri";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   if (!cookies.get("Authorization")) {

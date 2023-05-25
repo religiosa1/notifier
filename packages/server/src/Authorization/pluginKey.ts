@@ -1,5 +1,5 @@
 import fp from "fastify-plugin";
-import { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import bcrypt from "bcrypt";
 import z from "zod";
 import { AuthorizationEnum } from "src/models/AuthorizationEnum";
@@ -17,11 +17,11 @@ export default fp(async function (fastify) {
     ) {
       try {
         const key = (
-          Array.isArray(request.headers['x-api-key'])
-            ? request.headers['x-api-key'].at(-1)
-            : request.headers['x-api-key']
+          Array.isArray(request.headers["x-api-key"])
+            ? request.headers["x-api-key"].at(-1)
+            : request.headers["x-api-key"]
         ) || (
-          fastify.parseCookie(request.headers.cookie || "")['X-API-KEY']
+          fastify.parseCookie(request.headers.cookie || "")["X-API-KEY"]
         ) || "";
         if (!key) {
           throw new ResultError(401, "The API key wasn't supplied in the cookies or headers");

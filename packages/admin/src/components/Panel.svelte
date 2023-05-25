@@ -1,8 +1,12 @@
 <script lang="ts">
-  export let style: "error" | null = null;
+  export let style: "error" | "success" | null = null;
 </script>
 
-<div class="panel" class:panel_error={style === "error"}>
+<div
+	class="panel"
+	class:panel_error={style === "error"}
+	class:panel_success={style === "success"}
+>
   <slot />
 </div>
 
@@ -15,5 +19,8 @@
   }
   .panel_error {
     border-color: var(--clr-error, red);
+	}
+	.panel_success {
+    border-color: var(--clr-green, green);
   }
 </style>

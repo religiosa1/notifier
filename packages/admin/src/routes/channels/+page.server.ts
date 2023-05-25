@@ -7,19 +7,19 @@ import type { Counted } from "@shared/models/Counted";
 import { batchDelete } from '~/actions/batchDelete';
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
-  const pagination = getPaginationParams(url);
-  const channels = await fetch(new URL(paginate(pagination, '/channels'), server_base))
-    .then(unwrapResult) as Counted<Channel[]>;
+	const pagination = getPaginationParams(url);
+	const channels = await fetch(new URL(paginate(pagination, '/channels'), server_base))
+		.then(unwrapResult) as Counted<Channel[]>;
 
-  return {
-    channels: channels.data,
-    pagination: {
-      ...pagination,
-      count: channels.count
-    }
-  }
+	return {
+		channels: channels.data,
+		pagination: {
+			...pagination,
+			count: channels.count
+		}
+	}
 };
 
 export const actions: Actions = {
-  delete: batchDelete({ route: "/channels" })
+	delete: batchDelete({ route: "/channels" })
 }
