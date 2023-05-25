@@ -7,7 +7,7 @@ import { Writable } from "stream";
 class MutableStdout extends Writable {
   muted = false;
 
-  write(chunk: any, encoding?: BufferEncoding | ((error: Error | null | undefined) => void), callback?: (error: Error | null | undefined) => void): boolean {
+  override write(chunk: any, encoding?: BufferEncoding | ((error: Error | null | undefined) => void), callback?: (error: Error | null | undefined) => void): boolean {
     if (encoding instanceof Function) {
       callback = encoding;
       encoding = "utf-8";

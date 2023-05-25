@@ -1,7 +1,7 @@
-import { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import fastifyJwt from "@fastify/jwt";
-import { ZodTypeProvider } from "fastify-type-provider-zod";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
 import bcrypt from "bcrypt";
 import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "src/models/Result";

@@ -49,7 +49,7 @@
 			<td class="text-center">{getRoleName(user.role)}</td>
 			<td class="text-center">
 				{#each user.groups.slice(0, 10) as group (group.id)}
-					{group.name}
+					{group.name + ' '}
 				{/each}
 				{#if user.groups.length > 10}
 					{user.groups.length - 10} more.

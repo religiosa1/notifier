@@ -5,6 +5,7 @@
     "require": ["tsconfig-paths/register"],
     "transpileOnly": true,
     "files": true,
+    "ignoreDeprecations": "5.0",
     "compilerOptions": {
     }
   },
@@ -16,6 +17,7 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
     "outDir": "dist",
     "declaration": true,
     "exactOptionalPropertyTypes": false,

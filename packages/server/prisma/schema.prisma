@@ -42,7 +42,7 @@ model ApiKey {
 
 model Group {
   id        Int       @id @default(autoincrement())
-  name      String
+  name      String    @unique
   Users     User[]
   Channels  Channel[]
   createdAt DateTime  @default(now())

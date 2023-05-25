@@ -3,6 +3,8 @@ import { ZodError, type ZodIssue } from "zod";
 import type { Result, ResultFailure } from '~/models/Result';
 import { isResultErrorLike } from '~/models/Result';
 
+// TODO return a tuple from all unwraps and fail the action
+
 export class ServerError extends Error {
   name = "Server request error" as const;
   error: string;
@@ -28,7 +30,7 @@ export function unwrapResult<T>(r: Response): Promise<T> {
   });
 }
 
-function isServerErrorLike(e: unknown): e is ServerError {
+export function isServerErrorLike(e: unknown): e is ServerError {
   if (!e || typeof e !== "object" || !("name" in e)) {
     return false;
   }
@@ -39,6 +41,29 @@ function getStatusCode(e: unknown, fallback = 500): number {
     return e.statusCode;
   }
   return fallback;
+}
+
+// TODO combine with server ResultError
+export function errorToResponse(e: unknown): Response {
+  if (isServerErrorLike(e)) {
+    return new Response(JSON.stringify(e), {
+      status: e.statusCode
+    });
+  }
+  if (e && typeof e === "object") {
+    return new Response(JSON.stringify({
+      ...e,
+      success: false,
+    }), {
+      status: getStatusCode(e)
+    });
+  }
+  return new Response(JSON.stringify({
+    success: false,
+    error: "Unexpected error",
+    detail: e,
+    statusCode: 500,
+  }))
 }
 
 export type ActionError = { error: "Unexpected error", errorDetails: string };
@@ -63,7 +88,7 @@ export type ActionServerError = {
 export type UnwrappedServerError<T> = ActionFailure<T & ActionServerError>;
 export function unwrapServerError<T extends Record<string, unknown>>(
   e: unknown,
-  additionalData?: T
+  additionalData?: T,
 ): UnwrappedServerError<T> | UnwrappedError<T> {
   if (isServerErrorLike(e)) {
     return fail(e.statusCode || 500, {

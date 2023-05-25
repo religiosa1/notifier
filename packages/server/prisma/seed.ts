@@ -6,6 +6,11 @@ import { UserRoleEnum } from 'src/models/UserRoleEnum';
 const prisma = new PrismaClient()
 
 async function main() {
+  await prisma.group.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { name: "default" },
+  });
   await prisma.user.upsert({
     where: { id: 1 },
     update: {},
@@ -15,6 +20,9 @@ async function main() {
       password: await hash("1234567"),
       authorizationStatus: AuthorizationEnum.accepted,
       role: UserRoleEnum.admin,
+      groups: {
+        connect: { id: 1 }
+      },
     },
   });
 }

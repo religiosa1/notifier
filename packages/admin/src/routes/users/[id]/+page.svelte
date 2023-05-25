@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { base } from "$app/paths";
+	import { enhance } from "$app/forms";
 	import type { ActionData } from "./$types";
 	import { AuthorizationEnum, getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
 	import type { PageData } from "./$types";
 	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
+	import ErrorPanel from "~/components/ErrorPanel.svelte";
+
 	export let data: PageData;
 	export let form: ActionData;
 
@@ -17,10 +20,12 @@
 <h2>Edit user</h2>
 
 <BreadCrumbs cur="edit" href="{base}/users" name="Users" />
+<ErrorPanel action={form} />
 
 <div class="edit-grid">
 	<form method="POST" action="?/edit">
 		<div class="card card_form">
+			<h3>Main data</h3>
 			<p class="input-group">
 				<label>
 					<span class="form-label">Name</span>
@@ -62,9 +67,9 @@
 		</div>
 	</form>
 
-	<form method="POST" action="?/resetPassword">
+	<form method="POST" action="?/resetPassword" use:enhance>
 		<div class="card card_form">
-			<h3>Reset password</h3>
+			<h3>Change admin password</h3>
 
 			<p class="input-group">
 				<label>
@@ -85,6 +90,37 @@
 			<button class="button">Update password</button>
 		</div>
 	</form>
+</div>
+
+<!-- FIXME need to achieve scoping in error handling here,  -->
+<!-- <ErrorPanel action={form?.groups} /> -->
+<div class="card card_form">
+	<div class="user-groups">
+		<h3>Groups</h3>
+		<ul>
+			{#each (data?.user?.groups || []) as group (group.id)}
+				<li>
+					<form method="POST" action="?/deleteGroup" use:enhance>
+						<input type="hidden" name="id" value={group.id} />
+						{group.name}
+						<button>Delete</button>
+					</form>
+				</li>
+			{/each}
+		</ul>
+			<form method="POST" action="?/deleteAllGroups" use:enhance>
+				<p>
+					<button>Delete all groups</button>
+				</p>
+			</form>
+			<form method="POST" action="?/addOrCreateGroup" use:enhance>
+				<p>
+					<!-- TODO autocomplete/combobox -->
+					<input name="name" autocomplete="off" />
+					<button>Add group</button>
+				</p>
+			</form>
+	</div>
 </div>
 
 <style>

@@ -4,6 +4,7 @@ import { unwrapServerError, unwrapResult, unwrapValidationError } from '~/helper
 import { uri } from '~/helpers/uri';
 import { passwordSchema, userUpdateSchema, type UserDetail } from "@shared/models/User";
 import { getFormData } from '~/helpers/getFormData';
+import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
   try {
@@ -59,6 +60,54 @@ export const actions: Actions = {
       }
     } catch (err) {
       console.error("User update error", err);
+      return unwrapServerError(err);
+    }
+  },
+  // TODO change all the unwrapped error values for scoping
+  async addOrCreateGroup({ fetch, request, params }) {
+    const formData = await request.formData();
+    const name = formData.get("name");
+    try {
+      const serverData = await fetch(new URL(uri`/users/${params.id}/groups`, server_base), {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }).then(unwrapResult);
+      return {
+        groups: serverData
+      };
+    } catch (err) {
+      console.error("Create group error", err);
+      return unwrapServerError(err);
+    }
+  },
+  async deleteAllGroups({ fetch, params }) {
+    try {
+      const result = await fetch(new URL(uri`/users/${params.id}/groups`, server_base), {
+        method: "DELETE",
+      }).then(unwrapResult);
+      return {
+        groups: result
+      };
+    } catch(err) {
+      console.error("Delete all error", err);
+      return unwrapServerError(err);
+    }
+  },
+  async deleteGroup({ fetch, params, request }) {
+    const formData = await request.formData();
+    const id = formData.get("id");
+    if (!id || typeof id !== "string") {
+      return fail(422);
+    }
+    try {
+      const result = await fetch(new URL(uri`/users/${params.id}/groups/${id}`, server_base), {
+        method: "DELETE",
+      }).then(unwrapResult);
+      return {
+        groups: result
+      };
+    } catch(err) {
+      console.error("Delete group error", err);
       return unwrapServerError(err);
     }
   },

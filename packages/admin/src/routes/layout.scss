@@ -164,6 +164,10 @@ input:not([type="checkbox"], [type="radio"], [type="submit"]) {
 	min-width: min(20rem, 100%);
 }
 
+.form-subsection {
+	margin: 1.2rem 0;
+}
+
 .card {
 	padding: 1rem;
 	margin: 1rem auto;

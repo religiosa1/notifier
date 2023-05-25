@@ -6,6 +6,7 @@ import { omit } from "src/helpers/omit";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
 import * as UserModel from "src/models/User";
+import * as GroupModel from "src/models/Group";
 import { counted } from "src/models/Counted";
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
@@ -122,7 +123,7 @@ export default fp(async function(fastify) {
         data: {
           ...omit(req.body, ["channels", "groups", "password"]),
           password: await hash(req.body.password),
-          groups: idArrayToConnect(req.body.groups),
+          groups: nameArrayToUpsert(req.body.groups),
           channels: idArrayToConnect(req.body.channels),
         },
         include: {
@@ -153,6 +154,7 @@ export default fp(async function(fastify) {
         data: {
           ...omit(req.body, ["channels", "groups", "password"]),
           password: await hash(req.body.password),
+          groups: nameArrayToUpsert(req.body.groups)
         },
         include: {
           groups: { select: { id: true, name: true }},
@@ -182,11 +184,114 @@ export default fp(async function(fastify) {
       const user = await db.user.delete({
         where: { id },
       }).catch(handlerDbNotFound(userNotFound(id)));
-      fastify.log.info(`User delete by ${req.user.id}-${req.user.name}`, user);
+      fastify.log.info(`User ${req.params.userId} delete by ${req.user.id}-${req.user.name}`, user);
+      return reply.send(result(null));
+    }
+  });
+
+  fastify.withTypeProvider<ZodTypeProvider>().route({
+    method: "POST",
+    url: "/users/:userId/groups",
+    schema: {
+      params: z.object({
+        userId: z.number({ coerce: true})
+      }),
+      body: z.object({ name: GroupModel.groupNameSchema }),
+      response: {
+        200: resultSuccessSchema(z.null()),
+        404: resultFailureSchema,
+        409: resultFailureSchema,
+      },
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(req, reply) {
+      const id = req.params.userId;
+      const name = req.body.name;
+      await db.user.update({
+        where: { id },
+        data: {
+          groups: {
+            connectOrCreate: [{
+              where: { name },
+              create: { name },
+            }]
+          }
+        }
+      }).catch(handlerDbNotFound(userNotFound(id)))
+      fastify.log.info(`Group added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
+      return reply.send(result(null));
+    }
+  });
+
+  fastify.withTypeProvider<ZodTypeProvider>().route({
+    method: "DELETE",
+    url: "/users/:userId/groups/:groupId",
+    schema: {
+      params: z.object({
+        userId: z.number({ coerce: true}),
+        groupId: z.number({ coerce: true}),
+      }),
+      response: {
+        200: resultSuccessSchema(z.null()),
+        404: resultFailureSchema,
+        409: resultFailureSchema,
+      },
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(req, reply) {
+      const { userId, groupId } = req.params;
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          groups: {
+            disconnect: { id: groupId }
+          }
+        }
+      }).catch(handlerDbNotFound("Failed to delete the group"))
+      return reply.send(result(null));
+    }
+  });
+
+  fastify.withTypeProvider<ZodTypeProvider>().route({
+    method: "DELETE",
+    url: "/users/:userId/groups",
+    schema: {
+      params: z.object({
+        userId: z.number({ coerce: true}),
+      }),
+      response: {
+        200: resultSuccessSchema(z.null()),
+        404: resultFailureSchema,
+        409: resultFailureSchema,
+      },
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(req, reply) {
+      const id = req.params.userId;
+      await db.user.update({
+        where: { id },
+        data: {
+          groups: { set: [] }
+        }
+      }).catch(handlerDbNotFound(userNotFound(id)))
       return reply.send(result(null));
     }
   });
 });
+
+function nameArrayToUpsert(arr: string[] | undefined | null) {
+  if (!arr || !Array.isArray(arr)) {
+    return;
+  }
+  return {
+    connectOrCreate: arr.filter(i => i && typeof i === "string").map((name) => {
+      return {
+        where: { name },
+        create: { name },
+      }
+    }),
+  };
+}
 
 function idArrayToConnect(arr: number[] | undefined | null) {
   if (!arr || !Array.isArray(arr)) {

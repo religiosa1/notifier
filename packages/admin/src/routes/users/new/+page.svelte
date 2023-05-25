@@ -42,7 +42,7 @@
 		<p class="input-group">
 			<label class="form-input">
 				<span class="form-label">Name</span>
-				<input name="name" type="text" value={user?.name ?? ""} autocomplete="username" />
+				<input name="name" type="text" value={user?.name ?? ""} autocomplete="off" />
 				{#if form?.error === "Validation error" && form.errorDetails.fields.name}
 					<p class="error">
 						{form.errorDetails.fields.name.message}
@@ -53,7 +53,13 @@
 		<p class="input-group">
 			<label class="form-input">
 				<span class="form-label">Telegram Id</span>
-				<input name="telegramId" type="text" value={user?.telegramId ?? ""} required />
+				<input
+					name="telegramId"
+					autocomplete="off"
+					type="text"
+					value={user?.telegramId ?? ""}
+					required
+				/>
 			</label>
 		</p>
 		<fieldset class="input-group">
@@ -63,6 +69,7 @@
 					{getAuthorizationStatusName(status)}
 					<input
 						name="authorizationStatus"
+						autocomplete="off"
 						type="radio"
 						required
 						value={status}
@@ -79,6 +86,7 @@
 					<input
 						name="role"
 						type="radio"
+						autocomplete="off"
 						required
 						value={role}
 						checked={role == (user?.role || 0)}
@@ -89,9 +97,21 @@
 		<p class="input-group">
 			<label class="form-input">
 				<span class="form-label">Password</span>
-				<input name="password" type="password" autocomplete="new-password" />
+				<input name="password" type="password" autocomplete="off" />
 			</label>
 		</p>
+
+		<!-- <p class="input-group">
+			<label>
+				<span class="form-label">Groups</span>
+				<input
+					name="groups"
+					autocomplete="off"
+					value=""
+				/>
+				<small>Whitespace or comma-separated</small>
+			</label>
+		</p> -->
 
 		<button class="button">Create</button>
 		<button class="button" formaction="?/create&addNew">Create and add another</button>
