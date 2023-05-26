@@ -32,12 +32,14 @@ model User {
 
 model ApiKey {
   // Public part, displayed in user interface
-  prefix    String   @id
+  prefix    String
   // Actual key part, stored as hash
-  hash      String   @unique
+  hash      String
   user      User     @relation(fields: [userId], references: [id])
   userId    Int
   createdAt DateTime @default(now())
+  @@id([prefix, hash])
+  @@unique([prefix, hash])
 }
 
 model Group {
@@ -54,7 +56,6 @@ model Channel {
   name      String   @unique
   Groups    Group[]
   Users     User[]
-  userId    Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

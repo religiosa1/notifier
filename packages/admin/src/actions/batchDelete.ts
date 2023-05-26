@@ -4,9 +4,10 @@ import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { server_base } from "~/constants";
 
 interface DeleteActionProps {
-  route: string
+  route: string;
+  method?: string;
 }
-export const batchDelete = ({ route }: DeleteActionProps) =>
+export const batchDelete = ({ route, method }: DeleteActionProps) =>
   (async ({ request, fetch }) => {
     const formData = await request.formData();
     const data = formData.getAll("id")
@@ -17,7 +18,7 @@ export const batchDelete = ({ route }: DeleteActionProps) =>
       const serverData = await fetch(
         url,
         {
-          method: "DELETE",
+          method: method ?? "DELETE",
           body: JSON.stringify(data),
         }
       ).then(unwrapResult) as BatchOperationStats;

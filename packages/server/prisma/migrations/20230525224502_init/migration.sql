@@ -12,10 +12,12 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "ApiKey" (
-    "prefix" TEXT NOT NULL PRIMARY KEY,
+    "prefix" TEXT NOT NULL,
     "hash" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY ("prefix", "hash"),
     CONSTRAINT "ApiKey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -31,7 +33,6 @@ CREATE TABLE "Group" (
 CREATE TABLE "Channel" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "name" TEXT NOT NULL,
-    "userId" INTEGER,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
@@ -67,7 +68,7 @@ CREATE UNIQUE INDEX "User_telegramId_key" ON "User"("telegramId");
 CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ApiKey_hash_key" ON "ApiKey"("hash");
+CREATE UNIQUE INDEX "ApiKey_prefix_hash_key" ON "ApiKey"("prefix", "hash");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Group_name_key" ON "Group"("name");

@@ -1,5 +1,6 @@
 import * as fastify from "fastify";
 import * as http from "http";
+import type { TokenPayload } from "src/models/TokenPayload";
 
 declare module "fastify" {
   export interface FastifyInstance<
@@ -13,6 +14,6 @@ declare module "fastify" {
 
   // TODO Implement model for JWT payload
   export interface FastifyRequest {
-    user: { name: string, id: number, iat: number, exp: number }
+    user: TokenPayload
   }
 }

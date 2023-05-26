@@ -11,7 +11,7 @@ export const userSchema = z.object({
 	name: z.string().min(1).nullable(),
 	password: passwordSchema,
 	authorizationStatus: z.nativeEnum(AuthorizationEnum),
-	role: z.nativeEnum(UserRoleEnum)
+	role: z.nativeEnum(UserRoleEnum),
 });
 export type User = z.infer<typeof userSchema>;
 

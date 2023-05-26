@@ -11,6 +11,7 @@ import groupsRoutes from "src/routes/groups";
 import channelsRoutes from "src/routes/channels";
 import { ResultError } from "src/models/Result";
 import notify from "src/routes/notify";
+import authRequest from "src/routes/auth-request";
 
 const TOKEN = process.env.BOT_TOKEN;
 const url = process.env.URL || "";
@@ -30,6 +31,7 @@ app.setSerializerCompiler(serializerCompiler);
 app.register(usersRoutes);
 app.register(groupsRoutes);
 app.register(channelsRoutes);
+app.register(authRequest);
 
 app.setErrorHandler(function (error, _, reply) {
   this.log.error(error);

@@ -106,20 +106,26 @@
 						<button>Delete</button>
 					</form>
 				</li>
+			{:else}
+			<li>
+				This user has no groups &mdash; he can't recieve notifications
+			</li>
 			{/each}
 		</ul>
+		{#if data?.user?.groups?.length}
 			<form method="POST" action="?/deleteAllGroups" use:enhance>
 				<p>
 					<button>Delete all groups</button>
 				</p>
 			</form>
-			<form method="POST" action="?/addOrCreateGroup" use:enhance>
-				<p>
-					<!-- TODO autocomplete/combobox -->
-					<input name="name" autocomplete="off" />
-					<button>Add group</button>
-				</p>
-			</form>
+		{/if}
+		<form method="POST" action="?/addOrCreateGroup" use:enhance>
+			<p>
+				<!-- TODO autocomplete/combobox -->
+				<input name="name" autocomplete="off" />
+				<button>Add group</button>
+			</p>
+		</form>
 	</div>
 </div>
 
