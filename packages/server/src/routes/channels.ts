@@ -10,6 +10,7 @@ import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
+import { omit } from "src/helpers/omit";
 
 export default fp(async function(fastify) {
   const channelNotFound = (id: string | number) => `channel with id '${id}' doesn't exist`;
@@ -20,19 +21,34 @@ export default fp(async function(fastify) {
     schema: {
       querystring: paginationSchema,
       response: {
-        200: resultSuccessSchema(counted(z.array(ChannelModel.channelSchema))),
+        200: resultSuccessSchema(counted(z.array(ChannelModel.channelSchema.extend({
+          usersCount: z.number(),
+          groupsCount: z.number(),
+        })))),
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const { skip, take } = {...paginationDefaults, ...req.query };
-      const [ count, channels ] = await db.$transaction([
-        db.channel.count(),
-        db.channel.findMany({
+      const [ count, channels ] = await db.$transaction((tx) => {
+        const countPrms = tx.channel.count();
+        const channelPrms = tx.channel.findMany({
           skip,
           take,
-        }),
-      ]);
+          include: {
+            Groups: { select: { id: true } },
+            Users: { select: {id: true } },
+          }
+        }).then(channels => channels.map(channel => ({
+          ...omit(channel, []),
+          groupsCount: channel.Groups.length,
+          usersCount: channel.Users.length,
+        })));
+        return Promise.all([
+          countPrms,
+          channelPrms,
+        ]);
+      });
       return reply.send(result({
         count,
         data: channels,

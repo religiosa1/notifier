@@ -10,6 +10,7 @@ import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
+import { omit } from "src/helpers/omit";
 
 export default fp(async function(fastify) {
   const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
@@ -20,19 +21,34 @@ export default fp(async function(fastify) {
     schema: {
       querystring: paginationSchema,
       response: {
-        200: resultSuccessSchema(counted(z.array(GroupModel.groupSchema))),
+        200: resultSuccessSchema(counted(z.array(GroupModel.groupSchema.extend({
+          channelsCount: z.number(),
+          usersCount: z.number(),
+        })))),
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const { skip, take } = {...paginationDefaults, ...req.query };
-      const [ count, groups ] = await db.$transaction([
-        db.group.count(),
-        db.group.findMany({
+      const [ count, groups ] = await db.$transaction((tx) => {
+        const countPrms = tx.group.count();
+        const groupsPrms = tx.group.findMany({
           skip,
           take,
-        }),
-      ]);
+          include: {
+            Users: { select: { id: true } },
+            Channels: { select: { id: true } },
+          },
+        }).then((groups) => groups.map((i) => ({
+          ...omit(i, ["Users", "Channels"]),
+          channelsCount: i.Channels.length,
+          usersCount: i.Users.length,
+        })));
+        return Promise.all([
+          countPrms,
+          groupsPrms,
+        ])
+      });
       return reply.send(result({
         count,
         data: groups,

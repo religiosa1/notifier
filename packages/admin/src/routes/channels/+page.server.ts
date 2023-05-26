@@ -9,7 +9,7 @@ import { batchDelete } from '~/actions/batchDelete';
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const pagination = getPaginationParams(url);
 	const channels = await fetch(new URL(paginate(pagination, '/channels'), server_base))
-		.then(unwrapResult) as Counted<Channel[]>;
+		.then(unwrapResult) as Counted<Array<Channel & { usersCount: number; groupsCount: number }>>;
 
 	return {
 		channels: channels.data,

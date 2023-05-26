@@ -77,11 +77,13 @@
     {/each}
   </tbody>
 </table>
-{#if selected.size > 0}
-  <p>
-    Selected {selected.size} elements.
+<p>
+  {#if selected.size > 0}
+    Selected {selected.size} {selected.size === 1 ? "element" : "elements"}.
     <button class="inline" on:click={() => (selected = new Set())} type="button"
       >deselect all</button
     >
-  </p>
-{/if}
+  {:else}
+    Select some elements with checkboxes to perform operations on them.
+  {/if}
+</p>

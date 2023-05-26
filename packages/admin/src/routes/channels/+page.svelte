@@ -33,11 +33,14 @@
 	>
 		<svelte:fragment slot="header">
 			<th>Name</th>
-			<!-- TODO number of connected groups here -->
+			<th class="text-center">N of groups</th>
+			<th class="text-center">N of users</th>
 		</svelte:fragment>
 
 		<svelte:fragment slot="body" let:item={channel}>
 			<td><a href={base + uri`/channels/${channel.id}`}>{channel.name}</a></td>
+			<td class="text-center">{channel.groupsCount}</td>
+			<td class="text-center">{channel.usersCount}</td>
 		</svelte:fragment>
 	</SelectableTable>
 
