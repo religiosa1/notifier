@@ -42,12 +42,20 @@ function defaultCoerce<T extends z.AnyZodObject>(
   key: T['shape'],
   schema: T,
 ) {
-  const sch = schema.shape[key]?._def.typeName;
-  if (sch === z.ZodFirstPartyTypeKind.ZodNullable && !values.length) {
-    return null;
+  let sch = schema.shape[key]?._def.typeName;
+  if (
+    sch === z.ZodFirstPartyTypeKind.ZodNullable
+    || sch === z.ZodFirstPartyTypeKind.ZodOptional
+  ) {
+    if (!values.length) {
+      return sch === z.ZodFirstPartyTypeKind.ZodNullable ? null : undefined;
+    } else {
+      sch = schema.shape[key]?._def.innerType._def.typeName;
+
+    }
   }
   if (sch === z.ZodFirstPartyTypeKind.ZodArray) {
-    return values.map(i => coerceSimple(schema.shape[key].element._def.typeName, i));
+    return values.map(i => coerceSimple(sch, i));
   }
   return coerceSimple(sch, values[0]);
 }
