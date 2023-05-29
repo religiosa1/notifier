@@ -1,12 +1,10 @@
 import fp from "fastify-plugin";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import bcrypt from "bcrypt";
-import z from "zod";
 import { AuthorizationEnum } from "src/models/AuthorizationEnum";
-import { result, ResultError, resultSuccessSchema } from "src/models/Result";
+import { ResultError } from "src/models/Result";
 import { db } from "src/db";
-import { parseApiKey, generateApiKey } from "./apiKey";
-import { hash } from "./hash";
+import { parseApiKey } from "./apiKey";
 
 export default fp(async function (fastify) {
   fastify.decorate(
@@ -48,36 +46,4 @@ export default fp(async function (fastify) {
       }
     }
   );
-
-  /** Technical route, for admin */
-  fastify.route({
-    method: "PUT",
-    url: "/api-key",
-    schema: {
-      response: {
-        200: resultSuccessSchema(z.object({
-          apiKey: z.string(),
-        }))
-      },
-      // TODO accept user id in request
-    },
-    onRequest: fastify.authorizeJWT,
-    async handler(request) {
-      const apiKey = generateApiKey();
-      const [ prefix, key ] = parseApiKey(apiKey);
-      const hashedKey = await hash(key);
-      const userId = request.user.id;
-      if (!userId) {
-        throw new ResultError(403, "Mallformed JWT token, 'id' field is missing");
-      }
-      await db.apiKey.create({
-        data: {
-          prefix: prefix,
-          hash: hashedKey,
-          userId
-        }
-      });
-      return result({ apiKey });
-    }
-  });
 });

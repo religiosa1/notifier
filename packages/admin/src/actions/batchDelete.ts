@@ -1,4 +1,4 @@
-import type { Action } from "@sveltejs/kit";
+import type { Action, RequestEvent } from "@sveltejs/kit";
 import { unwrapServerError, unwrapResult } from "~/helpers/unwrapResult";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { server_base } from "~/constants";
@@ -7,8 +7,14 @@ interface DeleteActionProps {
   route: string;
   method?: string;
 }
-export const batchDelete = ({ route, method }: DeleteActionProps) =>
-  (async ({ request, fetch }) => {
+export const batchDelete = <
+  Params extends Partial<Record<string, string>> = Partial<Record<string, string>>,
+>(propsGetter: DeleteActionProps | ((props: RequestEvent<Params>) => DeleteActionProps)) => (async (props) => {
+    const { route, method } = typeof propsGetter === "function"
+      ? propsGetter(props)
+      : propsGetter;
+
+    const { request, fetch } = props;
     const formData = await request.formData();
     const data = formData.getAll("id")
       .filter(i => typeof i === "string").join();
@@ -27,4 +33,4 @@ export const batchDelete = ({ route, method }: DeleteActionProps) =>
       console.error("ERRORED", err);
       return unwrapServerError(err);
     }
-  }) satisfies Action;
+  }) satisfies Action<Params>;

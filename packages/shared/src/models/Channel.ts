@@ -3,7 +3,7 @@ import z from "zod";
 export const channelNameSchema = z.string().min(1).regex(/[a-zA-Z]\w*/)
 
 export const channelSchema = z.object({
-  id: z.number().int().min(1),
+  id: z.number().int().gt(0),
   name: channelNameSchema
 });
 export type Channel = z.infer<typeof channelSchema>;

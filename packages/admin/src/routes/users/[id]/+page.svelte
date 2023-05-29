@@ -112,7 +112,7 @@
 			</li>
 			{/each}
 		</ul>
-		{#if data?.user?.groups?.length}
+		{#if (data?.user?.groups?.length ?? 0) > 1}
 			<form method="POST" action="?/deleteAllGroups" use:enhance>
 				<p>
 					<button>Delete all groups</button>
@@ -129,11 +129,19 @@
 	</div>
 </div>
 
+<nav>
+	<a href="{base}/users/{user.id}/api-keys">API keys</a>
+	<a href="{base}/users/{user.id}/channels">Notification channels</a>
+</nav>
+
 <style>
-	.edit-grid {
-		display: grid;
-		grid-auto-flow: column;
-		grid-auto-columns: 1fr;
-		grid-gap: 1rem;
+	@media (min-width: 820px) {
+		.edit-grid {
+			display: grid;
+			grid-auto-flow: column;
+			grid-auto-columns: 1fr;
+			grid-gap: 1rem;
+		}
 	}
+
 </style>

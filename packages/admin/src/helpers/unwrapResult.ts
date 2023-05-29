@@ -1,18 +1,25 @@
-import { fail, type ActionFailure } from "@sveltejs/kit";
+import { fail, type ActionFailure, error } from "@sveltejs/kit";
 import { ZodError, type ZodIssue } from "zod";
 import type { Result, ResultFailure } from '~/models/Result';
 import { isResultErrorLike } from '~/models/Result';
+
+export function handleLoadError(err: unknown): never {
+  throw error(getStatusCode(err), isServerErrorLike(err) ? err.toJson() : JSON.stringify(err));
+}
 
 // TODO return a tuple from all unwraps and fail the action
 
 export class ServerError extends Error {
   name = "Server request error" as const;
   error: string;
-  detail?: string;
+  message: string;
   statusCode: number;
+  toJson() {
+    return JSON.parse(JSON.stringify(this));
+  }
   constructor(data: ResultFailure) {
     super(`Server request error ${data.statusCode} ${data.error}`);
-    this.detail = data.message;
+    this.message = data.message || "Unknown error";
     this.error = data.error;
     this.statusCode = data.statusCode;
   }
@@ -94,7 +101,7 @@ export function unwrapServerError<T extends Record<string, unknown>>(
     return fail(e.statusCode || 500, {
       ...(additionalData as T),
       error: "Server request error",
-      errorDetails: e.detail ?? e.message,
+      errorDetails: e.message,
     });
   }
   return unwrapError(e, additionalData);

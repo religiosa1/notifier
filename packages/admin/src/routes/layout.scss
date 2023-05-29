@@ -176,3 +176,11 @@ input:not([type="checkbox"], [type="radio"], [type="submit"]) {
 	max-width: 40rem;
 }
 .card_form *:first-child { margin-top: 0;}
+
+.card-details[open] > .card-details__summary {
+	padding-bottom: 1rem;
+}
+.card-details__body {
+	border-top: 1px dotted var(--clr-brd);
+	padding-top: 1rem;
+}
