@@ -14,7 +14,12 @@ async function main() {
   await prisma.channel.upsert({
     where: { id: 1 },
     update: {},
-    create: { name: "default" },
+    create: {
+      name: "default",
+      Groups: {
+        connect: { id: 1 }
+      }
+    },
   });
   await prisma.user.upsert({
     where: { id: 1 },

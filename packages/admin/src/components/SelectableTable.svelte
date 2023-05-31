@@ -37,7 +37,12 @@
         <input
           role="button"
           type="checkbox"
-          title={allChecked ? "deselect all" : "select all"}
+          disabled={available.length === 0}
+          title={available.length === 0
+            ? "No items available for selection"
+            : allChecked
+            ? "deselect all" : "select all"
+          }
           use:tristate={checkboxState}
           on:click={toggleCurrent}
         />
@@ -83,7 +88,7 @@
     <button class="inline" on:click={() => (selected = new Set())} type="button"
       >deselect all</button
     >
-  {:else}
+  {:else if items?.length}
     Select some elements with checkboxes to perform operations on them.
   {/if}
 </p>

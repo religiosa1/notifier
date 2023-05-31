@@ -49,30 +49,46 @@
 				<td><a href={base + uri`/channels/${channel.id}`}>{channel.name}</a></td>
 			</svelte:fragment>
 		</SelectableTable>
-
 		<Pagination {...data.pagination} />
+
+		<p class="form-controls">
+			<button
+				class="danger"
+
+				disabled={selectedChannels.size === 0}
+			>
+				Delete selected
+			</button>
+		</p>
 	</form>
 	<div class="form-controls">
-		<form method="post" action="?/add" use:enhance style="display:inline-block">
-			<!-- TODO fancy select TODO availableChannels -->
-			<select name="channel">
-				{#each data.channels as channel (channel.id)}
-					<options value={channel.id}>{channel.name}</options>
-				{:else}
-					<option disabled>There's no channels available to the user. Is he a member of any group?</option>
-				{/each}
-			</select>
-			<button>Add a channel</button>
+		<form method="post" action="?/add" use:enhance>
+			<p>
+				<button disabled={!data.availableChannels.length}>Add a channel</button>
+				<!-- TODO fancy select TODO availableChannels -->
+
+				<select name="id">
+					{#each data.availableChannels as channel (channel.id)}
+						<option value={channel.id}>{channel.name}</option>
+					{:else}
+						<option disabled selected>
+							{#if !data.channels.length}
+								There's no channels available to the user. Is he a member of any group?
+							{:else}
+								No more channels available to assign. Try adding the user to some additional groups.
+							{/if}
+						</option>
+					{/each}
+				</select>
+			</p>
 		</form>
-		<button
-			class="danger"
-			formAction="?/delete"
-			disabled={selectedChannels.size === 0}
-		>
-			Delete selected
-		</button>
 	</div>
 </div>
+
+<nav>
+	<a href="{base}/channels">List of all channels</a>
+	<a href="{base}/groups">List of all groups</a>
+</nav>
 
 <DeleteConfirmationModal
 	bind:open={showConfirmation}

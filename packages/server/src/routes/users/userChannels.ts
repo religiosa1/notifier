@@ -40,11 +40,36 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 					skip,
 					take,
 					where: {
-						userChannels: { every: { userId }}
+						userChannels: { some: { userId }}
 					}
 				}),
 			]);
 			return reply.send(result({ count, data }));
+		}
+	});
+
+	fastify.withTypeProvider<ZodTypeProvider>().route({
+		method: "GET",
+		url: '/users/:userId/available-channels',
+		schema: {
+			params: baseUserChannelsParams,
+			response: {
+				200: resultSuccessSchema(z.array(ChannelModel.channelSchema)),
+				404: resultFailureSchema,
+			}
+		},
+		onRequest: fastify.authorizeJWT,
+		async handler(req, reply) {
+			const { userId } = req.params;
+
+			const data = await db.channel.findMany({
+				where: {
+					Groups: { every: { Users: { every: { id: userId }} } },
+					userChannels: { none: { userId }},
+				}
+			});
+
+			return reply.send(result(data));
 		}
 	});
 

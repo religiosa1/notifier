@@ -37,12 +37,15 @@ export default fp(async function(fastify) {
           take,
           include: {
             Groups: { select: { id: true } },
-            Users: { select: {id: true } },
+            userChannels: {
+              select: { userId: true },
+              // TODO select distinct
+            }
           }
         }).then(channels => channels.map(channel => ({
-          ...omit(channel, []),
+          ...omit(channel, ["Groups", "userChannels"]),
           groupsCount: channel.Groups.length,
-          usersCount: channel.Users.length,
+          usersCount: channel.userChannels.length,
         })));
         return Promise.all([
           countPrms,
@@ -101,25 +104,25 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "DELETE",
+    method: "GET",
     url: "/channels/:channelId",
     schema: {
       params: z.object({
-        channelId: z.number({ coerce: true})
+        channelId: z.number({ coerce: true}).int().gt(0),
       }),
       response: {
-        200: resultSuccessSchema(z.null()),
+        200: resultSuccessSchema(ChannelModel.channelDetailSchema),
         404: resultFailureSchema
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.channelId;
-      const channel = await db.channel.delete({
-        where: { id }
-      }).catch(handlerDbNotFound(channelNotFound(id)));
-      fastify.log.info(`Channel delete by ${req.user.id}-${req.user.name}`, channel);
-      return reply.send(result(null));
+      const channel = await db.channel.findUniqueOrThrow({
+        where: { id },
+        include: { Groups: true },
+      }).catch(handlerDbNotFound(channelNotFound(id)))
+      return reply.send(result(channel));
     }
   });
 
@@ -128,7 +131,7 @@ export default fp(async function(fastify) {
     url: "/channels/:channelId",
     schema: {
       params: z.object({
-        channelId: z.number({ coerce: true})
+        channelId: z.number({ coerce: true}).int().gt(0),
       }),
       body: ChannelModel.channelUpdateSchema,
       response: {
@@ -152,24 +155,25 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "GET",
+    method: "DELETE",
     url: "/channels/:channelId",
     schema: {
       params: z.object({
-        channelId: z.number({ coerce: true})
+        channelId: z.number({ coerce: true}).int().gt(0),
       }),
       response: {
-        200: resultSuccessSchema(ChannelModel.channelSchema),
+        200: resultSuccessSchema(z.null()),
         404: resultFailureSchema
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.channelId;
-      const channel = await db.channel.findUniqueOrThrow({
+      const channel = await db.channel.delete({
         where: { id }
-      }).catch(handlerDbNotFound(channelNotFound(id)))
-      return reply.send(result(channel));
+      }).catch(handlerDbNotFound(channelNotFound(id)));
+      fastify.log.info(`Channel delete by ${req.user.id}-${req.user.name}`, channel);
+      return reply.send(result(null));
     }
   });
 

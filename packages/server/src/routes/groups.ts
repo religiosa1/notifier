@@ -101,25 +101,24 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "DELETE",
+    method: "GET",
     url: "/groups/:groupId",
     schema: {
       params: z.object({
-        groupId: z.number({ coerce: true})
+        groupId: z.number({ coerce: true}).int().gt(0),
       }),
       response: {
-        200: resultSuccessSchema(z.null()),
+        200: resultSuccessSchema(GroupModel.groupSchema),
         404: resultFailureSchema
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.groupId;
-      const group = await db.group.delete({
+      const group = await db.group.findUniqueOrThrow({
         where: { id }
-      }).catch(handlerDbNotFound(groupNotFound(id)));
-      fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
-      return reply.send(result(null));
+      }).catch(handlerDbNotFound(groupNotFound(id)))
+      return reply.send(result(group));
     }
   });
 
@@ -128,7 +127,7 @@ export default fp(async function(fastify) {
     url: "/groups/:groupId",
     schema: {
       params: z.object({
-        groupId: z.number({ coerce: true})
+        groupId: z.number({ coerce: true}).int().gt(0),
       }),
       body: GroupModel.groupUpdateSchema,
       response: {
@@ -152,24 +151,25 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "GET",
+    method: "DELETE",
     url: "/groups/:groupId",
     schema: {
       params: z.object({
-        groupId: z.number({ coerce: true})
+        groupId: z.number({ coerce: true}).int().gt(0),
       }),
       response: {
-        200: resultSuccessSchema(GroupModel.groupSchema),
+        200: resultSuccessSchema(z.null()),
         404: resultFailureSchema
       }
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.groupId;
-      const group = await db.group.findUniqueOrThrow({
+      const group = await db.group.delete({
         where: { id }
-      }).catch(handlerDbNotFound(groupNotFound(id)))
-      return reply.send(result(group));
+      }).catch(handlerDbNotFound(groupNotFound(id)));
+      fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
+      return reply.send(result(null));
     }
   });
 
