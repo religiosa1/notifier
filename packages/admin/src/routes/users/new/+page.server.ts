@@ -1,6 +1,6 @@
 import type { Actions } from "./$types";
 import { server_base } from "~/constants";
-import { unwrapResult, unwrapServerError, unwrapValidationError } from "~/helpers/unwrapResult";
+import { unwrapResult, handleActionFailure, unwrapValidationError } from "~/helpers/unwrapResult";
 import { uri } from "~/helpers/uri";
 import { passwordSchema, userCreateSchema, type UserDetail } from "@shared/models/User";
 import { redirect } from "@sveltejs/kit";
@@ -30,7 +30,7 @@ export const actions: Actions = {
 			}).then(unwrapResult)) as UserDetail;
 		} catch (err) {
 			console.error("User create error", err);
-			return unwrapServerError(err, data!);
+			return handleActionFailure(err, data!);
 		}
 		if (new URLSearchParams(request.url).has("addNew")) {
 			return {

@@ -64,7 +64,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 
 			const data = await db.channel.findMany({
 				where: {
-					Groups: { every: { Users: { every: { id: userId }} } },
+					Groups: { some: { Users: { some: { id: userId }} } },
 					userChannels: { none: { userId }},
 				}
 			});

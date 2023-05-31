@@ -1,6 +1,6 @@
 import type { Actions } from "./$types";
 import { server_base } from "~/constants";
-import { unwrapResult, unwrapServerError } from "~/helpers/unwrapResult";
+import { unwrapResult, handleActionFailure } from "~/helpers/unwrapResult";
 import { channelNameSchema } from "@shared/models/Channel";
 
 export const actions: Actions = {
@@ -17,7 +17,7 @@ export const actions: Actions = {
 			}).then(unwrapResult);
 			return { success: true }
 		} catch (err) {
-			return unwrapServerError(err, { message, channels: channels?.join(", ") });
+			return handleActionFailure(err, { message, channels: channels?.join(", ") });
 		}
 	}
 }

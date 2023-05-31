@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { server_base } from '~/constants';
-import { unwrapResult, unwrapServerError } from '~/helpers/unwrapResult';
+import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
 import type { UserDetail } from "@shared/models/User";
 import type { Channel } from "@shared/models/Channel";
@@ -48,7 +48,7 @@ export const actions: Actions = {
 			return resposnse;
 		} catch (err) {
 			console.error("Adding an API-key error", err);
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
   },
 }

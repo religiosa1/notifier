@@ -73,38 +73,33 @@ export function errorToResponse(e: unknown): Response {
   }))
 }
 
-export type ActionError = { error: "Unexpected error", errorDetails: string };
-export type UnwrappedError<T> = ActionFailure<T & ActionError>;
-export function unwrapError<T extends Record<string, unknown>>(
-  e: unknown,
-  additionalData?: T
-): UnwrappedError<T> {
-  return fail(getStatusCode(e), {
-    ...(additionalData as T),
-    error: "Unexpected error" as const,
-    errorDetails: e?.toString === Object.prototype.toString
-      ? JSON.stringify(e)
-      : String(e)
-  });
-}
-
-export type ActionServerError = {
-  error: "Server request error";
-  errorDetails: string;
-}
-export type UnwrappedServerError<T> = ActionFailure<T & ActionServerError>;
-export function unwrapServerError<T extends Record<string, unknown>>(
+export type ActionError = { error: string, errorDetails: string };
+export function handleActionFailure<T extends Record<string, unknown>>(
   e: unknown,
   additionalData?: T,
-): UnwrappedServerError<T> | UnwrappedError<T> {
+): ActionFailure<T & ActionError> {
+  const statusCode = getStatusCode(e);
+
+  let errorData: { error: string, errorDetails: string };
+
   if (isServerErrorLike(e)) {
-    return fail(e.statusCode || 500, {
+    errorData = {
       ...(additionalData as T),
-      error: "Server request error",
+      error: "Server request error" as const,
       errorDetails: e.message,
-    });
+    };
+  } else {
+    errorData = {
+      error: "Unexpected error" as const,
+      errorDetails: e?.toString === Object.prototype.toString
+        ? JSON.stringify(e)
+        : String(e)
+    }
   }
-  return unwrapError(e, additionalData);
+  return fail(statusCode, {
+    ...(additionalData as T),
+    ...errorData,
+  });
 }
 
 export type ActionValidationError = {

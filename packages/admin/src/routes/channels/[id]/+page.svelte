@@ -22,7 +22,7 @@
 	<p class="input-group">
 		<label>
 			<span class="form-label">Name</span>
-			<input name="name" type="text" value={data.channel?.name} autocomplete="off" />
+			<input required name="name" type="text" value={data.channel?.name} autocomplete="off" />
 		</label>
 	</p>
 	<div class="form-controls">
@@ -30,7 +30,11 @@
 	</div>
 </form>
 
-<form method="post" action="?/disconnectGroups" use:enhance>
+<form method="post" action="?/disconnectGroups" use:enhance={() => async ({ update }) => {
+	await update();
+	selectedGroups = new Set();
+}
+}>
 	<h3>The channel is accessible to the following groups</h3>
 	<SelectableTable items={data.channel?.Groups} bind:selected={selectedGroups}>
 		<svelte:fragment slot="header">
@@ -58,7 +62,7 @@
 <form method="POST" action="?/addOrCreateGroup" use:enhance>
 	<p>
 		<!-- TODO autocomplete/combobox -->
-		<input name="name" autocomplete="off" />
+		<input required name="name" autocomplete="off" />
 		<button>Add group</button>
 	</p>
 </form>

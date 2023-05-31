@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { server_base } from "~/constants";
-import { unwrapServerError, unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
+import { handleActionFailure, unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import { uri } from "~/helpers/uri";
 import { passwordSchema, userUpdateSchema, type UserDetail } from "@shared/models/User";
 import { getFormData } from "~/helpers/getFormData";
@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 			.then(unwrapResult) as UserDetail;
 	} catch (err) {
 		console.error("ERRORED", err);
-		return unwrapServerError(err);
+		return handleActionFailure(err);
 	}
 
 	return {
@@ -40,7 +40,7 @@ export const actions: Actions = {
 			}
 		} catch (err) {
 			console.error("User update error", err);
-			return unwrapServerError(err, data!);
+			return handleActionFailure(err, data!);
 		}
 	},
 	async resetPassword({ fetch, request, params }) {
@@ -60,7 +60,7 @@ export const actions: Actions = {
 			}
 		} catch (err) {
 			console.error("User update error", err);
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	},
 	// TODO change all the unwrapped error values for scoping
@@ -77,7 +77,7 @@ export const actions: Actions = {
 			};
 		} catch (err) {
 			console.error("Create group error", err);
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	},
 	async deleteAllGroups({ fetch, params }) {
@@ -90,7 +90,7 @@ export const actions: Actions = {
 			};
 		} catch (err) {
 			console.error("Delete all error", err);
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	},
 	async deleteGroup({ fetch, params, request }) {
@@ -108,7 +108,7 @@ export const actions: Actions = {
 			};
 		} catch (err) {
 			console.error("Delete group error", err);
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	},
 }

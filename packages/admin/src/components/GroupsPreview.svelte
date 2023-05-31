@@ -10,9 +10,7 @@
 </script>
 
 <span class="groups-preview">
-	{#each slice as group (group.id)}
-		{groupText}
-	{/each}
+	{groupText}
 	{#if remainder}
 		<i>and {remainder} more.</i>
 	{/if}

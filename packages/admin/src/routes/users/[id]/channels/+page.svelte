@@ -67,11 +67,11 @@
 				<button disabled={!data.availableChannels.length}>Add a channel</button>
 				<!-- TODO fancy select TODO availableChannels -->
 
-				<select name="id">
+				<select disabled={!data.availableChannels?.length} name="id">
 					{#each data.availableChannels as channel (channel.id)}
 						<option value={channel.id}>{channel.name}</option>
 					{:else}
-						<option disabled selected>
+						<option selected>
 							{#if !data.channels.length}
 								There's no channels available to the user. Is he a member of any group?
 							{:else}

@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { server_base } from '~/constants';
-import { handleLoadError, unwrapResult, unwrapServerError } from '~/helpers/unwrapResult';
+import { handleLoadError, unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
 import type { UserDetail } from "@shared/models/User";
 import type { Counted } from "@shared/models/Counted";
@@ -43,7 +43,7 @@ export const actions: Actions = {
 			}).then(unwrapResult)) as UserDetail;
 			return resposnse;
 		} catch (err) {
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	},
 	deleteAll: async ({ params, fetch}) => {
@@ -55,7 +55,7 @@ export const actions: Actions = {
 			}).then(unwrapResult)) as UserDetail;
 			return resposnse;
 		} catch (err) {
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	},
 	add: async ({ params, fetch }) => {
@@ -68,7 +68,7 @@ export const actions: Actions = {
 			return resposnse;
 		} catch (err) {
 			console.error("Adding an API-key error", err);
-			return unwrapServerError(err);
+			return handleActionFailure(err);
 		}
 	}
 }

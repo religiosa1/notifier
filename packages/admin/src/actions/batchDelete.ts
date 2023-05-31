@@ -1,5 +1,5 @@
 import type { Action, RequestEvent } from "@sveltejs/kit";
-import { unwrapServerError, unwrapResult } from "~/helpers/unwrapResult";
+import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { server_base } from "~/constants";
 
@@ -31,6 +31,6 @@ export const batchDelete = <
       return serverData;
     } catch(err) {
       console.error("ERRORED", err);
-      return unwrapServerError(err);
+      return handleActionFailure(err);
     }
   }) satisfies Action<Params>;

@@ -1,6 +1,6 @@
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions } from "./$types";
-import { unwrapServerError, unwrapResult } from "~/helpers/unwrapResult";
+import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
 import { server_base } from "~/constants";
 import { hasField } from "~/helpers/hasField";
 
@@ -17,7 +17,7 @@ export const actions: Actions = {
       }).then(unwrapResult);
     } catch (e) {
       console.error("ERRORED", e);
-      return unwrapServerError(e, { name });
+      return handleActionFailure(e, { name });
     }
 
     if (!hasField(serverData, "token", "string")) {
