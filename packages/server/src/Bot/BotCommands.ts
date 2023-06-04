@@ -2,7 +2,7 @@ import type TelegramBot from "node-telegram-bot-api";
 import type { Message } from "node-telegram-bot-api";
 import { db } from "src/db";
 import { logger } from "src/logger";
-import { createUser, getUserIdByTgId } from "src/services/UserService";
+import { createUser, getUserIdByTgId, userExistsByTgId } from "src/services/UserService";
 import * as ApiKeyService from "src/services/ApiKey";
 import * as UserChannelsService from "src/services/UserChannels";
 
@@ -21,11 +21,16 @@ export const botCommands: BotCommand[] = [
         this.sendMessage(msg.chat.id, "У вас какой-то странный чат, не могу найти от кого сообщение");
         return;
       }
-      createUser(db, {
-        name: msg.from.username,
-        telegramId: msg.from.id,
-      });
-      this.sendMessage(msg.chat.id, "Спасибо, мы подумаем и решим, достойны ли вы пользоваться нашим ботом.");
+
+      if (await userExistsByTgId(db, msg.from.id)) {
+        this.sendMessage(msg.chat.id, "Вы и так уже здесь, чего вам ещё надо?git");
+      } else {
+        createUser(db, {
+          name: msg.from.username,
+          telegramId: msg.from.id,
+        });
+        this.sendMessage(msg.chat.id, "Спасибо, мы подумаем и решим, достойны ли вы пользоваться нашим ботом.");
+      }
     }
   },
   {

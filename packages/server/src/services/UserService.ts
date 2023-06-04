@@ -12,6 +12,13 @@ export async function getUser(tx: DbTransactionClient, userId: number): Promise<
 	return userDetailSchema.parse(user);
 }
 
+export async function userExistsByTgId(tx: DbTransactionClient, telegramId: number): Promise<boolean> {
+	return tx.user.findUniqueOrThrow({
+		select: { id: true },
+		where: { telegramId },
+	}).then(r => !!r?.id );
+}
+
 export async function getUserIdByTgId(tx: DbTransactionClient, telegramId: number): Promise<number> {
 	return tx.user.findUniqueOrThrow({
 		select: { id: true },
