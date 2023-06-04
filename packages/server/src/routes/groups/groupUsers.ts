@@ -1,11 +1,11 @@
 import z from "zod";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import * as GroupModel from "@shared/models/Group";
+import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { db } from "src/db";
-import * as GroupModel from "src/models/Group";
-import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { removeRestricredChannels } from "src/services/UserChannels";
 

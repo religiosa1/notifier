@@ -1,17 +1,17 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import * as ChannelModel from "@shared/models/Channel";
+import { counted } from "@shared/models/Counted";
+import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
+import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
+import { groupNameSchema } from "@shared/models/Group";
+import { omit } from "@shared/helpers/omit";
 import { db } from "src/db";
-import * as ChannelModel from "src/models/Channel";
-import { counted } from "src/models/Counted";
-import { paginationSchema, paginationDefaults } from "src/models/Pagination";
-import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import { parseIds, batchIdsSchema } from "src/models/batchIds";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
-import { omit } from "src/helpers/omit";
-import { groupNameSchema } from "src/models/Group";
+import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 
 export default fp(async function(fastify) {
   const channelNotFound = (id: string | number) => `channel with id '${id}' doesn't exist`;

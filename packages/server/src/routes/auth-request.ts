@@ -1,14 +1,14 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { result, resultSuccessSchema } from "@shared/models/Result";
+import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
+import * as UserModel from "@shared/models/User";
+import { counted } from "@shared/models/Counted";
+import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
+import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { db } from "src/db";
-import { result, resultSuccessSchema } from "src/models/Result";
-import { paginationSchema, paginationDefaults } from "src/models/Pagination";
-import * as UserModel from "src/models/User";
-import { counted } from "src/models/Counted";
-import { parseIds, batchIdsSchema } from "src/models/batchIds";
-import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import { AuthorizationEnum } from "src/models/AuthorizationEnum";
 
 export default fp(async function(fastify) {
   fastify.withTypeProvider<ZodTypeProvider>().route({

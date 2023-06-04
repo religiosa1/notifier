@@ -1,9 +1,9 @@
 import z from "zod";
 import fp from "fastify-plugin";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { channelNameSchema } from "src/models/Channel";
+import { channelNameSchema } from "@shared/models/Channel";
 import type { IBot } from "src/Bot/Models";
-import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { db } from "src/db";
 
 interface NotifyOptions {

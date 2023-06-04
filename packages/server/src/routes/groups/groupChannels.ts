@@ -1,13 +1,13 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { db } from "src/db";
-import * as GroupModel from "src/models/Group";
-import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import { parseIds, batchIdsSchema } from "src/models/batchIds";
+import * as GroupModel from "@shared/models/Group";
+import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import type { FastifyInstance } from "fastify";
-import { channelNameSchema } from "src/models/Channel";
+import { channelNameSchema } from "@shared/models/Channel";
 import { removeRestricredChannels } from "src/services/UserChannels";
 
 export function groupChannels<Instace extends FastifyInstance>(fastify: Instace) {

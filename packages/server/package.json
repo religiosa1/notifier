@@ -6,10 +6,10 @@
   "types": "build/index.d.ts",
   "scripts": {
     "dev": "nodemon index.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.json",
     "start": "NODE_ENV=production node dist/index.js",
     "salt": "ts-node scripts/salt.ts",
-    "generate-jwt-secret": "node -e \"console.log(require('crypto').randomBytes(256).toString('base64'));\"",
+    "generate-jwt-secret": "ts-node scripts/generate-jwt-secret.ts",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node prisma/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"

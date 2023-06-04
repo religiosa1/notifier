@@ -50,7 +50,7 @@ export const botCommands: BotCommand[] = [
   },
   {
     pattern: /^\/remove-key\s+(\w+)$/,
-    async handler(this: TelegramBot, msg: Message) {
+    async handler(this: TelegramBot, _msg: Message) {
       throw new Error("TODO");
     }
   },
@@ -76,13 +76,13 @@ export const botCommands: BotCommand[] = [
   },
   {
     pattern: /^\/join-channel\s+(\w+)$/,
-    async handler(this: TelegramBot, msg: Message) {
+    async handler(this: TelegramBot, _msg: Message) {
       throw new Error("TODO");
     }
   },
   {
     pattern: /^\/leave-channel\s+(\w+)$/,
-    async handler(this: TelegramBot, msg: Message) {
+    async handler(this: TelegramBot, _msg: Message) {
       throw new Error("TODO");
     }
   },

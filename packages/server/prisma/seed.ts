@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client'
+import { AuthorizationEnum } from '@shared/models/AuthorizationEnum'
+import { UserRoleEnum } from '@shared/models/UserRoleEnum';
 import { hash } from 'src/Authorization/hash';
-import { AuthorizationEnum } from 'src/models/AuthorizationEnum'
-import { UserRoleEnum } from 'src/models/UserRoleEnum';
 
 const prisma = new PrismaClient()
 

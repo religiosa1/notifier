@@ -1,14 +1,14 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { db } from "src/db";
-import * as ChannelModel from "src/models/Channel";
 import type { FastifyInstance } from "fastify";
-import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import * as ChannelModel from "@shared/models/Channel";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
+import { paginationDefaults, paginationSchema } from "@shared/models/Pagination";
+import { counted } from "@shared/models/Counted";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import { batchIdsSchema, parseIds } from "src/models/batchIds";
-import { paginationDefaults, paginationSchema } from "src/models/Pagination";
-import { counted } from "src/models/Counted";
 import * as UserChannelsService from "src/services/UserChannels";
 
 export function userChannels<Instace extends FastifyInstance>(fastify: Instace) {

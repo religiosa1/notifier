@@ -1,9 +1,9 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { db } from "src/db";
-import * as GroupModel from "src/models/Group";
 import type { FastifyInstance } from "fastify";
-import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
+import * as GroupModel from "@shared/models/Group";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { removeRestricredChannels } from "src/services/UserChannels";
 

@@ -1,8 +1,8 @@
 import fp from "fastify-plugin";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import bcrypt from "bcrypt";
-import { AuthorizationEnum } from "src/models/AuthorizationEnum";
-import { ResultError } from "src/models/Result";
+import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
+import { ResultError } from "@shared/models/Result";
 import { db } from "src/db";
 import { parseApiKey } from "src/services/ApiKey";
 

@@ -2,6 +2,7 @@ import "dotenv/config";
 import fastify from "fastify";
 import cookie, { FastifyCookieOptions } from '@fastify/cookie'
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import { ResultError } from "@shared/models/Result";
 import authorizeJWT from "src/Authorization/pluginJWT";
 import authorizeKey from "src/Authorization/pluginKey";
 import { registerLogger } from "src/logger";
@@ -9,7 +10,6 @@ import { Bot, Update } from "src/Bot";
 import usersRoutes from "src/routes/users";
 import groupsRoutes from "src/routes/groups";
 import channelsRoutes from "src/routes/channels";
-import { ResultError } from "src/models/Result";
 import notify from "src/routes/notify";
 import authRequest from "src/routes/auth-request";
 

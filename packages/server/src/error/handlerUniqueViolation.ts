@@ -1,5 +1,5 @@
 import { Prisma  } from "@prisma/client";
-import { ResultError } from "src/models/Result";
+import { ResultError } from "@shared/models/Result";
 
 export function joinFields(fields: string[]) {
   return fields.map(i => `"${i}"`).join(", ");

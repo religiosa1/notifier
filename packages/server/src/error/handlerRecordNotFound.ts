@@ -1,5 +1,5 @@
 import { Prisma  } from "@prisma/client";
-import { ResultError } from "src/models/Result";
+import { ResultError } from "@shared/models/Result";
 
 export function handlerDbNotFound(message = "requested entity doesn't exist") {
   const handler = (err: unknown) => {

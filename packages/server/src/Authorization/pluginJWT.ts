@@ -4,16 +4,16 @@ import fastifyJwt from "@fastify/jwt";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
 import bcrypt from "bcrypt";
-import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "src/models/Result";
+import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "@shared/models/Result";
 import { db } from "src/db";
-import { UserRoleEnum } from "src/models/UserRoleEnum";
-import { tokenPayloadSchema } from "src/models/TokenPayload";
+import { UserRoleEnum } from "@shared/models/UserRoleEnum";
+import { tokenPayloadSchema } from "@shared/models/TokenPayload";
 
 export default fp(async function (fastify) {
   if (!process.env.JWT_SECRET) {
     throw new Error(
       "JWT secret is missing in env. Please, generate a secret with " +
-      "npm run generate-secret and add it to the environemnt"
+      "npm run generate-jwt-secret and add it to the environemnt"
     );
   }
 

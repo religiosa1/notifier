@@ -1,7 +1,7 @@
 import type { DbTransactionClient } from "src/db";
-import type { UserCreate, UserUpdate, UserDetail } from "src/models/User";
-import { userDetailSchema } from "src/models/User";
-import { omit } from "src/helpers/omit";
+import type { UserCreate, UserUpdate, UserDetail } from "@shared/models/User";
+import { userDetailSchema } from "@shared/models/User";
+import { omit } from "@shared/helpers/omit";
 import { hash } from 'src/Authorization/hash';
 
 export async function getUser(tx: DbTransactionClient, userId: number): Promise<UserDetail>  {

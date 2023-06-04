@@ -1,11 +1,11 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { db } from "src/db";
 import type { FastifyInstance } from "fastify";
-import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
-import { paginationDefaults, paginationSchema } from "src/models/Pagination";
-import { counted } from "src/models/Counted";
-import { apiKeyPrefixSchema, apiKeyPreviewSchema } from "src/models/ApiKey";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { paginationDefaults, paginationSchema } from "@shared/models/Pagination";
+import { counted } from "@shared/models/Counted";
+import { apiKeyPrefixSchema, apiKeyPreviewSchema } from "@shared/models/ApiKey";
+import { db } from "src/db";
 import * as ApiKeyService from "src/services/ApiKey";
 
 export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
