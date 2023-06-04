@@ -1,11 +1,10 @@
-import fp from "fastify-plugin";
 import z from "zod";
+import fp from "fastify-plugin";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { channelNameSchema } from "src/models/Channel";
-
+import type { IBot } from "src/Bot/Models";
 import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { db } from "src/db";
-import type { IBot } from "src/Bot/Models";
 
 interface NotifyOptions {
 	bot: IBot
@@ -37,7 +36,11 @@ export default fp<NotifyOptions>(async function (fastify, { bot }) {
 			const chats = await db.user.findMany({
 				select: { telegramId: true },
 				where: {
-					channels: { some: { name: { in: channels } } }
+					channels: {
+						some: {
+							channel: { name: { in: channels }}
+						}
+					}
 				}
 			});
 			if (!chats.length) {

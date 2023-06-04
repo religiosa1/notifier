@@ -83,7 +83,7 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 							: { set: [] }
 					}
 				});
-				removeRestricredChannels(tx);
+				await removeRestricredChannels(tx);
 				return groups;
 			}).catch(handlerDbNotFound(groupNotFound(groupId)));
 			const data = {

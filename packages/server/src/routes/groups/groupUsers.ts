@@ -1,4 +1,5 @@
 import z from "zod";
+import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { db } from "src/db";
@@ -6,7 +7,7 @@ import * as GroupModel from "src/models/Group";
 import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import type { FastifyInstance } from "fastify";
+import { removeRestricredChannels } from "src/services/UserChannels";
 
 export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 	const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
@@ -63,8 +64,8 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 			const groupId = req.params.groupId;
 			const ids = parseIds(req.query.id || "");
 
-			const [ response ] = await db.$transaction([
-				db.group.update({
+			const response = await db.$transaction(async (tx) => {
+				const resp = await tx.group.update({
 					where: { id: groupId },
 					include: {
 						Users: { select: { id: true },
@@ -77,19 +78,11 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 							? { disconnect: ids.map(id => ({ id })) }
 							: { set: [] }
 					}
-				}),
-				db.userChannel.deleteMany({
-					where: {
-						user: {
-							...(ids.length ? {id: {in: ids }} : {}),
-							groups: { some: { id: groupId }},
-						},
-						channel: {
-							Groups: { every: { id: groupId }}
-						}
-					}
-				}),
-			]).catch(handlerDbNotFound(groupNotFound(groupId)));
+				});
+				await removeRestricredChannels(tx);
+				return resp
+			}).catch(handlerDbNotFound(groupNotFound(groupId)));
+
 			const data = {
 				count: response.Users.length,
 				outOf: ids.length,

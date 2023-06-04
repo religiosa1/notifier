@@ -6,8 +6,7 @@ import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Res
 import { paginationDefaults, paginationSchema } from "src/models/Pagination";
 import { counted } from "src/models/Counted";
 import { apiKeyPrefixSchema, apiKeyPreviewSchema } from "src/models/ApiKey";
-import { generateApiKey, parseApiKey } from "src/Authorization/apiKey";
-import { hash } from "src/Authorization/hash";
+import * as ApiKeyService from "src/services/ApiKey";
 
 export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
 	const baseUserKeysUrl = "/users/:userId/api-keys";
@@ -30,19 +29,10 @@ export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [count, data] = await db.$transaction([
-				db.apiKey.count({ where: { userId } }),
-				db.apiKey.findMany({
-					skip,
-					take,
-					select: { prefix: true, createdAt: true },
-					where: { userId }
-				}),
-			]);
+			const [ data, count ] = await ApiKeyService.getKeys(db, userId, { skip, take });
 			return reply.send(result({ count, data }));
 		}
 	});
-
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
@@ -58,16 +48,7 @@ export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req) {
 			const { userId } = req.params;
-			const apiKey = generateApiKey();
-			const [ prefix, key ] = parseApiKey(apiKey);
-			const hashedKey = await hash(key);
-			await db.apiKey.create({
-				data: {
-					prefix: prefix,
-					hash: hashedKey,
-					userId
-				}
-			});
+			const apiKey = await ApiKeyService.createKey(db, userId);
 			return result({ apiKey });
 		}
 	});
@@ -86,11 +67,7 @@ export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req) {
 			const { prefix, userId } = req.params;
-			// Specifically doing it through the user, so we control, that userId is correct
-			await db.user.update({
-				where: { id: userId },
-				data: { ApiKeys: { delete: { prefix } } }
-			})
+			await ApiKeyService.deleteKey(db, userId, prefix);
 			return result(null);
 		}
 	});

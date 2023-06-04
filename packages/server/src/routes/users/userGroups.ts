@@ -5,6 +5,7 @@ import * as GroupModel from "src/models/Group";
 import type { FastifyInstance } from "fastify";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
+import { removeRestricredChannels } from "src/services/UserChannels";
 
 export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
   const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
@@ -61,23 +62,17 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId, groupId } = req.params;
-			await db.$transaction([
-				// if we disconnect a group from a user, then we need to check that he has access to the channels
-				db.userChannel.deleteMany({
-					where: {
-						userId,
-						channel: { Groups: { none: { id: groupId } }}
-					}
-				}),
-				db.user.update({
+			await db.$transaction(async (tx) => {
+				await tx.user.update({
 					where: { id: userId },
 					data: {
 						groups: {
 							disconnect: { id: groupId }
 						}
 					}
-				})
-			]).catch(handlerDbNotFound("Failed to delete the group"));
+				});
+				await removeRestricredChannels(tx);
+			}).catch(handlerDbNotFound("Failed to delete the group"));
 			return reply.send(result(null));
 		}
 	});

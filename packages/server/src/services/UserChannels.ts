@@ -1,13 +1,12 @@
-import type { Channel, PrismaClient, PrismaPromise, UserChannel } from "@prisma/client";
-
-type PrimsaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use">
+import type { Channel, UserChannel } from "@prisma/client";
+import type { DbTransactionClient } from "src/db";
 
 export type BatchPayload = {
 	count: number
 }
 
 export function getUserChannels(
-	tx: PrimsaTransactionClient,
+	tx: DbTransactionClient,
 	userId: number,
 	{
 		skip,
@@ -32,9 +31,9 @@ export function getUserChannels(
 }
 
 export function availableChannels(
-	tx: PrimsaTransactionClient,
+	tx: DbTransactionClient,
 	userId: number
-): PrismaPromise<Channel[]> {
+): Promise<Channel[]> {
 	return tx.channel.findMany({
 		where: {
 			Groups: { some: { Users: { some: { id: userId }} } },
@@ -44,18 +43,18 @@ export function availableChannels(
 }
 
 export function connectUserChannel(
-	tx: PrimsaTransactionClient,
+	tx: DbTransactionClient,
 	userId: number,
 	channelId: number
-): PrismaPromise<UserChannel> {
+): Promise<UserChannel> {
 	return tx.userChannel.create({ data: { userId, channelId } });
 }
 
 export function disconnectUserChannels(
-	tx: PrimsaTransactionClient,
+	tx: DbTransactionClient,
 	userId: number,
 	channelIds: number[],
-): PrismaPromise<BatchPayload> {
+): Promise<BatchPayload> {
 	return tx.userChannel.deleteMany({ where: {
 		userId,
 		channelId: { in: channelIds }
@@ -63,7 +62,7 @@ export function disconnectUserChannels(
 }
 
 /** Removing all of the UserChannels, to which users don't have access. */
-export function removeRestricredChannels(tx: PrimsaTransactionClient): PrismaPromise<number> {
+export function removeRestricredChannels(tx: DbTransactionClient): Promise<number> {
 	// I can't manage to do this effectively in Prisma, so here goes some raw sql.
 	return tx.$executeRaw`
 		WITH orphaned AS (

@@ -13,6 +13,7 @@ import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
 import { omit } from "src/helpers/omit";
 import { groupUsers } from "./groupUsers";
 import { groupChannels } from "src/routes/groups/groupChannels";
+import { removeRestricredChannels } from "src/services/UserChannels";
 
 export default fp(async function(fastify) {
   const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
@@ -92,18 +93,15 @@ export default fp(async function(fastify) {
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const ids = parseIds(req.query.id);
-      const [{ count }] = await db.$transaction([
-        db.group.deleteMany({
+      const { count } = await db.$transaction(async (tx) => {
+        const resp = await tx.group.deleteMany({
           where: {
             id: { in: ids }
           }
-        }),
-        db.userChannel.deleteMany({
-          where: {
-            channel: { Groups: { every: { id: { in: ids }}}}
-          }
-        }),
-      ]);
+        });
+        await removeRestricredChannels(tx);
+        return resp;
+      });
       const data = {
         count,
         outOf: ids.length,
@@ -211,14 +209,13 @@ export default fp(async function(fastify) {
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.groupId;
-      const [group] = await db.$transaction([
-        db.group.delete({
+      const group = await db.$transaction(async (tx) => {
+        const resp = await db.group.delete({
           where: { id }
-        }),
-        db.userChannel.deleteMany({
-          where: { channel: { Groups: { every: { id }}}}
-        }),
-      ]).catch(handlerDbNotFound(groupNotFound(id)));
+        });
+        await removeRestricredChannels(tx);
+        return resp;
+      }).catch(handlerDbNotFound(groupNotFound(id)));
       fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
       return reply.send(result(null));
     }

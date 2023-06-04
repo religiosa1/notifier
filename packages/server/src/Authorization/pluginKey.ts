@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import { AuthorizationEnum } from "src/models/AuthorizationEnum";
 import { ResultError } from "src/models/Result";
 import { db } from "src/db";
-import { parseApiKey } from "./apiKey";
+import { parseApiKey } from "src/services/ApiKey";
 
 export default fp(async function (fastify) {
   fastify.decorate(
