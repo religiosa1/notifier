@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id                  Int           @id @default(autoincrement())
-  telegramId          String        @unique
+  telegramId          Int           @unique
   name                String?       @unique
   groups              Group[]
   // only admin users can have password, so if the password exists it's an admin

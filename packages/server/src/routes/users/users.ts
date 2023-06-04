@@ -2,16 +2,16 @@ import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { db } from "src/db";
-import { omit } from "src/helpers/omit";
 import { result, resultFailureSchema, resultSuccessSchema } from "src/models/Result";
 import { paginationSchema, paginationDefaults } from "src/models/Pagination";
 import * as UserModel from "src/models/User";
 import { counted } from "src/models/Counted";
 import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
-import { hash } from 'src/Authorization/hash';
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
+import * as UserService from "src/services/UserService";
+
 import { userChannels } from "./userChannels";
 import { userGroups } from "./userGroups";
 import { userKeys } from "./userKeys";
@@ -63,16 +63,8 @@ export default fp(async function(fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const user = await db.user.create({
-				data: {
-					...omit(req.body, ["channels", "groups", "password"]),
-					password: await hash(req.body.password),
-					groups: nameArrayToUpsert(req.body.groups)
-				},
-				include: {
-					groups: { select: { id: true, name: true }},
-				}
-			}).catch(handlerUniqueViolation()) as UserModel.UserDetail;
+			const user = await UserService.createUser(db, req.body)
+				.catch(handlerUniqueViolation()) as UserModel.UserDetail;
 			fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(user));
 		}
@@ -90,16 +82,12 @@ export default fp(async function(fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const { count } = await db.user.deleteMany({
-					where: {
-						id: { in: ids }
-					}
-			});
+			const count = await UserService.deleteUsers(db, ids);
 			const data = {
 				count,
 				outOf: ids.length,
 			};
-			fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, data);
+			fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, ids, data);
 			return reply.send(result(data));
 		}
 	});
@@ -119,10 +107,8 @@ export default fp(async function(fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.userId;
-			const user = await db.user.findUniqueOrThrow({
-				where: { id },
-				include: { groups: { select: { id: true, name: true }}}
-			}).catch(handlerDbNotFound(userNotFound(id))) as UserModel.UserDetail;
+			const user = await UserService.getUser(db, id)
+				.catch(handlerDbNotFound(userNotFound(id)));
 			return reply.send(result(user));
 		}
 	});
@@ -143,21 +129,11 @@ export default fp(async function(fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const id = req.params.userId;
-			const user = await db.user.update({
-				where: { id },
-				data: {
-					...omit(req.body, ["channels", "groups", "password"]),
-					password: await hash(req.body.password),
-					groups: nameArrayToUpsert(req.body.groups),
-				},
-				include: {
-					groups: { select: { id: true, name: true }},
-				}
-			})
-				.catch(handlerDbNotFound(userNotFound(id)))
+			const {userId} = req.params;
+			const user = await UserService.editUser(db, userId, req.body)
+				.catch(handlerDbNotFound(userNotFound(userId)))
 				.catch(handlerUniqueViolation()) as UserModel.UserDetail;
-			fastify.log.info(`User edit by ${req.user.id}-${req.user.name}`, req.body);
+			fastify.log.info(`User ${userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(user));
 		}
 	});
@@ -177,10 +153,9 @@ export default fp(async function(fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.userId;
-			const user = await db.user.delete({
-				where: { id },
-			}).catch(handlerDbNotFound(userNotFound(id)));
-			fastify.log.info(`User ${req.params.userId} delete by ${req.user.id}-${req.user.name}`, user);
+			await UserService.deleteUsers(db, [id])
+				.catch(handlerDbNotFound(userNotFound(id)));
+			fastify.log.info(`User ${id} delete by ${req.user.id}-${req.user.name}`);
 			return reply.send(result(null));
 		}
 	});
@@ -190,16 +165,4 @@ export default fp(async function(fastify) {
 	userKeys(fastify);
 });
 
-function nameArrayToUpsert(arr: string[] | undefined | null) {
-	if (!arr || !Array.isArray(arr)) {
-		return;
-	}
-	return {
-		connectOrCreate: arr.filter(i => i && typeof i === "string").map((name) => {
-			return {
-				where: { name },
-				create: { name },
-			}
-		}),
-	};
-}
+

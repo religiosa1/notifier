@@ -25,7 +25,7 @@ async function main() {
     where: { id: 1 },
     update: {},
     create: {
-      telegramId: process.env.ROOT_TELEGRAM_ID || "1234567",
+      telegramId: Number(process.env.ROOT_TELEGRAM_ID) || 1234567,
       name: 'admin',
       password: await hash("1234567"),
       authorizationStatus: AuthorizationEnum.accepted,

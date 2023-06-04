@@ -7,10 +7,10 @@ import { groupNameSchema } from "./Group";
 export const passwordSchema = z.string().min(6).nullable();
 
 export const userSchema = userPreviewSchema.extend({
-	telegramId: z.string().min(1),
-	password: passwordSchema,
-	authorizationStatus: z.nativeEnum(AuthorizationEnum),
-	role: z.nativeEnum(UserRoleEnum),
+	telegramId: z.number({ coerce: true }),
+	password: z.optional(passwordSchema),
+	authorizationStatus: z.nativeEnum(AuthorizationEnum).default(AuthorizationEnum.pending),
+	role: z.nativeEnum(UserRoleEnum).default(AuthorizationEnum.pending),
 });
 export type User = z.infer<typeof userSchema>;
 
@@ -27,9 +27,14 @@ export type UserWithGroups = z.infer<typeof userWithGroupsSchema>;
 export const userDetailSchema = userWithGroupsSchema;
 export type UserDetail = z.infer<typeof userDetailSchema>;
 
-export const userCreateSchema = userSchema.omit({ id: true }).extend({
+export const userCreateSchema = userSchema.omit({ id: true }).partial({
+	authorizationStatus: true,
+	role: true,
+}).extend({
 	groups: z.array(groupNameSchema).optional(),
 	channels: z.array(z.number().int().gt(0)).optional()
 });
 export type UserCreate = z.infer<typeof userCreateSchema>;
+
 export const userUpdateSchema = userCreateSchema.partial();
+export type UserUpdate = z.infer<typeof userUpdateSchema>
