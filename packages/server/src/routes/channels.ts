@@ -83,7 +83,7 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "PUT",
+    method: "POST",
     url: "/channels",
     schema: {
       body: ChannelModel.channelCreateSchema,
@@ -128,7 +128,7 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "POST",
+    method: "PUT",
     url: "/channels/:channelId",
     schema: {
       params: z.object({
@@ -205,7 +205,7 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "PUT",
+    method: "POST",
     url: "/channels/:channelId/groups",
     schema: {
       params: z.object({
@@ -233,7 +233,7 @@ export default fp(async function(fastify) {
           }}
         }
       });
-      fastify.log.info(`Channel groups batch disconnect by ${req.user.id}-${req.user.name}`, data);
+      fastify.log.info(`Channel group added by ${req.user.id}-${req.user.name}`, data);
       return reply.send(result(data));
     }
   });
@@ -248,6 +248,7 @@ export default fp(async function(fastify) {
       querystring: z.object({ id: z.optional(batchIdsSchema) }),
       response: {
         200: resultSuccessSchema(batchOperationStatsSchema),
+        404: resultFailureSchema,
       }
     },
     onRequest: fastify.authorizeJWT,

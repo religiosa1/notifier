@@ -45,7 +45,7 @@ export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
 
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
+		method: "POST",
 		url: baseUserKeysUrl,
 		schema: {
 			params: baseUserKeysParams,

@@ -11,6 +11,8 @@ import { parseIds, batchIdsSchema } from "src/models/batchIds";
 import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
 import { omit } from "src/helpers/omit";
+import { groupUsers } from "./groupUsers";
+import { groupChannels } from "src/routes/groups/groupChannels";
 
 export default fp(async function(fastify) {
   const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
@@ -57,6 +59,62 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
+    method: "POST",
+    url: "/groups",
+    schema: {
+      body: GroupModel.groupCreateSchema,
+      response: {
+        200: resultSuccessSchema(GroupModel.groupSchema),
+        409: resultFailureSchema,
+      }
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(req, reply) {
+      const group = await db.group.create({
+        data: {
+          name: req.body.name,
+        }
+      }).catch(handlerUniqueViolation());
+      fastify.log.info(`Group created by ${req.user.id}-${req.user.name}`, group);
+      return reply.send(result(group));
+    }
+  });
+
+  fastify.withTypeProvider<ZodTypeProvider>().route({
+    method: "DELETE",
+    url: "/groups",
+    schema: {
+      querystring: z.object({ id: batchIdsSchema }),
+      response: {
+        200: resultSuccessSchema(batchOperationStatsSchema),
+      }
+    },
+    onRequest: fastify.authorizeJWT,
+    async handler(req, reply) {
+      const ids = parseIds(req.query.id);
+      const [{ count }] = await db.$transaction([
+        db.group.deleteMany({
+          where: {
+            id: { in: ids }
+          }
+        }),
+        db.userChannel.deleteMany({
+          where: {
+            channel: { Groups: { every: { id: { in: ids }}}}
+          }
+        }),
+      ]);
+      const data = {
+        count,
+        outOf: ids.length,
+      };
+      fastify.log.info(`Group batch delete by ${req.user.id}-${req.user.name}`, data);
+      return reply.send(result(data));
+    }
+  });
+
+
+  fastify.withTypeProvider<ZodTypeProvider>().route({
     method: "GET",
     url: "/groups/search",
     schema: {
@@ -79,28 +137,6 @@ export default fp(async function(fastify) {
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "PUT",
-    url: "/groups",
-    schema: {
-      body: GroupModel.groupCreateSchema,
-      response: {
-        200: resultSuccessSchema(GroupModel.groupSchema),
-        409: resultFailureSchema,
-      }
-    },
-    onRequest: fastify.authorizeJWT,
-    async handler(req, reply) {
-      const group = await db.group.create({
-        data: {
-          name: req.body.name,
-        }
-      }).catch(handlerUniqueViolation());
-      fastify.log.info(`Group created by ${req.user.id}-${req.user.name}`, group);
-      return reply.send(result(group));
-    }
-  });
-
-  fastify.withTypeProvider<ZodTypeProvider>().route({
     method: "GET",
     url: "/groups/:groupId",
     schema: {
@@ -108,7 +144,7 @@ export default fp(async function(fastify) {
         groupId: z.number({ coerce: true}).int().gt(0),
       }),
       response: {
-        200: resultSuccessSchema(GroupModel.groupSchema),
+        200: resultSuccessSchema(GroupModel.groupDetailSchema),
         404: resultFailureSchema
       }
     },
@@ -116,14 +152,24 @@ export default fp(async function(fastify) {
     async handler(req, reply) {
       const id = req.params.groupId;
       const group = await db.group.findUniqueOrThrow({
-        where: { id }
-      }).catch(handlerDbNotFound(groupNotFound(id)))
+        where: { id },
+        include: {
+          Users: { select: {
+            id: true,
+            name: true,
+          }},
+          Channels: { select: {
+            id: true,
+            name: true,
+          }},
+        }
+      }).catch(handlerDbNotFound(groupNotFound(id)));
       return reply.send(result(group));
     }
   });
 
   fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "POST",
+    method: "PUT",
     url: "/groups/:groupId",
     schema: {
       params: z.object({
@@ -165,37 +211,19 @@ export default fp(async function(fastify) {
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
       const id = req.params.groupId;
-      const group = await db.group.delete({
-        where: { id }
-      }).catch(handlerDbNotFound(groupNotFound(id)));
+      const [group] = await db.$transaction([
+        db.group.delete({
+          where: { id }
+        }),
+        db.userChannel.deleteMany({
+          where: { channel: { Groups: { every: { id }}}}
+        }),
+      ]).catch(handlerDbNotFound(groupNotFound(id)));
       fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
       return reply.send(result(null));
     }
   });
 
-  fastify.withTypeProvider<ZodTypeProvider>().route({
-    method: "DELETE",
-    url: "/groups",
-    schema: {
-      querystring: z.object({ id: batchIdsSchema }),
-      response: {
-        200: resultSuccessSchema(batchOperationStatsSchema),
-      }
-    },
-    onRequest: fastify.authorizeJWT,
-    async handler(req, reply) {
-      const ids = parseIds(req.query.id);
-      const { count } = await db.group.deleteMany({
-          where: {
-            id: { in: ids }
-          }
-      });
-      const data = {
-        count,
-        outOf: ids.length,
-      };
-      fastify.log.info(`Group batch delete by ${req.user.id}-${req.user.name}`, data);
-      return reply.send(result(data));
-    }
-  });
+  groupUsers(fastify);
+  groupChannels(fastify);
 });

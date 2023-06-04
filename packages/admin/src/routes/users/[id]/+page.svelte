@@ -23,13 +23,13 @@
 <ErrorPanel action={form} />
 
 <div class="edit-grid">
-	<form method="POST" action="?/edit">
-		<div class="card card_form">
+	<div class="card card_vw">
+		<form method="POST" action="?/edit">
 			<h3>Main data</h3>
 			<p class="input-group">
 				<label>
 					<span class="form-label">Name</span>
-					<input name="name" type="text" value={user.name} autocomplete="username" />
+					<input required name="name" type="text" value={user.name} autocomplete="username" />
 				</label>
 			</p>
 			<p class="input-group">
@@ -64,11 +64,12 @@
 			</fieldset>
 
 			<button class="button">Save</button>
-		</div>
-	</form>
+		</form>
+	</div>
 
-	<form method="POST" action="?/resetPassword" use:enhance>
-		<div class="card card_form">
+	<div class="card card_vw">
+		<form method="POST" action="?/resetPassword" use:enhance>
+
 			<h3>Change admin password</h3>
 
 			<p class="input-group">
@@ -88,13 +89,13 @@
 			</p>
 
 			<button class="button">Update password</button>
-		</div>
-	</form>
+		</form>
+	</div>
 </div>
 
 <!-- FIXME need to achieve scoping in error handling here,  -->
 <!-- <ErrorPanel action={form?.groups} /> -->
-<div class="card card_form">
+<div class="card">
 	<div class="user-groups">
 		<h3>Groups</h3>
 		<ul>
@@ -102,7 +103,7 @@
 				<li>
 					<form method="POST" action="?/deleteGroup" use:enhance>
 						<input type="hidden" name="id" value={group.id} />
-						{group.name}
+						<a href="{base}/groups/{group.id}">{group.name}</a>
 						<button>Delete</button>
 					</form>
 				</li>
@@ -122,7 +123,7 @@
 		<form method="POST" action="?/addOrCreateGroup" use:enhance>
 			<p>
 				<!-- TODO autocomplete/combobox -->
-				<input name="name" autocomplete="off" />
+				<input required name="name" autocomplete="off" />
 				<button>Add group</button>
 			</p>
 		</form>
@@ -141,6 +142,8 @@
 			grid-auto-flow: column;
 			grid-auto-columns: 1fr;
 			grid-gap: 1rem;
+			align-content: stretch;
+			justify-content: stretch;
 		}
 	}
 

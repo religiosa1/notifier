@@ -9,6 +9,7 @@ import { batchOperationStatsSchema } from "src/models/BatchOperationStats";
 import { batchIdsSchema, parseIds } from "src/models/batchIds";
 import { paginationDefaults, paginationSchema } from "src/models/Pagination";
 import { counted } from "src/models/Counted";
+import * as UserChannelsService from "src/services/UserChannels";
 
 export function userChannels<Instace extends FastifyInstance>(fastify: Instace) {
 	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
@@ -32,18 +33,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const { skip, take } = {...paginationDefaults, ...req.query };
-			const [ count, data ] = await db.$transaction([
-				db.userChannel.count({
-					where: { userId }
-				}),
-				db.channel.findMany({
-					skip,
-					take,
-					where: {
-						userChannels: { some: { userId }}
-					}
-				}),
-			]);
+			const [ data, count ] = await UserChannelsService.getUserChannels(db, userId, { skip, take });
 			return reply.send(result({ count, data }));
 		}
 	});
@@ -62,13 +52,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 
-			const data = await db.channel.findMany({
-				where: {
-					Groups: { some: { Users: { some: { id: userId }} } },
-					userChannels: { none: { userId }},
-				}
-			});
-
+			const data = await UserChannelsService.availableChannels(db, userId);
 			return reply.send(result(data));
 		}
 	});
@@ -88,9 +72,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const channelId = req.body.id;
-			await db.userChannel.create({
-				data: { userId, channelId }
-			})
+			await UserChannelsService.connectUserChannel(db, userId, channelId);
 			fastify.log.info(`Channel added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(null));
 		}
@@ -113,12 +95,10 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const ids = parseIds(req.query.id);
-			const { count } = await db.userChannel.deleteMany({
-				where: {
-					userId,
-					channelId: { in: ids }
-				},
-			}).catch(handlerDbNotFound(userNotFound(userId)))
+
+			const {count} = await UserChannelsService.disconnectUserChannels(db, userId, ids)
+				.catch(handlerDbNotFound(userNotFound(userId)))
+
 			const data = {
 				count,
 				outOf: ids.length,

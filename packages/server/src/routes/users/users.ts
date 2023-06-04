@@ -52,6 +52,33 @@ export default fp(async function(fastify) {
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
+		method: "POST",
+		url: "/users",
+		schema: {
+			body: UserModel.userCreateSchema,
+			response: {
+				200: resultSuccessSchema(UserModel.userDetailSchema),
+				409: resultFailureSchema,
+			},
+		},
+		onRequest: fastify.authorizeJWT,
+		async handler(req, reply) {
+			const user = await db.user.create({
+				data: {
+					...omit(req.body, ["channels", "groups", "password"]),
+					password: await hash(req.body.password),
+					groups: nameArrayToUpsert(req.body.groups)
+				},
+				include: {
+					groups: { select: { id: true, name: true }},
+				}
+			}).catch(handlerUniqueViolation()) as UserModel.UserDetail;
+			fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
+			return reply.send(result(user));
+		}
+	});
+
+	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",
 		url: "/users",
 		schema: {
@@ -101,7 +128,7 @@ export default fp(async function(fastify) {
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
+		method: "PUT",
 		url: "/users/:userId",
 		schema: {
 			params: z.object({
@@ -136,33 +163,6 @@ export default fp(async function(fastify) {
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/users",
-		schema: {
-			body: UserModel.userCreateSchema,
-			response: {
-				200: resultSuccessSchema(UserModel.userDetailSchema),
-				409: resultFailureSchema,
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const user = await db.user.create({
-				data: {
-					...omit(req.body, ["channels", "groups", "password"]),
-					password: await hash(req.body.password),
-					groups: nameArrayToUpsert(req.body.groups)
-				},
-				include: {
-					groups: { select: { id: true, name: true }},
-				}
-			}).catch(handlerUniqueViolation()) as UserModel.UserDetail;
-			fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
-			return reply.send(result(user));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",
 		url: "/users/:userId",
 		schema: {
@@ -184,7 +184,6 @@ export default fp(async function(fastify) {
 			return reply.send(result(null));
 		}
 	});
-
 
 	userChannels(fastify);
 	userGroups(fastify);

@@ -32,7 +32,7 @@ export const actions: Actions = {
 		}
 		try {
 			const serverData = (await fetch(new URL(uri`/users/${params.id}`, server_base), {
-				method: "POST",
+				method: "PUT",
 				body: JSON.stringify(data),
 			}).then(unwrapResult)) as UserDetail;
 			return {

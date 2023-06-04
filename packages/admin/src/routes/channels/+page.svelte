@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { base } from "$app/paths";
+	import { enhance } from "$app/forms";
 	import type { ActionData, PageData } from "./$types";
 	import { uri } from "~/helpers/uri";
 	import BatchStatsPanel from "~/components/BatchStatsPanel.svelte";
@@ -47,10 +48,17 @@
 	<Pagination {...data.pagination} />
 
 	<div class="form-controls">
-		<a class="button" href="{base}/channels/new"> Add a new channel </a>
 		<button class="danger" disabled={selectedGroups.size === 0}>Delete selected</button>
 	</div>
 </form>
+
+<form method="POST" action="?/add" use:enhance>
+	<p>
+		<input required name="name" autocomplete="off" />
+		<button>Create a new channel</button>
+	</p>
+</form>
+
 
 <DeleteConfirmationModal
 	bind:open={showConfirmation}

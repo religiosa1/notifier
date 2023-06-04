@@ -50,8 +50,12 @@ h2 {
 	margin: 0.3em 0 0.83em;
 }
 
-h3, h4, p {
+p {
 	margin: 0.3em 0 1em;
+}
+
+h3, h4 {
+	margin: 1.8em 0 0.9em;
 }
 
 a.button,
@@ -174,6 +178,8 @@ input:not([type="checkbox"], [type="radio"], [type="submit"]) {
 	border-radius: 0.3rem;
 	border: 1px solid var(--clr-brd);
 	max-width: 40rem;
+	box-sizing: border-box;
+	width: 100%;
 }
 .card_form *:first-child { margin-top: 0;}
 

@@ -25,7 +25,7 @@ export const actions: Actions = {
 		}
 		try {
 			var serverData = (await fetch(new URL("/users", server_base), {
-				method: "PUT",
+				method: "POST",
 				body: JSON.stringify(data),
 			}).then(unwrapResult)) as UserDetail;
 		} catch (err) {

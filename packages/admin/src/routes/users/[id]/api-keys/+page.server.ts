@@ -62,7 +62,7 @@ export const actions: Actions = {
 		const userId = params.id;
 		try {
 			const resposnse = (await fetch(new URL(uri`/users/${userId}/api-keys`, server_base), {
-				method: "PUT",
+				method: "POST",
 				body: JSON.stringify({}),
 			}).then(unwrapResult)) as UserDetail;
 			return resposnse;

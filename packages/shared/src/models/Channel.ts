@@ -1,5 +1,5 @@
-import { groupSchema } from "./Group";
 import z from "zod";
+import { groupSchema } from "./Group";
 
 export const channelNameSchema = z.string().min(1).regex(/[a-zA-Z]\w*/);
 

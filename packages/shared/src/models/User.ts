@@ -1,14 +1,13 @@
 import z from "zod";
 import { AuthorizationEnum } from "./AuthorizationEnum";
 import { UserRoleEnum } from "./UserRoleEnum";
+import { userPreviewSchema } from "./UserPreview";
 import { groupNameSchema } from "./Group";
 
-export const passwordSchema = z.string().min(6).nullable()
+export const passwordSchema = z.string().min(6).nullable();
 
-export const userSchema = z.object({
-	id: z.number().int().gt(0),
+export const userSchema = userPreviewSchema.extend({
 	telegramId: z.string().min(1),
-	name: z.string().min(1).nullable(),
 	password: passwordSchema,
 	authorizationStatus: z.nativeEnum(AuthorizationEnum),
 	role: z.nativeEnum(UserRoleEnum),

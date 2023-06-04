@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
 	import { base } from "$app/paths";
 	import type { ActionData, PageData } from "./$types";
 	import { uri } from "~/helpers/uri";
@@ -47,9 +48,15 @@
 	<Pagination {...data.pagination} />
 
 	<div class="form-controls">
-		<a class="button" href="{base}/groups/new"> Add a new group </a>
 		<button class="danger" disabled={selectedGroups.size === 0}>Delete selected</button>
 	</div>
+</form>
+
+<form method="POST" action="?/add" use:enhance>
+	<p>
+		<input required name="name" autocomplete="off" />
+		<button>Create a new group</button>
+	</p>
 </form>
 
 <DeleteConfirmationModal

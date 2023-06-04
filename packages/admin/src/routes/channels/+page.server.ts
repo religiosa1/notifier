@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { server_base } from '~/constants';
-import { handleLoadError, unwrapResult } from '~/helpers/unwrapResult';
+import { handleActionFailure, handleLoadError, unwrapResult } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
 import type { Channel } from "@shared/models/Channel";
 import type { Counted } from "@shared/models/Counted";
@@ -22,5 +22,17 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 };
 
 export const actions: Actions = {
-	delete: batchDelete({ route: "/channels" })
+	delete: batchDelete({ route: "/channels" }),
+	add: async ({ request, fetch }) => {
+		const fd = await request.formData();
+		const name = fd.get("name");
+		try {
+			await fetch(new URL("/channels", server_base), {
+				method: "POST",
+				body: JSON.stringify({ name })
+			}).then(unwrapResult);
+		} catch(e) {
+			return handleActionFailure(e);
+		}
+	},
 }

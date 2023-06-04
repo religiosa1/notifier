@@ -9,7 +9,7 @@
   export let items: T[];
   export let selectable: (item: T, index: number, items: T[]) => unknown = () => true;
 
-	$: available = items.filter(selectable);
+	$: available = (items?.filter(selectable) ?? []);
 	$: allChecked = available.every((i) => selected.has(i.id));
 
   $: checkboxState = allChecked
@@ -37,8 +37,8 @@
         <input
           role="button"
           type="checkbox"
-          disabled={available.length === 0}
-          title={available.length === 0
+          disabled={!available?.length}
+          title={!available?.length
             ? "No items available for selection"
             : allChecked
             ? "deselect all" : "select all"
@@ -75,7 +75,7 @@
       </tr>
     {:else}
       <tr>
-        <td colspan={headerEl?.querySelectorAll("th").length}>
+        <td colspan={headerEl?.querySelectorAll("th")?.length}>
           <slot name="empty">No elements is there to show!</slot>
         </td>
       </tr>

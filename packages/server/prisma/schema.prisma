@@ -11,23 +11,23 @@ datasource db {
 }
 
 model User {
-  id                   Int       @id @default(autoincrement())
-  telegramId           String    @unique
-  name                 String?   @unique
-  groups               Group[]
+  id                  Int           @id @default(autoincrement())
+  telegramId          String        @unique
+  name                String?       @unique
+  groups              Group[]
   // only admin users can have password, so if the password exists it's an admin
-  password             String?
-  ApiKeys              ApiKey[]
+  password            String?
+  ApiKeys             ApiKey[]
   // waiting for https://github.com/prisma/prisma/issues/2219
   // For the time being, it's done in userland as AuthorizationEnum
   // Authorization status doesn't impact admin page log-ins,
   // only telegram bot functionality
-  authorizationStatus  Int       @default(0)
+  authorizationStatus Int           @default(0)
   // UserRoleEnum
-  role                 Int       @default(0)
-  channel             UserChannel[]
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  role                Int           @default(0)
+  channels            UserChannel[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 }
 
 model ApiKey {
@@ -50,19 +50,20 @@ model Group {
 }
 
 model Channel {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  Groups    Group[]
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  Groups       Group[]
   userChannels UserChannel[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model UserChannel {
-  user   User @relation(fields: [userId], references: [id])
-  userId Int
-  channel Channel @relation(fields: [channelId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  channel   Channel @relation(fields: [channelId], references: [id])
   channelId Int
+
   @@id([userId, channelId])
   @@unique([userId, channelId])
 }
