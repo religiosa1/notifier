@@ -8,12 +8,14 @@ export class BotMock implements IBot {
     if (!token) {
       throw new Error("Bot token isn't present in the env variables");
     }
-    logger.info(`Telegram bot MOCK initialized with token "${token}"`)
+    logger.info(`MOCK Telegram bot initialized with token "${token}". It's a MOCK it won't do anything`)
   }
-  async setWebHook(_: string) {}
+  async setWebHook(_: string) {
+    logger.info(`MOCK HOOK being set`)
+  }
   processUpdate(..._: Parameters<Bot["processUpdate"]>) {}
   sendMessage(...args: Parameters<Bot["sendMessage"]>): ReturnType<Bot["sendMessage"]> {
-    logger.trace('sending a telegram message', ...args);
+    logger.trace('sending a MOCK telegram message', ...args);
     return Promise.allSettled([
       {
         message_id: Math.floor(Math.random() * 1e9),

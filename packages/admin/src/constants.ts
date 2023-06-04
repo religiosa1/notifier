@@ -1,1 +1,1 @@
-export const server_base = process.env.API_URL!;
+export const server_base = import.meta.env.API_URL;

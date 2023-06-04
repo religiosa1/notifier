@@ -5,7 +5,10 @@ export function serverUrl(url: string | URL): URL {
 	try {
 		var baseUrl = new URL(server_base);
 	}	catch(e) {
-		throw new Error("Can't create base server url. Did you forget to set API_URL environment variable?", {
+		throw new Error(
+			"Can't create base server url.\n" +
+			"Did you forget to set API_URL environment variable?\n" +
+			`Using: ${JSON.stringify(server_base ?? undefined)}`, {
 			cause: e
 		});
 	}

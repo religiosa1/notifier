@@ -54,7 +54,7 @@ export default fp(async function (fastify) {
       if (user.role !== UserRoleEnum.admin) {
         throw new ResultError(403, "You don't have required permissions");
       }
-      const payload = tokenPayloadSchema.parse(user);
+      const payload = tokenPayloadSchema.omit({ iat: true, exp: true }).parse(user);
       const token = fastify.jwt.sign(payload, { expiresIn: 1_200_000 });
 
       return reply.send(result({ token, user }));
