@@ -9,7 +9,7 @@ export function serverUrl(url: string | URL): URL {
 			cause: e
 		});
 	}
-	const u = new URL(url);
+	const u = new URL(url, server_base);
 	if (baseUrl.pathname) {
 		u.pathname = urlJoin(baseUrl.pathname, u.pathname);
 	}
