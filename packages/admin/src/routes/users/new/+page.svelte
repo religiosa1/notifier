@@ -43,7 +43,7 @@
 			<label class="form-input">
 				<span class="form-label">Name</span>
 				<input name="name" type="text" value={user?.name ?? ""} autocomplete="off" />
-				{#if form?.error === "Validation error" && form.errorDetails.fields.name}
+				{#if typeof form?.errorDetails === "object"}
 					<p class="error">
 						{form.errorDetails.fields.name.message}
 					</p>

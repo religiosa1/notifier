@@ -1,7 +1,7 @@
 import type { Actions } from "./$types";
-import { server_base } from "~/constants";
 import { unwrapResult, handleActionFailure } from "~/helpers/unwrapResult";
 import { channelNameSchema } from "@shared/models/Channel";
+import { serverUrl } from "~/helpers/serverUrl";
 
 export const actions: Actions = {
 	async send({ fetch, request }) {
@@ -11,7 +11,7 @@ export const actions: Actions = {
 			?.split(/(?:\s*,\s*)|(?:\s+)/)
 			.map(i => channelNameSchema.parse(i.trim()));
 		try {
-			await fetch(new URL("/notify", server_base), {
+			await fetch(serverUrl("/notify"), {
 				method: "POST",
 				body: JSON.stringify({ channels, message }),
 			}).then(unwrapResult);

@@ -1,9 +1,9 @@
-import { server_base } from "~/constants";
-import { errorToResponse, unwrapResult } from "~/helpers/unwrapResult";
 import type { RequestHandler } from "./$types";
+import { errorToResponse, unwrapResult } from "~/helpers/unwrapResult";
+import { serverUrl } from "~/helpers/serverUrl";
 
 export const GET: RequestHandler = async ({ fetch, url }) => {
-  const targetUrl = new URL('/groups/search', server_base);
+  const targetUrl = serverUrl('/groups/search');
   const name = url.searchParams.get("name");
   if (name) {
     targetUrl.searchParams.set("name", name)

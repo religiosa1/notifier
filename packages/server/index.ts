@@ -14,12 +14,13 @@ import notify from "src/routes/notify";
 import authRequest from "src/routes/auth-request";
 
 const TOKEN = process.env.BOT_TOKEN;
+const prefix = process.env.URL || "";
 const url = process.env.URL || "";
 const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT) || 8085;
 
 export const app = fastify({ logger: true });
-registerLogger(app.log)
+registerLogger(app.log);
 app.register(cookie, {
   secret: process.env.JWT_SECRET,
   hook: false,
@@ -28,10 +29,11 @@ app.register(authorizeJWT);
 app.register(authorizeKey);
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
-app.register(usersRoutes);
-app.register(groupsRoutes);
-app.register(channelsRoutes);
-app.register(authRequest);
+
+app.register(usersRoutes, { prefix });
+app.register(groupsRoutes, { prefix });
+app.register(channelsRoutes, { prefix });
+app.register(authRequest, { prefix });
 
 app.setErrorHandler(function (error, _, reply) {
   this.log.error(error);

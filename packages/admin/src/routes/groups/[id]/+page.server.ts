@@ -1,12 +1,12 @@
 import type { Actions, PageServerLoad } from './$types';
-import { server_base } from '~/constants';
 import { handleLoadError, unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import type { GroupDetail } from "@shared/models/Group";
 import { uri } from "~/helpers/uri";
 import { batchDelete } from '~/actions/batchDelete';
+import { serverUrl } from '~/helpers/serverUrl';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
-	const group = await fetch(new URL(uri`/groups/${params.id}`, server_base))
+	const group = await fetch(serverUrl(uri`/groups/${params.id}`))
 		.then(unwrapResult<GroupDetail>)
 		.catch(handleLoadError);
 
@@ -20,7 +20,7 @@ export const actions: Actions = {
 		const fd = await request.formData();
 		const name = fd.get("name");
 		try {
-			await fetch(new URL(uri`/groups/${params.id}`, server_base), {
+			await fetch(serverUrl(uri`/groups/${params.id}`), {
 				method: "PUT",
 				body: JSON.stringify({ name })
 			}).then(unwrapResult);
@@ -31,7 +31,7 @@ export const actions: Actions = {
 	disconnectUsers: batchDelete(({ params }) => ({ route: uri`/groups/${params.id}/users` })),
 	disconnectAllUsers: async ({ params, fetch }) => {
 		try {
-			await fetch(new URL(uri`/groups/${params.id}/users`, server_base), {
+			await fetch(serverUrl(uri`/groups/${params.id}/users`), {
 				method: "DELETE",
 			}).then(unwrapResult);
 		} catch(err) {
@@ -42,7 +42,7 @@ export const actions: Actions = {
 	disconnectChannels: batchDelete(({ params }) => ({ route: uri`/groups/${params.id}/channels` })),
 	disconnectAllChannels: async ({ params, fetch }) => {
 		try {
-			await fetch(new URL(uri`/groups/${params.id}/channels`, server_base), {
+			await fetch(serverUrl(uri`/groups/${params.id}/channels`), {
 				method: "DELETE",
 			}).then(unwrapResult);
 		} catch(err) {
@@ -53,7 +53,7 @@ export const actions: Actions = {
 		const fd = await request.formData();
 		const name = fd.get("name");
 		try {
-			await fetch(new URL(uri`/groups/${params.id}/channels`, server_base), {
+			await fetch(serverUrl(uri`/groups/${params.id}/channels`), {
 				method: "POST",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);

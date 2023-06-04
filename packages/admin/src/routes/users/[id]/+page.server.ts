@@ -1,14 +1,14 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { server_base } from "~/constants";
+import { fail } from "@sveltejs/kit";
+import { passwordSchema, userUpdateSchema, type UserDetail } from "@shared/models/User";
 import { handleActionFailure, unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import { uri } from "~/helpers/uri";
-import { passwordSchema, userUpdateSchema, type UserDetail } from "@shared/models/User";
 import { getFormData } from "~/helpers/getFormData";
-import { fail } from "@sveltejs/kit";
+import { serverUrl } from "~/helpers/serverUrl";
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
 	try {
-		var user = await fetch(new URL(uri`/users/${params.id}`, server_base))
+		var user = await fetch(serverUrl(uri`/users/${params.id}`))
 			.then(unwrapResult) as UserDetail;
 	} catch (err) {
 		console.error("ERRORED", err);
@@ -31,7 +31,7 @@ export const actions: Actions = {
 			return unwrapValidationError(e, Object.fromEntries(formData));
 		}
 		try {
-			const serverData = (await fetch(new URL(uri`/users/${params.id}`, server_base), {
+			const serverData = (await fetch(serverUrl(uri`/users/${params.id}`), {
 				method: "PUT",
 				body: JSON.stringify(data),
 			}).then(unwrapResult)) as UserDetail;
@@ -51,7 +51,7 @@ export const actions: Actions = {
 			return unwrapValidationError(e, Object.fromEntries(formData));
 		}
 		try {
-			const serverData = (await fetch(new URL(uri`/users/${params.id}`, server_base), {
+			const serverData = (await fetch(serverUrl(uri`/users/${params.id}`), {
 				method: "POST",
 				body: JSON.stringify({ password }),
 			}).then(unwrapResult)) as UserDetail;
@@ -68,7 +68,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const name = formData.get("name");
 		try {
-			const serverData = await fetch(new URL(uri`/users/${params.id}/groups`, server_base), {
+			const serverData = await fetch(serverUrl(uri`/users/${params.id}/groups`), {
 				method: "POST",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);
@@ -82,7 +82,7 @@ export const actions: Actions = {
 	},
 	async deleteAllGroups({ fetch, params }) {
 		try {
-			const result = await fetch(new URL(uri`/users/${params.id}/groups`, server_base), {
+			const result = await fetch(serverUrl(uri`/users/${params.id}/groups`), {
 				method: "DELETE",
 			}).then(unwrapResult);
 			return {
@@ -100,7 +100,7 @@ export const actions: Actions = {
 			return fail(422);
 		}
 		try {
-			const result = await fetch(new URL(uri`/users/${params.id}/groups/${id}`, server_base), {
+			const result = await fetch(serverUrl(uri`/users/${params.id}/groups/${id}`), {
 				method: "DELETE",
 			}).then(unwrapResult);
 			return {

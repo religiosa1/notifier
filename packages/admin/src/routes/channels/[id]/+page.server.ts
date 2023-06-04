@@ -1,12 +1,12 @@
 import type { Actions, PageServerLoad } from './$types';
-import { server_base } from '~/constants';
 import { handleLoadError, unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import type { ChannelDetail } from "@shared/models/Channel";
 import { uri } from "~/helpers/uri";
 import { batchDelete } from '~/actions/batchDelete';
+import { serverUrl } from '~/helpers/serverUrl';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
-	const channel = await fetch(new URL(uri`/channels/${params.id}`, server_base))
+	const channel = await fetch(serverUrl(uri`/channels/${params.id}`))
 		.then(unwrapResult<ChannelDetail>)
 		.catch(handleLoadError);
 
@@ -20,7 +20,7 @@ export const actions: Actions = {
 		const fd = await request.formData();
 		const name = fd.get("name");
 		try {
-			await fetch(new URL(uri`/channels/${params.id}`, server_base), {
+			await fetch(serverUrl(uri`/channels/${params.id}`), {
 				method: "POST",
 				body: JSON.stringify({ name })
 			}).then(unwrapResult);
@@ -31,7 +31,7 @@ export const actions: Actions = {
 	disconnectGroups: batchDelete(({ params }) => ({ route: uri`/channels/${params.id}/groups` })),
 	disconnectAllGroups: async ({ params, fetch }) => {
 		try {
-			await fetch(new URL(uri`/channels/${params.id}/groups`, server_base), {
+			await fetch(serverUrl(uri`/channels/${params.id}/groups`), {
 				method: "DELETE",
 			}).then(unwrapResult);
 		} catch(err) {
@@ -42,7 +42,7 @@ export const actions: Actions = {
 		const fd = await request.formData();
 		const name = fd.get("name");
 		try {
-			await fetch(new URL(uri`/channels/${params.id}/groups`, server_base), {
+			await fetch(serverUrl(uri`/channels/${params.id}/groups`), {
 				method: "PUT",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);

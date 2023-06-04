@@ -55,7 +55,7 @@ function isPagination(obj: unknown): obj is Pagination {
 
 function validate<T extends object>(obj: T, field: string, minVal: number): boolean {
   const val = obj[field as keyof T];
-  return (Number.isInteger(val) && val >= minVal);
+  return (typeof val === "number" && Number.isInteger(val) && val >= minVal);
 }
 
 function coerceParam(p: number | string | null, defaultValue: number): number {

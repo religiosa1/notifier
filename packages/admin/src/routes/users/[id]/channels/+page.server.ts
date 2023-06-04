@@ -1,5 +1,4 @@
 import type { Actions, PageServerLoad } from './$types';
-import { server_base } from '~/constants';
 import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
 import type { UserDetail } from "@shared/models/User";
@@ -8,15 +7,16 @@ import type { Counted } from "@shared/models/Counted";
 import { batchDelete } from '~/actions/batchDelete';
 import { uri } from '~/helpers/uri';
 import { fail } from '@sveltejs/kit';
+import { serverUrl } from '~/helpers/serverUrl';
 
 export const load: PageServerLoad = async ({ fetch, url, params}) => {
   const pagination = getPaginationParams(url);
   const [ user, availableChannels, channels ] = await Promise.all([
-    fetch(new URL(uri`/users/${params.id}`, server_base))
+    fetch(serverUrl(uri`/users/${params.id}`))
       .then(unwrapResult) as Promise<UserDetail>,
-    fetch(new URL(paginate(pagination, uri`/users/${params.id}/available-channels`), server_base))
+    fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/available-channels`)))
       .then(unwrapResult) as Promise<Channel[]>,
-    fetch(new URL(paginate(pagination, uri`/users/${params.id}/channels`), server_base))
+    fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/channels`)))
       .then(unwrapResult) as Promise<Counted<Channel[]>>,
   ]);
 
@@ -41,7 +41,7 @@ export const actions: Actions = {
 			return fail(422, { error: "id field must be present" });
 		}
 		try {
-			const resposnse = (await fetch(new URL(uri`/users/${userId}/channels`, server_base), {
+			const resposnse = (await fetch(serverUrl(uri`/users/${userId}/channels`), {
 				method: "POST",
 				body: JSON.stringify({ id }),
 			}).then(unwrapResult)) as UserDetail;

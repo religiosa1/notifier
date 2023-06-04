@@ -1,8 +1,8 @@
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions } from "./$types";
 import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
-import { server_base } from "~/constants";
 import { hasField } from "~/helpers/hasField";
+import { serverUrl } from "~/helpers/serverUrl";
 
 export const actions: Actions = {
   async default({ fetch, request, url, cookies }) {
@@ -11,12 +11,12 @@ export const actions: Actions = {
     const password = formData.get("password");
     let serverData;
     try {
-      serverData = await fetch(new URL("/login", server_base), {
+      serverData = await fetch(serverUrl("/login"), {
         method: "POST",
         body: JSON.stringify({ name, password }),
       }).then(unwrapResult);
     } catch (e) {
-      console.error("ERRORED", e);
+      console.error("Login error", e);
       return handleActionFailure(e, { name });
     }
 
