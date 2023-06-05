@@ -25,14 +25,14 @@ Once the user request is accepted, they will be notified by the bot that they
 can start using the API.
 
 After that, a user can:
-- Ask for a new API token from the bot via `/new-key` command.
-- Review the list of available API tokens via `/list-keys` command.
-- Revoke the existing API token via `/remove-key` command.
-- Request a list of available notification channels via `/list-channels-all` command
+- Ask for a new API token from the bot via `/new_key` command.
+- Review the list of available API tokens via `/list_keys` command.
+- Revoke the existing API token via `/remove_key` command.
+- Request a list of available notification channels via `/list_all_channels` command
   (notifications accessible to the user controlled by admin with groups mechanism).
-- Get a list of subscribed notifications via `/list-channels` command.
-- Join a notification channel via `/join-channel` command.
-- Leave a channel via `/leave-channel` command.
+- Get a list of subscribed notifications via `/list_channels` command.
+- Join a notification channel via `/join_channel` command.
+- Leave a channel via `/leave_channel` command.
 
 The admin panel allows an admin to:
 - Directly send a message to one or many notification channels.

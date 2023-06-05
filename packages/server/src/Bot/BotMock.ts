@@ -1,6 +1,7 @@
+import { esc } from "src/util/esc";
+import { logger } from "src/logger";
 import type { Bot } from "./Bot";
 import type { IBot } from "./Models";
-import { logger } from "src/logger";
 
 /** Basic mock of Bot class for testing purposes */
 export class BotMock implements IBot {
@@ -8,7 +9,7 @@ export class BotMock implements IBot {
     if (!token) {
       throw new Error("Bot token isn't present in the env variables");
     }
-    logger.info(`MOCK Telegram bot initialized with token "${token}". It's a MOCK it won't do anything`)
+    logger.info(esc`MOCK Telegram bot initialized with token ${token}. It's a MOCK it won't do anything`)
   }
   async setWebHook(_: string) {
     logger.info(`MOCK HOOK being set`)
