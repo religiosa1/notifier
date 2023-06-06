@@ -118,9 +118,11 @@ export function unwrapValidationError<T extends Record<string, unknown>>(
   if (e instanceof ZodError) {
     const knownKeys = Object.keys( formData || {});
     const unknownErrors = e.errors.filter(i => !knownKeys.includes(i.path.toString()));
-    const fields: Record<string, ZodIssue> = Object.fromEntries(e.errors.map(i => [
-      i.path.toString(), i
-    ] satisfies [ string, ZodIssue ]));
+    const fields: Record<string, ZodIssue> = Object.fromEntries(
+      e.errors
+        .filter(i => typeof i.path === "string" && i.path)
+        .map(i => [i.path.toString(), i] satisfies [ string, ZodIssue ])
+    );
     return fail( 422, {
       ...(formData as T),
       error: "Validation error" as const,

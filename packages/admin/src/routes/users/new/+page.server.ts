@@ -24,10 +24,13 @@ export const actions: Actions = {
 		try {
 			var data = getFormData(formData, userCreateSchema, {
 				password: (i) => i[0]
-					? passwordSchema.parse(i[0])
+					? passwordSchema.parse(i[0], { path: ["password"] })
 					: null,
 				groups: ([groups]) => typeof groups === "string"
-					? groups.trim().split(/\s*,?\s+/).map((g) => groupNameSchema.parse(g))
+					? groups
+						.trim().split(/\s*,?\s+/)
+						.filter(Boolean)
+						.map((g) => groupNameSchema.parse(g, { path: ["password"] }))
 					: undefined
 			});
 		} catch (e) {

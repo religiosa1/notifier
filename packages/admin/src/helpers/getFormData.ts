@@ -51,7 +51,6 @@ function defaultCoerce<T extends z.AnyZodObject>(
       return sch === z.ZodFirstPartyTypeKind.ZodNullable ? null : undefined;
     } else {
       sch = schema.shape[key]?._def.innerType._def.typeName;
-
     }
   }
   if (sch === z.ZodFirstPartyTypeKind.ZodArray) {
@@ -60,6 +59,7 @@ function defaultCoerce<T extends z.AnyZodObject>(
   return coerceSimple(sch, values[0]);
 }
 
+// FIXME ZodFirstPartyTypeKind.ZodDefault
 function coerceSimple(sch: z.ZodFirstPartyTypeKind, value: unknown) {
   switch (sch) {
     case z.ZodFirstPartyTypeKind.ZodNativeEnum:

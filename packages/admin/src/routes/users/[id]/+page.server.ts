@@ -45,7 +45,7 @@ export const actions: Actions = {
 	async resetPassword({ fetch, request, params }) {
 		const formData = await request.formData();
 		try {
-			var password = passwordSchema.parse(formData.get("password") || null);
+			var password = passwordSchema.parse(formData.get("password") || null, { path: ["password"]});
 		} catch (e) {
 			return unwrapValidationError(e, Object.fromEntries(formData));
 		}

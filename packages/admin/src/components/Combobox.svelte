@@ -6,15 +6,17 @@
 
 	const dataListId = nanoid();
 
-	$: options = getAvailableOptions(value ?? "");
+	let options: string[] = [];
 
-	function getAvailableOptions(value: string): string[] {
-		if (/[\s,]+$/.test(value)) {
-			const currentItems = value.split(/[\s,]+/);
-			return items.filter(i => !currentItems.includes(i)).map(i => value + i);
+	$: {
+		if (/[\s,]+$/.test(value ?? "")) {
+			const currentItems = value?.split(/[\s,]+/) || [];
+			options = items.filter(i => !currentItems.includes(i)).map(i => value + i);
+		} else {
+			options = items;
 		}
-		return items
 	}
+
 </script>
 
 <input

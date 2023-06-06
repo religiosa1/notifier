@@ -20,7 +20,7 @@ export const actions: Actions = {
 		const message = formData.get("message")?.toString();
 		const channels = formData.get("channels")?.toString()
 			?.split(/(?:\s*,\s*)|(?:\s+)/)
-			.map(i => channelNameSchema.parse(i.trim()));
+			.map(i => channelNameSchema.parse(i.trim(), { path: ["channels", "i"] }));
 		try {
 			await fetch(serverUrl("/notify"), {
 				method: "POST",

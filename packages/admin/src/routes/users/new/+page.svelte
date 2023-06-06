@@ -35,11 +35,13 @@
 	>
 {/if}
 
+<!-- FIXME use:enhance reactivity issues in ErrorPanel and Combobox -->
+
 {#if form?.error}
 	<ErrorPanel action={form} />
 {/if}
 
-<form method="POST" action="?/create" use:enhance>
+<form method="POST" action="?/create">
 	<div class="card card_form">
 		<p class="input-group">
 			<label class="form-input">
@@ -47,7 +49,7 @@
 				<input name="name" type="text" value={form?.name ?? ""} autocomplete="off" />
 				{#if typeof form?.errorDetails === "object"}
 					<p class="error">
-						{form.errorDetails.fields.name.message}
+						{form.errorDetails.fields.name?.message}
 					</p>
 				{/if}
 			</label>
@@ -58,7 +60,8 @@
 				<input
 					name="telegramId"
 					autocomplete="off"
-					type="text"
+					type="number"
+					step={1}
 					value={form?.telegramId ?? ""}
 					required
 				/>
@@ -117,6 +120,8 @@
 		</p>
 
 		<button class="button">Create</button>
-		<button class="button" formaction="?/create&addNew">Create and add another</button>
+		<button class="button" formaction="?/create&addNew">
+			Create and add another
+		</button>
 	</div>
 </form>
