@@ -65,8 +65,6 @@
 		<form method="post" action="?/add" use:enhance>
 			<p>
 				<button disabled={!data.availableChannels.length}>Add a channel</button>
-				<!-- TODO fancy select TODO availableChannels -->
-
 				<select disabled={!data.availableChannels?.length} name="id">
 					{#each data.availableChannels as channel (channel.id)}
 						<option value={channel.id}>{channel.name}</option>

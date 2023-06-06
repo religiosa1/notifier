@@ -65,7 +65,8 @@ export default fp(async function(fastify) {
     url: "/channels/search",
     schema: {
       querystring: z.object({
-        name: z.string().optional()
+        name: z.string().optional(),
+        group: z.number({ coerce: true }).int().gt(0).optional(),
       }),
       response: {
         200: resultSuccessSchema(z.array(ChannelModel.channelSchema)),
@@ -75,7 +76,8 @@ export default fp(async function(fastify) {
     async handler(req, reply) {
       const channels = await db.channel.findMany({
         where: {
-          name: { contains: req.query.name }
+          name: { contains: req.query.name ?? "" },
+          Groups: { none: { id: req.query.group }}
         }
       });
       return reply.send(result(channels));

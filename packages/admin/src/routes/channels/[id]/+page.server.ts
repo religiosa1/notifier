@@ -4,14 +4,17 @@ import type { ChannelDetail } from "@shared/models/Channel";
 import { uri } from "~/helpers/uri";
 import { batchDelete } from '~/actions/batchDelete';
 import { serverUrl } from '~/helpers/serverUrl';
+import type { Group } from '@shared/models/Group';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
-	const channel = await fetch(serverUrl(uri`/channels/${params.id}`))
-		.then(unwrapResult<ChannelDetail>)
-		.catch(handleLoadError);
+	const [channel, groups] = await Promise.all([
+		fetch(serverUrl(uri`/channels/${params.id}`)).then(unwrapResult<ChannelDetail>),
+		fetch(serverUrl('/groups/search')).then(unwrapResult<Group[]>),
+	]).catch(handleLoadError);
 
 	return {
-		channel
+		channel,
+		groups
 	};
 };
 

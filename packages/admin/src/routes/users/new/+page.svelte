@@ -3,15 +3,14 @@
 	import { base } from "$app/paths";
 	import { AuthorizationEnum, getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
 	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
-	import type { ActionData } from "./$types";
+	import type { ActionData, PageData } from "./$types";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
 	import Panel from "~/components/Panel.svelte";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
+	import Combobox from "~/components/Combobox.svelte";
+
+	export let data: PageData;
 	export let form: ActionData;
-
-	const user = form;
-
-	$: console.log("user", user);
 </script>
 
 <h2>Create a new user</h2>
@@ -35,14 +34,17 @@
 		></Panel
 	>
 {/if}
-<ErrorPanel action={form} />
+
+{#if form?.error}
+	<ErrorPanel action={form} />
+{/if}
 
 <form method="POST" action="?/create" use:enhance>
 	<div class="card card_form">
 		<p class="input-group">
 			<label class="form-input">
 				<span class="form-label">Name</span>
-				<input name="name" type="text" value={user?.name ?? ""} autocomplete="off" />
+				<input name="name" type="text" value={form?.name ?? ""} autocomplete="off" />
 				{#if typeof form?.errorDetails === "object"}
 					<p class="error">
 						{form.errorDetails.fields.name.message}
@@ -57,7 +59,7 @@
 					name="telegramId"
 					autocomplete="off"
 					type="text"
-					value={user?.telegramId ?? ""}
+					value={form?.telegramId ?? ""}
 					required
 				/>
 			</label>
@@ -73,7 +75,7 @@
 						type="radio"
 						required
 						value={status}
-						checked={status == (user?.authorizationStatus || 0)}
+						checked={status == (form?.authorizationStatus || 0)}
 					/>
 				</label>
 			{/each}
@@ -89,7 +91,7 @@
 						autocomplete="off"
 						required
 						value={role}
-						checked={role == (user?.role || 0)}
+						checked={role == (form?.role || 0)}
 					/>
 				</label>
 			{/each}
@@ -101,17 +103,18 @@
 			</label>
 		</p>
 
-		<!-- <p class="input-group">
+		<p class="input-group">
+			<!-- svelte-ignore a11y-label-has-associated-control -->
 			<label>
 				<span class="form-label">Groups</span>
-				<input
+				<Combobox
 					name="groups"
-					autocomplete="off"
-					value=""
+					value={form?.groups ?? ""}
+					items={data.groups.map(i => i.name)}
 				/>
 				<small>Whitespace or comma-separated</small>
 			</label>
-		</p> -->
+		</p>
 
 		<button class="button">Create</button>
 		<button class="button" formaction="?/create&addNew">Create and add another</button>

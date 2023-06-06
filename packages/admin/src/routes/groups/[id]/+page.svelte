@@ -98,7 +98,12 @@
 	</form>
 	<form method="POST" action="?/addChannel" use:enhance>
 		<p>
-			<input required name="name" autocomplete="off" />
+			<input required name="name" autocomplete="off" list="available-channels"/>
+			<datalist id="available-channels">
+				{#each data.channels as channel}
+					<option value={channel.name} />
+				{/each}
+			</datalist>
 			<button>Add a channel</button>
 		</p>
 	</form>

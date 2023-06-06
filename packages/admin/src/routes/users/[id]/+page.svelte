@@ -122,8 +122,12 @@
 		{/if}
 		<form method="POST" action="?/addOrCreateGroup" use:enhance>
 			<p>
-				<!-- TODO autocomplete/combobox -->
-				<input required name="name" autocomplete="off" />
+				<input required name="name" autocomplete="off" list="available-groups" />
+				<datalist id="available-groups">
+					{#each data.groups as group}
+						<option value={group.name} />
+					{/each}
+				</datalist>
 				<button>Add group</button>
 			</p>
 		</form>

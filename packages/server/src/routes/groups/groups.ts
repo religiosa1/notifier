@@ -117,7 +117,9 @@ export default fp(async function(fastify) {
     url: "/groups/search",
     schema: {
       querystring: z.object({
-        name: z.string().optional()
+        name: z.string().optional(),
+        channel: z.number({ coerce: true}).int().gt(0).optional(),
+        user: z.number({ coerce: true}).int().gt(0).optional(),
       }),
       response: {
         200: resultSuccessSchema(z.array(GroupModel.groupSchema)),
@@ -125,9 +127,12 @@ export default fp(async function(fastify) {
     },
     onRequest: fastify.authorizeJWT,
     async handler(req, reply) {
+      const { query } = req;
       const groups = await db.group.findMany({
         where: {
-          name: { contains: req.query.name }
+          name: { contains: query.name ?? "" },
+          Channels: query.channel ? { none: { id: query.channel }} : undefined,
+          Users: query.user ? { none: { id: req.query.user }} : undefined,
         }
       });
       return reply.send(result(groups));
