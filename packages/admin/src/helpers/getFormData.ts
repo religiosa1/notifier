@@ -42,24 +42,45 @@ function defaultCoerce<T extends z.AnyZodObject>(
   key: T['shape'],
   schema: T,
 ) {
-  let sch = schema.shape[key]?._def.typeName;
-  if (
-    sch === z.ZodFirstPartyTypeKind.ZodNullable
-    || sch === z.ZodFirstPartyTypeKind.ZodOptional
-  ) {
-    if (!values.length) {
-      return sch === z.ZodFirstPartyTypeKind.ZodNullable ? null : undefined;
-    } else {
-      sch = schema.shape[key]?._def.innerType._def.typeName;
+  const zodobj = schema.shape[key];
+  if (!values.length) {
+    const dflt = getType(zodobj, z.ZodFirstPartyTypeKind.ZodDefault);
+    if (dflt) {
+      return dflt._def.defaultValue();
+    }
+    if (getType(zodobj, z.ZodFirstPartyTypeKind.ZodNullable)) {
+      return null;
+    }
+    if (getType(zodobj, z.ZodFirstPartyTypeKind.ZodOptional)) {
+      return undefined;
     }
   }
+  const sch = getInnerType(zodobj);
   if (sch === z.ZodFirstPartyTypeKind.ZodArray) {
-    return values.map(i => coerceSimple(sch, i));
+    return values.map(i => coerceSimple(getInnerType(sch), i));
   }
   return coerceSimple(sch, values[0]);
 }
 
-// FIXME ZodFirstPartyTypeKind.ZodDefault
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getType(zodobj: any, type: z.ZodFirstPartyTypeKind): any {
+  if (zodobj._def?.typeName === type) {
+    return zodobj;
+  }
+  if (zodobj?._def?.innerType) {
+    return getType(zodobj._def.innerType, type);
+  }
+  return undefined;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getInnerType(zodobj: any): z.ZodFirstPartyTypeKind {
+  if (!zodobj?._def?.innerType?._def) {
+    return zodobj._def?.typeName;
+  }
+  return getInnerType(zodobj?._def?.innerType);
+}
+
 function coerceSimple(sch: z.ZodFirstPartyTypeKind, value: unknown) {
   switch (sch) {
     case z.ZodFirstPartyTypeKind.ZodNativeEnum:
