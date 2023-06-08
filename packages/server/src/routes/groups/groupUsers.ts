@@ -22,7 +22,7 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 		schema: {
 			params: baseGroupUsersParams,
 			body: z.object({
-				id: z.number().int().gt(0),
+				name: z.string().min(1),
 			}),
 			response: {
 				200: resultSuccessSchema(GroupModel.groupDetailSchema),
@@ -32,7 +32,7 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { groupId } = req.params;
-			const userId = req.body.id;
+			const name = req.body.name;
 			const data = await db.group.update({
 				where: { id: groupId },
 				include: {
@@ -40,7 +40,7 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 					Channels: true,
 				},
 				data: {
-					Users: { connect: { id: userId } },
+					Users: { connect: { name } },
 				},
 			}).catch(handlerDbNotFound(groupNotFound(groupId)));
 			fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, data);

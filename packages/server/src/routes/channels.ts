@@ -77,7 +77,7 @@ export default fp(async function(fastify) {
       const channels = await db.channel.findMany({
         where: {
           name: { contains: req.query.name ?? "" },
-          Groups: { none: { id: req.query.group }}
+          Groups: req.query.group ? { none: { id: req.query.group }} : {},
         }
       });
       return reply.send(result(channels));

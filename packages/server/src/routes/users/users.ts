@@ -160,6 +160,33 @@ export default fp(async function(fastify) {
 		}
 	});
 
+	fastify.withTypeProvider<ZodTypeProvider>().route({
+		method: "GET",
+		url: "/users/search",
+		schema: {
+			querystring: z.object({
+        name: z.string().optional(),
+        group: z.number({ coerce: true}).int().gt(0).optional(),
+      }),
+			response: {
+				200: resultSuccessSchema(z.array(UserModel.userSchema)),
+			}
+		},
+		onRequest: fastify.authorizeJWT,
+		async handler(req, reply) {
+			const { query } = req;
+			const users = await db.user.findMany({
+				where: {
+					name: { contains: query.name ?? "" },
+					groups: query.group ? { none: {id: query.group} } : undefined,
+				}
+			});
+			return reply.send(result(
+				users.map(i => UserModel.userSchema.parse(i))
+			));
+		}
+	});
+
 	userChannels(fastify);
 	userGroups(fastify);
 	userKeys(fastify);

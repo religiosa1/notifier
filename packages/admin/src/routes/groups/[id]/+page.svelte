@@ -62,7 +62,17 @@
 			</div>
 		{/if}
 	</form>
-	<!-- TODO autocomplete/combobox for adding users -->
+	<form method="POST" action="?/addUser" use:enhance>
+		<p>
+			<input required name="name" autocomplete="off" list="available-users"/>
+			<datalist id="available-users">
+				{#each data.users as user}
+					<option value={user.name} />
+				{/each}
+			</datalist>
+			<button>Add user</button>
+		</p>
+	</form>
 </details>
 
 <details class="card card-details">

@@ -24,24 +24,20 @@
 </p>
 
 {#if form?.createdUser}
-	<Panel
-		>Successfully created a new user
-		<code
-			>{"{"} id: {form.createdUser?.id}, name: "<a href="{base}/users/{form.createdUser.id}"
-				>{form.createdUser?.name}</a
-			>"
-			{"}"}</code
-		></Panel
-	>
+	<Panel>
+		Successfully created a new user
+		<code>
+			{"{"}
+				id: {form.createdUser?.id},
+				name: "<a href="{base}/users/{form.createdUser.id}">{form.createdUser?.name}</a>"
+			{"}"}
+		</code>
+	</Panel>
 {/if}
 
-<!-- FIXME use:enhance reactivity issues in ErrorPanel and Combobox -->
+<ErrorPanel action={form} />
 
-{#if form?.error}
-	<ErrorPanel action={form} />
-{/if}
-
-<form method="POST" action="?/create">
+<form method="POST" action="?/create" use:enhance>
 	<div class="card card_form">
 		<p class="input-group">
 			<label class="form-input">
