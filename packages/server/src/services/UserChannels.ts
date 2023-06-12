@@ -12,16 +12,16 @@ export function getUserChannels(
 		skip,
 		take
 	} = {
-		skip: 0,
-		take: 20,
-	}
+			skip: 0,
+			take: 20,
+		}
 ): Promise<[data: Channel[], total: number]> {
 	return Promise.all([
 		tx.channel.findMany({
 			skip,
 			take,
 			where: {
-				userChannels: { some: { userId }}
+				userChannels: { some: { userId } }
 			}
 		}),
 		tx.userChannel.count({
@@ -36,8 +36,8 @@ export function availableChannels(
 ): Promise<Channel[]> {
 	return tx.channel.findMany({
 		where: {
-			Groups: { some: { Users: { some: { id: userId }} } },
-			userChannels: { none: { userId }},
+			Groups: { some: { Users: { some: { id: userId } } } },
+			userChannels: { none: { userId } },
 		}
 	});
 }
@@ -55,10 +55,12 @@ export function disconnectUserChannels(
 	userId: number,
 	channelIds: number[],
 ): Promise<BatchPayload> {
-	return tx.userChannel.deleteMany({ where: {
-		userId,
-		channelId: { in: channelIds }
-	} });
+	return tx.userChannel.deleteMany({
+		where: {
+			userId,
+			channelId: { in: channelIds }
+		}
+	});
 }
 
 /** Removing all of the UserChannels, to which users don't have access. */

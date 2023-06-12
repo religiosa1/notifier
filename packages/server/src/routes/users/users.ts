@@ -16,7 +16,7 @@ import { userChannels } from "./userChannels";
 import { userGroups } from "./userGroups";
 import { userKeys } from "./userKeys";
 
-export default fp(async function(fastify) {
+export default fp(async function (fastify) {
 	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
@@ -29,10 +29,10 @@ export default fp(async function(fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const { skip, take } = {...paginationDefaults, ...req.query };
+			const { skip, take } = { ...paginationDefaults, ...req.query };
 			// why Prisma is so stupid?..
 			// https://github.com/prisma/prisma/issues/7550
-			const [ count, users ] = await db.$transaction([
+			const [count, users] = await db.$transaction([
 				db.user.count(),
 				db.user.findMany({
 					skip,
@@ -74,7 +74,7 @@ export default fp(async function(fastify) {
 		method: "DELETE",
 		url: "/users",
 		schema: {
-			querystring: z.object({ id: batchIdsSchema}),
+			querystring: z.object({ id: batchIdsSchema }),
 			response: {
 				200: resultSuccessSchema(batchOperationStatsSchema),
 			}
@@ -97,7 +97,7 @@ export default fp(async function(fastify) {
 		url: "/users/:userId",
 		schema: {
 			params: z.object({
-				userId: z.number({ coerce: true}).int().gt(0),
+				userId: z.number({ coerce: true }).int().gt(0),
 			}),
 			response: {
 				200: resultSuccessSchema(UserModel.userDetailSchema),
@@ -118,7 +118,7 @@ export default fp(async function(fastify) {
 		url: "/users/:userId",
 		schema: {
 			params: z.object({
-				userId: z.number({ coerce: true}).int().gt(0),
+				userId: z.number({ coerce: true }).int().gt(0),
 			}),
 			body: UserModel.userUpdateSchema,
 			response: {
@@ -129,7 +129,7 @@ export default fp(async function(fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const {userId} = req.params;
+			const { userId } = req.params;
 			const user = await UserService.editUser(db, userId, req.body)
 				.catch(handlerDbNotFound(userNotFound(userId)))
 				.catch(handlerUniqueViolation()) as UserModel.UserDetail;
@@ -143,7 +143,7 @@ export default fp(async function(fastify) {
 		url: "/users/:userId",
 		schema: {
 			params: z.object({
-				userId: z.number({ coerce: true}).int().gt(0),
+				userId: z.number({ coerce: true }).int().gt(0),
 			}),
 			response: {
 				200: resultSuccessSchema(z.null()),
@@ -165,9 +165,9 @@ export default fp(async function(fastify) {
 		url: "/users/search",
 		schema: {
 			querystring: z.object({
-        name: z.string().optional(),
-        group: z.number({ coerce: true}).int().gt(0).optional(),
-      }),
+				name: z.string().optional(),
+				group: z.number({ coerce: true }).int().gt(0).optional(),
+			}),
 			response: {
 				200: resultSuccessSchema(z.array(UserModel.userSchema)),
 			}
@@ -178,7 +178,7 @@ export default fp(async function(fastify) {
 			const users = await db.user.findMany({
 				where: {
 					name: { contains: query.name ?? "" },
-					groups: query.group ? { none: {id: query.group} } : undefined,
+					groups: query.group ? { none: { id: query.group } } : undefined,
 				}
 			});
 			return reply.send(result(

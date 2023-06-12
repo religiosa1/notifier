@@ -68,11 +68,13 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 				const resp = await tx.group.update({
 					where: { id: groupId },
 					include: {
-						Users: { select: { id: true },
-						where: ids.length
-							? { id: { in: ids} }
-							: undefined
-					}},
+						Users: {
+							select: { id: true },
+							where: ids.length
+								? { id: { in: ids } }
+								: undefined
+						}
+					},
 					data: {
 						Users: ids.length
 							? { disconnect: ids.map(id => ({ id })) }

@@ -8,7 +8,7 @@ import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import { removeRestricredChannels } from "src/services/UserChannels";
 
 export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
-  const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
+	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
 	const baseUserGroupsUrl = "/users/:userId/groups";
 	const baseUserGroupsParams = z.object({
 		userId: z.number({ coerce: true }).int().gt(0),
@@ -51,7 +51,7 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		url: `${baseUserGroupsUrl}/:groupId`,
 		schema: {
 			params: baseUserGroupsParams.extend({
-				groupId: z.number({ coerce: true}).int().gt(0),
+				groupId: z.number({ coerce: true }).int().gt(0),
 			}),
 			response: {
 				200: resultSuccessSchema(z.null()),
@@ -90,14 +90,14 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const {userId} = req.params;
+			const { userId } = req.params;
 			await db.$transaction([
 				db.user.update({
 					where: { id: userId },
 					data: { groups: { set: [] } },
 				}),
 				// If we removed all of the users groups, than he has no permissions for any channels
-				db.userChannel.deleteMany({ where: {userId} }),
+				db.userChannel.deleteMany({ where: { userId } }),
 			]).catch(handlerDbNotFound(userNotFound(userId)))
 			return reply.send(result(null));
 		}

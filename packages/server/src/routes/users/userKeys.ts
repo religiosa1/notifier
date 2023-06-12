@@ -29,7 +29,7 @@ export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [ data, count ] = await ApiKeyService.getKeys(db, userId, { skip, take });
+			const [data, count] = await ApiKeyService.getKeys(db, userId, { skip, take });
 			return reply.send(result({ count, data }));
 		}
 	});

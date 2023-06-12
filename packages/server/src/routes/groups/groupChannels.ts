@@ -41,10 +41,12 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 					Channels: true,
 				},
 				data: {
-					Channels: { connectOrCreate: {
-						create: { name },
-						where: { name },
-					}}
+					Channels: {
+						connectOrCreate: {
+							create: { name },
+							where: { name },
+						}
+					}
 				},
 			}).catch(handlerDbNotFound(groupNotFound(groupId)));
 			fastify.log.info(`Group channels updated by ${req.user.id}-${req.user.name}`, data);
@@ -72,11 +74,13 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 				const groups = await tx.group.update({
 					where: { id: groupId },
 					include: {
-						Channels: { select: { id: true },
-						where: ids.length
-							? { id: { in: ids} }
-							: undefined
-					}},
+						Channels: {
+							select: { id: true },
+							where: ids.length
+								? { id: { in: ids } }
+								: undefined
+						}
+					},
 					data: {
 						Channels: ids.length
 							? { disconnect: ids.map(id => ({ id })) }

@@ -15,7 +15,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
 	const baseUserChannelsUrl = "/users/:userId/channels";
 	const baseUserChannelsParams = z.object({
-		userId: z.number({ coerce: true}).int().gt(0),
+		userId: z.number({ coerce: true }).int().gt(0),
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
@@ -32,8 +32,8 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId } = req.params;
-			const { skip, take } = {...paginationDefaults, ...req.query };
-			const [ data, count ] = await UserChannelsService.getUserChannels(db, userId, { skip, take });
+			const { skip, take } = { ...paginationDefaults, ...req.query };
+			const [data, count] = await UserChannelsService.getUserChannels(db, userId, { skip, take });
 			return reply.send(result({ count, data }));
 		}
 	});
@@ -62,7 +62,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		url: baseUserChannelsUrl,
 		schema: {
 			params: baseUserChannelsParams,
-			body: z.object({ id:  z.number({ coerce: true}).int().gt(0) }),
+			body: z.object({ id: z.number({ coerce: true }).int().gt(0) }),
 			response: {
 				200: resultSuccessSchema(z.null()),
 				404: resultFailureSchema,
@@ -82,9 +82,9 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		method: "DELETE",
 		url: baseUserChannelsUrl,
 		schema: {
-			querystring: z.object({ id: batchIdsSchema}),
+			querystring: z.object({ id: batchIdsSchema }),
 			params: z.object({
-				userId: z.number({ coerce: true}).int().gt(0),
+				userId: z.number({ coerce: true }).int().gt(0),
 			}),
 			response: {
 				200: resultSuccessSchema(batchOperationStatsSchema),
@@ -96,7 +96,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 			const { userId } = req.params;
 			const ids = parseIds(req.query.id);
 
-			const {count} = await UserChannelsService.disconnectUserChannels(db, userId, ids)
+			const { count } = await UserChannelsService.disconnectUserChannels(db, userId, ids)
 				.catch(handlerDbNotFound(userNotFound(userId)))
 
 			const data = {

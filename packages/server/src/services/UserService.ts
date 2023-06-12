@@ -4,10 +4,10 @@ import { userDetailSchema } from "@shared/models/User";
 import { omit } from "@shared/helpers/omit";
 import { hash } from 'src/Authorization/hash';
 
-export async function getUser(tx: DbTransactionClient, userId: number): Promise<UserDetail>  {
+export async function getUser(tx: DbTransactionClient, userId: number): Promise<UserDetail> {
 	const user = await tx.user.findUniqueOrThrow({
 		where: { id: userId },
-		include: { groups: { select: { id: true, name: true }}}
+		include: { groups: { select: { id: true, name: true } } }
 	});
 	return userDetailSchema.parse(user);
 }
@@ -16,14 +16,14 @@ export async function userExistsByTgId(tx: DbTransactionClient, telegramId: numb
 	return tx.user.findUniqueOrThrow({
 		select: { id: true },
 		where: { telegramId },
-	}).then(r => !!r?.id );
+	}).then(r => !!r?.id);
 }
 
 export async function getUserIdByTgId(tx: DbTransactionClient, telegramId: number): Promise<number> {
 	return tx.user.findUniqueOrThrow({
 		select: { id: true },
 		where: { telegramId },
-	}).then(r => r.id );
+	}).then(r => r.id);
 }
 
 export async function createUser(tx: DbTransactionClient, user: UserCreate) {
@@ -35,7 +35,7 @@ export async function createUser(tx: DbTransactionClient, user: UserCreate) {
 			groups: nameArrayToUpsert(user.groups)
 		},
 		include: {
-			groups: { select: { id: true, name: true }},
+			groups: { select: { id: true, name: true } },
 		}
 	})
 }
@@ -50,7 +50,7 @@ export async function editUser(tx: DbTransactionClient, id: number, user: UserUp
 			groups: nameArrayToUpsert(user.groups),
 		},
 		include: {
-			groups: { select: { id: true, name: true }},
+			groups: { select: { id: true, name: true } },
 		}
 	})
 }
@@ -60,7 +60,7 @@ export async function deleteUsers(tx: DbTransactionClient, ids: number[]): Promi
 		return 0;
 	}
 	const { count } = await tx.user.deleteMany({
-			where: { id: { in: ids } }
+		where: { id: { in: ids } }
 	});
 	return count;
 }

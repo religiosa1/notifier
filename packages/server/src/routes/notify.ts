@@ -38,7 +38,7 @@ export default fp<NotifyOptions>(async function (fastify, { bot }) {
 				where: {
 					channels: {
 						some: {
-							channel: { name: { in: channels }}
+							channel: { name: { in: channels } }
 						}
 					}
 				}
