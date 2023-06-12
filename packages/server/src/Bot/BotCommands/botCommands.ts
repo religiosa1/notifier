@@ -77,8 +77,11 @@ export const botCommands: BotCommand[] = [
     async ({ bot }, msg) => {
       const userId = await getUserIdByTgId(db, msg.chat.id);
       const [apiKeys] = await ApiKeyService.getKeys(db, userId, {skip: 0, take: 999});
+      const keys = apiKeys.length
+        ? apiKeys.map(i => i.prefix).join('\n')
+        : "No keys available."
       bot.sendMessage(msg.chat.id,
-        "Доступные ключи\n" + apiKeys.map(i => i.prefix).join('\n'),
+        "Available keys:\n" + keys,
       );
     }
   ),

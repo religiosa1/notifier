@@ -25,10 +25,11 @@ export class Bot implements IBot {
         (...args) => command.handler(handlerContext, ...args)
       );
     });
-
+    logger.info(esc`Telegram bot initialized with token ${token}`)
+  }
+  async init(): Promise<void> {
     const publicCommands = botCommands.filter(i => !i.hidden);
     this.bot.setMyCommands(publicCommands.map(i => i.toTelegramCommand()));
-    logger.info(esc`Telegram bot initialized with token ${token}`)
   }
   async setWebHook(token: string): Promise<void> {
     await this.bot.setWebHook(token);

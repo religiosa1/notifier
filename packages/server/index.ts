@@ -44,12 +44,14 @@ app.setErrorHandler(function (error, _, reply) {
 const bot = new Bot(TOKEN!);
 app.register(notify, { bot });
 
-app.after(() => {
+app.after(async () => {
+  await bot.init();
   app.route({
     method: 'POST',
     url: `/bot${TOKEN}`,
     handler: async (req) => { bot.processUpdate(req.body as Update) },
   });
+  app.log.info("Bot initialized");
 });
 
 

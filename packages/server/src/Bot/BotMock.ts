@@ -11,6 +11,7 @@ export class BotMock implements IBot {
     }
     logger.info(esc`MOCK Telegram bot initialized with token ${token}. It's a MOCK it won't do anything`)
   }
+  async init() {}
   async setWebHook(_: string) {
     logger.info(`MOCK HOOK being set`)
   }

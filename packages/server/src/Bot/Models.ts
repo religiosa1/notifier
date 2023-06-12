@@ -15,4 +15,5 @@ export interface IBot {
 		chats: Array<string | number>,
 		opts: SendMessageProps
 	): Promise<PromiseSettledResult<void | Message>[]>;
+	init(): Promise<void>;
 }

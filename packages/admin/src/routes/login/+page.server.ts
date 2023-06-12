@@ -1,8 +1,17 @@
+import { base } from "$app/paths";
 import { fail, redirect } from "@sveltejs/kit";
-import type { Actions } from "./$types";
+import type { Actions, PageServerLoad } from "./$types";
 import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
 import { hasField } from "~/helpers/hasField";
 import { serverUrl } from "~/helpers/serverUrl";
+
+export const load: PageServerLoad = async ({ parent }) => {
+  const { user } = await parent();
+
+  if (user) {
+    throw redirect(303, base + '/');
+  }
+}
 
 export const actions: Actions = {
   async default({ fetch, request, url, cookies }) {
