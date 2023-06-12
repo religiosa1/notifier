@@ -42,8 +42,8 @@ export class BotCommand {
 
 	toTelegramCommand(): TelegramBot.BotCommand {
 		return {
-			command: [this.command, ...this.args.map(a => `<${a}>`)].join(' '),
-			description: this.description
+			command: this.command,
+			description: this.description,
 		};
 	}
 }
