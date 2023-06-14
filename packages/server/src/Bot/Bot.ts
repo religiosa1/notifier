@@ -22,7 +22,13 @@ export class Bot implements IBot {
 		botCommands.forEach(command => {
 			this.bot.onText(
 				command.pattern,
-				(...args) => command.handler(handlerContext, ...args)
+				async (...args) => {
+					try {
+						await command.handler(handlerContext, ...args);
+					} catch(e) {
+						logger.error("command execution failed", command.command, args, e);
+					}
+				},
 			);
 		});
 		logger.info(esc`Telegram bot initialized with token ${token}`)
