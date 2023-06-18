@@ -1,4 +1,5 @@
 import type { Channel, UserChannel } from "@prisma/client";
+import type { ChannelSubscription } from "@shared/models/Channel";
 import type { DbTransactionClient } from "src/db";
 
 export type BatchPayload = {
@@ -42,12 +43,40 @@ export function availableChannels(
 	});
 }
 
-// TODO check permissions
-export function connectUserChannel(
+export async function allAvailableChannels(
+	tx: DbTransactionClient,
+	userId: number
+): Promise<ChannelSubscription[]> {
+	const data = await tx.channel.findMany({
+		include: { userChannels: true },
+		where: {
+			Groups: { some: { Users: { some: { id: userId } } } },
+		},
+	});
+	return data.map(i => ({
+		id: i.id,
+		name: i.name,
+		subscribed: i.userChannels.length > 0,
+	}));
+}
+
+
+export async function connectUserChannel(
 	tx: DbTransactionClient,
 	userId: number,
 	channelId: number
 ): Promise<UserChannel> {
+	const perms = await tx.channel.findFirst({
+		where: {
+			id: channelId,
+			Groups: { some: {
+				Users: { some: { id: userId}}
+			}}
+		},
+	});
+	if (perms == null) {
+		throw new Error("The user doesn't have the required permissions to join the channel");
+	}
 	return tx.userChannel.create({ data: { userId, channelId } });
 }
 

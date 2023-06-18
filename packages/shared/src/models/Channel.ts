@@ -18,3 +18,8 @@ export const channelCreateSchema = channelSchema.omit({
   id: true,
 });
 export const channelUpdateSchema = channelCreateSchema;
+
+export const channelSubscriptionSchema = channelSchema.extend({
+  subscribed: z.boolean(),
+});
+export type ChannelSubscription = z.infer<typeof channelSubscriptionSchema>;

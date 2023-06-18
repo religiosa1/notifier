@@ -1,6 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
 import type { Update, Message } from "node-telegram-bot-api";
-export type { Update };
 import type { IBot, SendMessageProps } from "src/Bot/Models";
 import { botCommands } from "./BotCommands";
 import { logger } from "src/logger";
@@ -8,6 +7,7 @@ import { esc } from "src/util/esc";
 import { asyncPool } from "src/util/asyncPool";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
+export type { Update };
 
 export class Bot implements IBot {
 	bot: TelegramBot;

@@ -37,10 +37,11 @@ export const botCommands: BotCommand[] = [
 		"list_all_channels",
 		"List notification channels available to you",
 		async ({ reply, userId }) => {
-			const channels = await UserChannelsService.availableChannels(db, userId);
+			const channels = await UserChannelsService.allAvailableChannels(db, userId);
+			console.log("channels", channels);
 			await reply(listMessage(
 				"Available channels",
-				channels.map(i => i.name),
+				channels.map(i => `${i.subscribed ? "[+]" : "[–]"} ${i.name}`),
 				"No channels available for you. Contact admin to add you to some groups"
 			));
 		}
