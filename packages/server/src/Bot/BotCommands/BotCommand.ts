@@ -1,7 +1,7 @@
 import type TelegramBot from "node-telegram-bot-api";
 import type { BotCommandContext } from "src/Bot/BotCommands/BotCommandContext";
 import { esc } from "src/util/esc";
-import { reEscape } from "@shared/helpers/reEscape";
+import { reEscape } from "src/util/reEscape";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
 
 const wordRegEx = /^[a-zA-Z][\w_]*$/;
@@ -37,10 +37,8 @@ export class BotCommand {
 	}
 
 	get pattern(): RegExp {
-		const argsRe = this.args.length
-			// Using repeat here, so all of the args are correctly packed into their own capture group
-			? "(?:\\s+([0-9\\w]+))?".repeat(this.args.length)
-			: "";
+		// Using repeat here, so all of the args are correctly packed into their own capture group
+		const argsRe = "(?:\\s+([0-9\\w]+))?".repeat(this.args.length);
 		const garbageRe = "(?:\\s+.*)?";
 		return new RegExp("^\\/" + reEscape(this.command) + argsRe + garbageRe +"$");
 	}
