@@ -28,9 +28,9 @@ After that, a user can:
 - Ask for a new API token from the bot via `/new_key` command.
 - Review the list of available API tokens via `/list_keys` command.
 - Revoke the existing API token via `/remove_key` command.
-- Request a list of available notification channels via `/list_all_channels` command
+- Request a list of available notification channels via `/list_channels` command
   (notifications accessible to the user controlled by admin with groups mechanism).
-- Get a list of subscribed notifications via `/list_channels` command.
+- Get a list of subscribed notifications via `/list_subscriptions` command.
 - Join a notification channel via `/join_channel` command.
 - Leave a channel via `/leave_channel` command.
 

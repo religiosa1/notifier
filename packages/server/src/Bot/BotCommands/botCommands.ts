@@ -34,8 +34,8 @@ export const botCommands: BotCommand[] = [
 	// ---------------------------------------------------------------------------
 	// Channels
 	new BotCommand(
-		"list_all_channels",
-		"List notification channels available to you",
+		"list_channels",
+		"List all notification channels available to you",
 		async ({ reply, userId }) => {
 			const channels = await UserChannelsService.allAvailableChannels(db, userId);
 			console.log("channels", channels);
@@ -47,8 +47,8 @@ export const botCommands: BotCommand[] = [
 		}
 	),
 	new BotCommand(
-		"list_channels",
-		"List notification channels you're currently subscribed",
+		"list_subscriptions",
+		"List your current subscriptions",
 		async ({ reply, userId }) => {
 			const [channels] = await UserChannelsService.getUserChannels(db, userId);
 			await reply(listMessage(
@@ -61,7 +61,7 @@ export const botCommands: BotCommand[] = [
 	),
 	new BotCommand(
 		"join_channel",
-		"Join a notification channel",
+		"Join a notification channel (subscribe)",
 		async ({ reply, userId }, [channel]) => {
 			const channelId = await getChannelId(db, channel!);
 			if (channelId == null) {
