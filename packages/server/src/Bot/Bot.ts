@@ -30,7 +30,7 @@ export class Bot implements IBot {
 						await command.handler(context, args);
 					} catch(e) {
 						if (e instanceof BotCommandError) {
-							this.bot.sendMessage(msg.chat.id, String(e));
+							this.bot.sendMessage(msg.chat.id, e.message);
 							return;
 						}
 						await Promise.all([

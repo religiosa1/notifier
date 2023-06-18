@@ -42,6 +42,7 @@ export function availableChannels(
 	});
 }
 
+// TODO check permissions
 export function connectUserChannel(
 	tx: DbTransactionClient,
 	userId: number,

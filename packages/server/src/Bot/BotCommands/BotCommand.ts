@@ -54,9 +54,8 @@ export class BotCommand {
 			const arg = match?.[i+1];
 			if (!arg) {
 				throw new BotCommandError(
-					`Command /${this.command} requires specific amount of args: \n` +
-					this.usageString + "\n" +
-					`expected: ${this.args.length} args, got ${i}`
+					`/${this.command} requires you to enter arguments: \n` +
+					this.usageString + "\n"
 				);
 			}
 			retval.push(arg);

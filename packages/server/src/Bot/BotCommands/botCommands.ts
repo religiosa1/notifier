@@ -112,8 +112,8 @@ export const botCommands: BotCommand[] = [
 		"remove_key",
 		"remove an API key",
 		async ({ reply, userId }, [prefix]) => {
-			const apiKey = await ApiKeyService.deleteKey(db, userId, prefix!);
-			await reply("Your newly generated API key:\n" + apiKey);
+			await ApiKeyService.deleteKey(db, userId, prefix!);
+			await reply("Successfully removed the key.");
 		},
 		["KEY"],
 	),
@@ -123,5 +123,5 @@ function listMessage(prefix: string, items: string[], elseMsg: string): string {
 	if (!items.length) {
 		return elseMsg;
 	}
-	return prefix + "\n" + items.join("\n");
+	return prefix + "\n" + items.map(i => "- " + i).join("\n");
 }
