@@ -11,7 +11,7 @@ export interface IBotConstructor {
 export interface IBot {
 	setWebHook(token: string): Promise<void>;
 	processUpdate(update: Update): void;
-	sendMessage(
+	broadcastMessage(
 		chats: Array<string | number>,
 		opts: SendMessageProps
 	): Promise<PromiseSettledResult<void | Message>[]>;

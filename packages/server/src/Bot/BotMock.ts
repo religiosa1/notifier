@@ -16,7 +16,7 @@ export class BotMock implements IBot {
 		logger.info(`MOCK HOOK being set`)
 	}
 	processUpdate(..._: Parameters<Bot["processUpdate"]>) { }
-	sendMessage(...args: Parameters<Bot["sendMessage"]>): ReturnType<Bot["sendMessage"]> {
+	broadcastMessage(...args: Parameters<Bot["broadcastMessage"]>): ReturnType<Bot["broadcastMessage"]> {
 		logger.trace('sending a MOCK telegram message', ...args);
 		return Promise.allSettled([
 			{

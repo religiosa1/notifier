@@ -1,71 +1,88 @@
 import { db } from "src/db";
-import { createUser, getUserIdByTgId, userExistsByTgId } from "src/services/UserService";
+import { createUser } from "src/services/UserService";
 import * as ApiKeyService from "src/services/ApiKey";
 import * as UserChannelsService from "src/services/UserChannels";
 import { BotCommand } from "./BotCommand";
+import { getChannelId } from "src/services/ChannelService";
 
 /** Available bot commands */
 export const botCommands: BotCommand[] = [
 	new BotCommand(
 		"start",
 		"",
-		async ({ bot, logger }, msg) => {
-			logger.info({ event: "start command", chat: msg.chat });
-			if (!msg.from) {
-				bot.sendMessage(msg.chat.id, "У вас какой-то странный чат, не могу найти от кого сообщение");
+		async ({ logger, reply, userId, msg }) => {
+			if (!isNaN(userId)) {
+				await reply("You've already started using the bot.");
 				return;
 			}
-
-			if (await userExistsByTgId(db, msg.from.id)) {
-				bot.sendMessage(msg.chat.id, "Вы и так уже здесь, чего вам ещё надо?git");
-			} else {
-				createUser(db, {
-					name: msg.from.username,
-					telegramId: msg.from.id,
-				});
-				bot.sendMessage(msg.chat.id, "Спасибо, мы подумаем и решим, достойны ли вы пользоваться нашим ботом.");
+			if (!msg.from) {
+				throw new Error("There's no 'chat' information in the message, unable to process");
 			}
+			await Promise.all([
+				logger.info({ event: "start command", chat: msg.chat }),
+				createUser(db, {
+					name: msg.chat.username,
+					telegramId: msg.chat.id,
+				}).then(() => reply(
+					"Thank you, you'll be able to use the service, once an admin will approve your join request."
+				))
+			]);
 		},
 		[],
-		{ hidden: true }
+		{ hidden: true, noAuth: true }
 	),
 	// ---------------------------------------------------------------------------
 	// Channels
 	new BotCommand(
 		"list_all_channels",
 		"List notification channels available to you",
-		async ({ bot }, msg) => {
-			const userId = await getUserIdByTgId(db, msg.chat.id);
+		async ({ reply, userId }) => {
 			const channels = await UserChannelsService.availableChannels(db, userId);
-			bot.sendMessage(msg.chat.id,
-				"Доступные каналы\n" + channels.map(i => i.name).join('\n'),
-			);
+			await reply(listMessage(
+				"Available channels",
+				channels.map(i => i.name),
+				"No channels available for you. Contact admin to add you to some groups"
+			));
 		}
 	),
 	new BotCommand(
 		"list_channels",
 		"List notification channels you're currently subscribed",
-		async ({ bot }, msg) => {
-			const userId = await getUserIdByTgId(db, msg.chat.id);
+		async ({ reply, userId }) => {
 			const [channels] = await UserChannelsService.getUserChannels(db, userId);
-			bot.sendMessage(msg.chat.id,
-				"Текущие каналы\n" + channels.map(i => i.name).join('\n'),
-			);
+			await reply(listMessage(
+				"You're currently subscribed to following notification channels:",
+				channels.map(i => i.name),
+				"You're not currently subscribed to any channels.\n" +
+				"Use /list_all_channels to see channels available to you and /join_channel to subscribe"
+			));
 		}
 	),
 	new BotCommand(
 		"join_channel",
 		"Join a notification channel",
-		async (_, _msg) => {
-			throw new Error("TODO");
+		async ({ reply, userId }, [channel]) => {
+			const channelId = await getChannelId(db, channel!);
+			if (channelId == null) {
+				await reply("No such channel");
+				return;
+			}
+			await UserChannelsService.connectUserChannel(db, userId, channelId);
+			await reply("Successfully joined the channel: " + channel);
 		},
 		["CHANNEL"],
 	),
 	new BotCommand(
 		"leave_channel",
 		"Leave a notification channel",
-		async (_, _msg) => {
-			throw new Error("TODO");
+		async ({ reply, userId }, [channel]) => {
+			const channelId = await getChannelId(db, channel!);
+			if (channelId == null) {
+				await reply("No such channel");
+				return;
+			}
+			await UserChannelsService.disconnectUserChannels(db, userId, [channelId]);
+			await reply("Successfully left the channel: " + channel);
 		},
 		["CHANNEL"],
 	),
@@ -74,34 +91,37 @@ export const botCommands: BotCommand[] = [
 	new BotCommand(
 		"list_keys",
 		"List your API keys to the bot",
-		async ({ bot }, msg) => {
-			const userId = await getUserIdByTgId(db, msg.chat.id);
+		async ({ reply, userId }) => {
 			const [apiKeys] = await ApiKeyService.getKeys(db, userId, { skip: 0, take: 999 });
-			const keys = apiKeys.length
-				? apiKeys.map(i => i.prefix).join('\n')
-				: "No keys available."
-			bot.sendMessage(msg.chat.id,
-				"Available keys:\n" + keys,
-			);
+			await reply(listMessage(
+				"Available keys:",
+				apiKeys.map(i => i.prefix),
+				"No keys available."
+			));
 		}
 	),
 	new BotCommand(
 		"new_key",
 		"Generate a new API key",
-		async ({ bot }, msg) => {
-			const userId = await getUserIdByTgId(db, msg.chat.id);
+		async ({ reply, userId }) => {
 			const apiKey = await ApiKeyService.createKey(db, userId);
-			bot.sendMessage(msg.chat.id,
-				"Вот ваш ключ.\n" + apiKey,
-			)
+			await reply("Your newly generated API key:\n" + apiKey);
 		}
 	),
 	new BotCommand(
 		"remove_key",
 		"remove an API key",
-		async (_bot, _msg) => {
-			throw new Error("TODO");
+		async ({ reply, userId }, [prefix]) => {
+			const apiKey = await ApiKeyService.deleteKey(db, userId, prefix!);
+			await reply("Your newly generated API key:\n" + apiKey);
 		},
 		["KEY"],
 	),
 ];
+
+function listMessage(prefix: string, items: string[], elseMsg: string): string {
+	if (!items.length) {
+		return elseMsg;
+	}
+	return prefix + "\n" + items.join("\n");
+}

@@ -1,25 +1,26 @@
 import type TelegramBot from "node-telegram-bot-api";
-import type { Message } from "node-telegram-bot-api";
+import type { BotCommandContext } from "src/Bot/BotCommands/BotCommandContext";
 import { esc } from "src/util/esc";
 import { reEscape } from "@shared/helpers/reEscape";
-import type { BaseLogger } from "pino";
 
 const wordRegEx = /[a-zA-Z][\w_]+/;
 
-type MessageHandler = (context: {
-	bot: TelegramBot,
-	logger: BaseLogger
-}, msg: Message, match: RegExpExecArray | null) => void | Promise<void>;
+type MessageHandler = (
+	context: BotCommandContext,
+	args: string[],
+) => void | Promise<void>;
 
 export class BotCommand {
 	public hidden = false;
+	public noAuth = false;
 	constructor(
 		public command: string,
 		public description: string,
 		public handler: MessageHandler,
 		public args: string[] = [],
 		{
-			hidden = false
+			hidden = false,
+			noAuth = false,
 		} = {}
 	) {
 		if (!wordRegEx.test(command)) {
@@ -31,12 +32,13 @@ export class BotCommand {
 			}
 		}
 		this.hidden = hidden;
+		this.noAuth = noAuth;
 	}
 
 	get pattern(): RegExp {
 		return new RegExp("^\/" + [
 			reEscape(this.command),
-			...this.args.map(() => '[a-zA-Z][\w_]+')
+			...this.args.map(() => '\w*')
 		].join('\s+'));
 	}
 
@@ -45,5 +47,12 @@ export class BotCommand {
 			command: this.command,
 			description: this.description,
 		};
+	}
+
+	get usageString(): string {
+		return [
+			"/" + this.command,
+			this.args.map(a => `<${a.toUpperCase()}>`)
+		].join(" ");
 	}
 }

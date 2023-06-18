@@ -47,7 +47,7 @@ export default fp<NotifyOptions>(async function (fastify, { bot }) {
 				throw new ResultError(404, "Can't find anyone to send the data to in the provided channels");
 			}
 
-			await bot.sendMessage(
+			await bot.broadcastMessage(
 				chats.map(i => i.telegramId),
 				{ text: req.body.message }
 			);

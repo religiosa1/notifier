@@ -6,27 +6,39 @@ import { botCommands } from "./BotCommands";
 import { logger } from "src/logger";
 import { esc } from "src/util/esc";
 import { asyncPool } from "src/util/asyncPool";
+import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 
 export class Bot implements IBot {
 	bot: TelegramBot;
+	#commandContextFactory: BotCommandContextFactory;
 
 	constructor(token: string) {
 		if (!token) {
 			throw new Error("Bot token isn't supplied! (is it defined in env variables?)");
 		}
 		this.bot = new TelegramBot(token);
-		const handlerContext = {
-			bot: this.bot,
-			logger,
-		}
+		this.#commandContextFactory = new BotCommandContextFactory(this.bot, logger);
+
 		botCommands.forEach(command => {
 			this.bot.onText(
 				command.pattern,
-				async (...args) => {
+				async (msg, match) => {
 					try {
-						await command.handler(handlerContext, ...args);
+						if (match == null || (match?.length ?? 0) !== command.args.length) {
+							await this.bot.sendMessage(
+								msg.chat.id,
+								"This command requires specific args: \n" + command.usageString
+							);
+							return;
+						}
+						const context = await this.#commandContextFactory.createContext(msg);
+						const args = match?.slice(1);
+						await command.handler(context, args);
 					} catch(e) {
-						logger.error("command execution failed", command.command, args, e);
+						await Promise.all([
+							logger.error("command execution failed", command.command, msg, match, e),
+							this.bot.sendMessage(msg.chat.id, "Command execution failed: " + String(e)),
+						]);
 					}
 				},
 			);
@@ -47,7 +59,7 @@ export class Bot implements IBot {
 		return this.bot.processUpdate(update);
 	}
 
-	async sendMessage(
+	async broadcastMessage(
 		chats: Array<string | number>, opts: SendMessageProps
 	): Promise<PromiseSettledResult<void | Message>[]> {
 		logger.trace("sending a telegram message", opts);
