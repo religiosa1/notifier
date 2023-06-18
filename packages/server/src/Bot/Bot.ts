@@ -7,6 +7,7 @@ import { logger } from "src/logger";
 import { esc } from "src/util/esc";
 import { asyncPool } from "src/util/asyncPool";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
+import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
 
 export class Bot implements IBot {
 	bot: TelegramBot;
@@ -24,21 +25,16 @@ export class Bot implements IBot {
 				command.pattern,
 				async (msg, match) => {
 					try {
-						const nArgs = (match?.length ?? 1) - 1;
-						if (match == null || nArgs !== command.args.length) {
-							await this.bot.sendMessage(
-								msg.chat.id,
-								"This command requires specific args: \n" + command.usageString + "\n" +
-								`expected: ${command.args.length} args, got ${nArgs}`
-							);
-							return;
-						}
 						const context = await this.#commandContextFactory.createContext(msg);
-						const args = match?.slice(1);
+						const args = command.extractArgs(match);
 						await command.handler(context, args);
 					} catch(e) {
+						if (e instanceof BotCommandError) {
+							this.bot.sendMessage(msg.chat.id, String(e));
+							return;
+						}
 						await Promise.all([
-							logger.error("command execution failed", command.command, msg, match, e),
+							logger.error("Command execution failed", command.command, msg, match, e),
 							this.bot.sendMessage(msg.chat.id, "Command execution failed: " + String(e)),
 						]);
 					}
@@ -83,5 +79,4 @@ export class Bot implements IBot {
 		logger.info({ massSend: msgs });
 		return msgs;
 	}
-
 }

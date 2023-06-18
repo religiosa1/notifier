@@ -22,8 +22,7 @@
     "declaration": true,
     "exactOptionalPropertyTypes": false,
     "paths": {
-      "src/*": [ "src/*" ],
-      "@shared/*": [  "../shared/src/*" ],
+      "@shared/*": [  "../shared/src/*" ]
     }
   }
 }

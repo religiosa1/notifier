@@ -96,7 +96,7 @@ export const botCommands: BotCommand[] = [
 			await reply(listMessage(
 				"Available keys:",
 				apiKeys.map(i => i.prefix),
-				"No keys available."
+				"No keys available. You can create a new key using /new_key command."
 			));
 		}
 	),

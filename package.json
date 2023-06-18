@@ -10,7 +10,7 @@
     "start:admin": "npm run start --workspace packages/admin",
     "dev": "concurrently \"npm:dev --workspace packages/admin\" \"npm:dev --workspace packages/server\"",
     "db:migrate": "npm run db:migrate --workspace packages/server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test --workspaces --if-present"
   },
   "repository": {
     "type": "git",
