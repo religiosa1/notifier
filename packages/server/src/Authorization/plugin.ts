@@ -8,6 +8,7 @@ import { ResultError, resultFailureSchema, resultSuccessSchema, result } from "@
 import { db } from "src/db";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
+import { authorizeKey } from "src/Authorization/authorizeKey";
 
 export default fp(async function (fastify) {
 	if (!process.env.JWT_SECRET) {
@@ -72,6 +73,22 @@ export default fp(async function (fastify) {
 			} catch (err) {
 				reply.send(err)
 			}
+		}
+	);
+
+	// Not actually used anywhere, do we even need it?
+	fastify.decorate(
+		"authorizeKey",
+		authorizeKey.bind(undefined, fastify),
+	);
+
+	fastify.decorate(
+		"authorizeAnyMethod",
+		async function (
+			request: FastifyRequest,
+			reply: FastifyReply,
+		) {
+			return request.jwtVerify().catch(() => authorizeKey(fastify, request, reply));
 		}
 	);
 })

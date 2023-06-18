@@ -3,8 +3,7 @@ import fastify from "fastify";
 import cookie, { FastifyCookieOptions } from '@fastify/cookie'
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { ResultError } from "@shared/models/Result";
-import authorizeJWT from "src/Authorization/pluginJWT";
-import authorizeKey from "src/Authorization/pluginKey";
+import authorization from "src/Authorization";
 import { registerLogger } from "src/logger";
 import { Bot, Update } from "src/Bot";
 import usersRoutes from "src/routes/users";
@@ -25,8 +24,7 @@ app.register(cookie, {
   secret: process.env.JWT_SECRET,
   hook: false,
 } satisfies FastifyCookieOptions);
-app.register(authorizeJWT);
-app.register(authorizeKey);
+app.register(authorization);
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 

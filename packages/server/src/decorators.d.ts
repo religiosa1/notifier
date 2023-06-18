@@ -10,6 +10,7 @@ declare module "fastify" {
 	> {
 		authorizeJWT(): void;
 		authorizeKey(): void;
+    authorizeAnyMethod(): void;
 	}
 
 	export interface FastifyRequest {

@@ -27,8 +27,7 @@ export default fp<NotifyOptions>(async function (fastify, { bot }) {
 				422: resultFailureSchema,
 			}
 		},
-		// TODO Key authorization for notification too?
-		onRequest: fastify.authorizeJWT,
+		onRequest: fastify.authorizeAnyMethod,
 		async handler(req, reply) {
 			const channels = Array.isArray(req.body.channels)
 				? req.body.channels
