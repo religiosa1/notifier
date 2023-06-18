@@ -118,6 +118,21 @@ export const botCommands: BotCommand[] = [
 		},
 		["KEY"],
 	),
+	// ---------------------------------------------------------------------------
+	// Help
+	new BotCommand(
+		"help",
+		"List available commands",
+		async ({ reply }) => {
+			reply(
+				botCommands.filter(cmd => !cmd.hidden).map(
+					cmd => cmd.usageString + " - " + cmd.description
+				).join("\n")
+			);
+		},
+		[],
+		{ noAuth: true }
+	),
 ];
 
 function listMessage(prefix: string, items: string[], elseMsg: string): string {
