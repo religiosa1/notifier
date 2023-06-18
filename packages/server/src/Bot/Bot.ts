@@ -24,10 +24,12 @@ export class Bot implements IBot {
 				command.pattern,
 				async (msg, match) => {
 					try {
-						if (match == null || (match?.length ?? 0) !== command.args.length) {
+						const nArgs = (match?.length ?? 1) - 1;
+						if (match == null || nArgs !== command.args.length) {
 							await this.bot.sendMessage(
 								msg.chat.id,
-								"This command requires specific args: \n" + command.usageString
+								"This command requires specific args: \n" + command.usageString + "\n" +
+								`expected: ${command.args.length} args, got ${nArgs}`
 							);
 							return;
 						}
