@@ -18,7 +18,7 @@ const url = process.env.URL || "";
 const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT) || 8085;
 
-if (!url) {
+if (process.env.NODE_ENV === "production" && !url) {
   throw new Error("Public URL for the bot wasn't supplied through environment variables");
 }
 

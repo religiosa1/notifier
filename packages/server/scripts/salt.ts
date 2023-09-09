@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /** Script for manually generating passwords for API keys */
 import readline from "readline";
 import { hash } from "src/Authorization/hash";
