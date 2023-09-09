@@ -8,6 +8,7 @@
 	import Panel from "~/components/Panel.svelte";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	import Combobox from "~/components/Combobox.svelte";
+	import { TELEGRAM_MAX_ID } from "~/constants";
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -58,6 +59,7 @@
 					autocomplete="off"
 					type="number"
 					step={1}
+					max={TELEGRAM_MAX_ID}
 					value={form?.telegramId ?? ""}
 					required
 				/>

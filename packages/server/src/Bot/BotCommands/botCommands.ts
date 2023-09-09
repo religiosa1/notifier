@@ -18,15 +18,14 @@ export const botCommands: BotCommand[] = [
 			if (!msg.from) {
 				throw new Error("There's no 'chat' information in the message, unable to process");
 			}
-			await Promise.all([
-				logger.info({ event: "start command", chat: msg.chat }),
-				createUser(db, {
-					name: msg.chat.username,
-					telegramId: msg.chat.id,
-				}).then(() => reply(
-					"Thank you, you'll be able to use the service, once an admin will approve your join request."
-				))
-			]);
+			logger.info({ event: "start command", chat: msg.chat }),
+			await createUser(db, {
+				name: msg.chat.username,
+				telegramId: msg.chat.id,
+			});
+			await reply(
+				"Thank you, you'll be able to use the service, once an admin will approve your join request."
+			);
 		},
 		[],
 		{ hidden: true, noAuth: true }

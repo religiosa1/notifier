@@ -7,6 +7,7 @@
 	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
+	import { TELEGRAM_MAX_ID } from "~/constants";
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -29,13 +30,21 @@
 			<p class="input-group">
 				<label>
 					<span class="form-label">Name</span>
-					<input required name="name" type="text" value={user.name} autocomplete="username" />
+					<input required name="name" type="text" value={user.name} autocomplete="off" />
 				</label>
 			</p>
 			<p class="input-group">
 				<label>
 					<span class="form-label">Telegram Id</span>
-					<input name="telegramId" type="text" value={user.telegramId} required />
+					<input
+						name="telegramId"
+						autocomplete="off"
+						type="number"
+						step={1}
+						max={TELEGRAM_MAX_ID}
+						value={user.telegramId ?? ""}
+						required
+					/>
 				</label>
 			</p>
 			<fieldset class="input-group">

@@ -10,6 +10,7 @@
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "salt": "ts-node scripts/salt.ts",
     "generate-jwt-secret": "ts-node scripts/generate-jwt-secret.ts",
+    "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node prisma/seed.ts",
     "test": "jest"
