@@ -11,14 +11,20 @@ describe("decodeJWT", () => {
   const sign = "K19lwzl-KTzIlLSv8WdhxXCj0BM7WPwy_dtO1vwcGKg";
   const validToken = [header, payload, sign].join(".");
 
+  const expectedResult = {
+    ...encodedData,
+    exp: expect.any(Number),
+    iat: expect.any(Number),
+  }
+
   it("parses provided token", () => {
     const result = decodeJWT(validToken);
-    expect(result).toEqual(encodedData);
+    expect(result).toEqual(expectedResult);
   });
 
   it("cuts 'Bearer ' part from token, if it comes directly from header/cookie", () => {
     const result = decodeJWT("Bearer " + validToken);
-    expect(result).toEqual(encodedData);
+    expect(result).toEqual(expectedResult);
   });
 
   it("throws on malformed data in a token", () => {

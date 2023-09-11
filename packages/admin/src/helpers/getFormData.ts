@@ -4,6 +4,9 @@ interface GetFormDataOptions {
   autoCoerce?: boolean;
 }
 
+// Correct type?
+type ZodObjectType = any;
+
 export function getFormData<T extends z.AnyZodObject>(
   formData: FormData,
   schema: T,
@@ -20,70 +23,73 @@ export function getFormData<T extends z.AnyZodObject>(
     autoCoerce = true
   }: GetFormDataOptions = {}
 ): z.infer<T> {
-  const rawObject = Object.fromEntries(
+  const formDataData = Object.fromEntries(
       Array.from(formData.keys(), (key) => {
-        const tf = transformers?.[key];
         const values = formData.getAll(key);
+        const tf = transformers?.[key];
         if (tf instanceof Function) {
           return [key, tf(values, key, schema, formData)] as const;
         }
         // TODO add test cases for extra fields in object (no such key in schema)
-        if (autoCoerce && key in schema.shape) {
-          return [key, defaultCoerce(values, key, schema)]
+        const schemaField = schema.shape[key];
+        if (autoCoerce && schemaField) {
+          return [key, coerce(values, schemaField)]
         }
         return [key, values[0]] as const;
       }).filter(i => Array.isArray(i) && i.length === 2 && i[1] !== undefined)
   );
-  return schema.parse(rawObject);
+  return schema.parse(formDataData);
 }
 
 // @see https://github.com/colinhacks/zod/discussions/1763
-function defaultCoerce<T extends z.AnyZodObject>(
+function coerce(
   values: FormDataEntryValue[],
-  key: T['shape'],
-  schema: T,
+  schemaField: ZodObjectType
 ) {
-  const zodobj = schema.shape[key];
   if (!values.length) {
-    const dflt = getType(zodobj, z.ZodFirstPartyTypeKind.ZodDefault);
-    if (dflt) {
-      return dflt._def.defaultValue();
+    const defaultValue = getInnerZodObjectOfType(schemaField, z.ZodFirstPartyTypeKind.ZodDefault);
+    if (defaultValue) {
+      return defaultValue._def.defaultValue();
     }
-    if (getType(zodobj, z.ZodFirstPartyTypeKind.ZodNullable)) {
+    if (getInnerZodObjectOfType(schemaField, z.ZodFirstPartyTypeKind.ZodNullable)) {
       return null;
     }
-    if (getType(zodobj, z.ZodFirstPartyTypeKind.ZodOptional)) {
-      return undefined;
-    }
+    return undefined;
   }
-  const sch = getInnerType(zodobj);
+  const sch = getInnerFirstPartyTypeKind(schemaField);
   if (sch === z.ZodFirstPartyTypeKind.ZodArray) {
-    return values.map(i => coerceSimple(getInnerType(sch), i));
+    console.log("SCH2", schemaField._def.type)
+    return values.map(i => coerceSimple(schemaField._def.type, i));
   }
-  return coerceSimple(sch, values[0]);
+  return coerceSimple(schemaField, values[0]);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getType(zodobj: any, type: z.ZodFirstPartyTypeKind): any {
+function getInnerZodObjectOfType(
+  zodobj: ZodObjectType,
+  type: z.ZodFirstPartyTypeKind
+): ZodObjectType | undefined {
   if (zodobj?._def?.typeName === type) {
     return zodobj;
   }
   if (zodobj?._def?.innerType) {
-    return getType(zodobj._def.innerType, type);
+    return getInnerZodObjectOfType(zodobj._def.innerType, type);
   }
   return undefined;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getInnerType(zodobj: any): z.ZodFirstPartyTypeKind {
+function getInnerFirstPartyTypeKind(zodobj: ZodObjectType): z.ZodFirstPartyTypeKind {
   if (!zodobj?._def?.innerType?._def) {
     return zodobj?._def?.typeName;
   }
-  return getInnerType(zodobj?._def?.innerType);
+  return getInnerFirstPartyTypeKind(zodobj?._def?.innerType);
 }
 
-function coerceSimple(sch: z.ZodFirstPartyTypeKind, value: unknown) {
-  switch (sch) {
+function coerceSimple(sch: z.ZodType, value: unknown) {
+  const typeName = "typeName" in sch._def && typeof sch._def.typeName === "string"
+    ? sch._def.typeName
+    : undefined;
+
+  switch (typeName) {
     case z.ZodFirstPartyTypeKind.ZodNativeEnum:
     case z.ZodFirstPartyTypeKind.ZodNumber:
       return Number(value);
