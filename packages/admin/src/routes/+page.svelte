@@ -19,6 +19,8 @@
 	<a class="tile-nav__item button secondary" href="./channels"> channels </a>
 </nav>
 
+<a href="./settings">App settings</a>
+
 <style>
 	.tile-nav {
 		display: flex;

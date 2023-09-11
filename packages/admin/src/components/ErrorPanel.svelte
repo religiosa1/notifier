@@ -15,7 +15,7 @@
     {action.error}
     {#if isValidationError(action)}
       {#each action.errorDetails.allErrors as err}
-        <pre>{err.path}: {err.message}</pre>
+        <pre>{err.path}:{#if "validation" in err} ({err.validation}) {/if}: {err.message}</pre>
       {/each}
     {:else if hasField(action, "errorDetails", "string")}
       <pre>{action.errorDetails}</pre>

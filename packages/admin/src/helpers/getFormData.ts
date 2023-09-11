@@ -27,7 +27,8 @@ export function getFormData<T extends z.AnyZodObject>(
         if (tf instanceof Function) {
           return [key, tf(values, key, schema, formData)] as const;
         }
-        if (autoCoerce) {
+        // TODO add test cases for extra fields in object (no such key in schema)
+        if (autoCoerce && key in schema.shape) {
           return [key, defaultCoerce(values, key, schema)]
         }
         return [key, values[0]] as const;
@@ -64,7 +65,7 @@ function defaultCoerce<T extends z.AnyZodObject>(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getType(zodobj: any, type: z.ZodFirstPartyTypeKind): any {
-  if (zodobj._def?.typeName === type) {
+  if (zodobj?._def?.typeName === type) {
     return zodobj;
   }
   if (zodobj?._def?.innerType) {
@@ -76,7 +77,7 @@ function getType(zodobj: any, type: z.ZodFirstPartyTypeKind): any {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getInnerType(zodobj: any): z.ZodFirstPartyTypeKind {
   if (!zodobj?._def?.innerType?._def) {
-    return zodobj._def?.typeName;
+    return zodobj?._def?.typeName;
   }
   return getInnerType(zodobj?._def?.innerType);
 }
