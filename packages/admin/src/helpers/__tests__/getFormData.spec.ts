@@ -60,6 +60,62 @@ describe("getFormData", () => {
     expect(() => getFormData(fd2, schema)).toThrow();
   });
 
-  describe.todo("autoCoerce disabled tests");
-  describe.todo("nullable tests");
+  describe("nullable tests", () => {
+    const formData = new FormData();
+    formData.set("notEmpty", "123");
+
+    it("fills empty nullable fields as nulls", () => {
+      const schema = z.object({
+        empty: z.string().nullable(),
+        notEmpty: z.string().nullable(),
+      });
+      const result = getFormData(formData, schema);
+      expect(result).toEqual({
+        empty: null,
+        notEmpty: "123"
+      });
+    });
+
+    it("fills empty optional fields as undefined", () => {
+      const schema = z.object({
+        empty: z.string().optional(),
+        notEmpty: z.string().optional(),
+      });
+      const result = getFormData(formData, schema);
+      expect(result).toEqual({
+        empty: undefined,
+        notEmpty: "123"
+      });
+    });
+
+    it("fills items with default values as their default", () => {
+      const schema = z.object({
+        empty: z.string().default("test"),
+        notEmpty: z.string().nullable(),
+      });
+      const result = getFormData(formData, schema);
+      expect(result).toEqual({
+        empty: "test",
+        notEmpty: "123"
+      });
+    });
+
+    it("applies coercion for nullable items as required", () => {
+      const resultNullable = getFormData(formData,  z.object({
+        notEmpty: z.number().nullable(),
+      }));
+      expect(resultNullable).toEqual({
+        notEmpty: 123,
+      });
+    });
+
+    it("applies coercion for nullable items as required", () => {
+      const resultNullable = getFormData(formData,  z.object({
+        notEmpty: z.number().optional(),
+      }));
+      expect(resultNullable).toEqual({
+        notEmpty: 123,
+      });
+    });
+  });
 });
