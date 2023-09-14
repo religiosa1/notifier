@@ -5,6 +5,6 @@ import { BotMock } from "./BotMock";
 
 export const Bot: IBotConstructor = process.env.NODE_ENV === "production"
 	? BotProd
-	: BotMock;
+	: BotMock
 
 export type Bot = BotProd;

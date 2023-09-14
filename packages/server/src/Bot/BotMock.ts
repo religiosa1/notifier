@@ -1,11 +1,12 @@
 import { esc } from "src/util/esc";
-import { logger } from "src/logger";
 import type { Bot } from "./Bot";
 import type { IBot } from "./Models";
+import { BaseLogger } from "pino";
+import { inject } from "src/injection";
 
 /** Basic mock of Bot class for testing purposes */
 export class BotMock implements IBot {
-	constructor(token: string) {
+	constructor(token: string, private readonly logger: BaseLogger = inject("logger")) {
 		if (!token) {
 			throw new Error("Bot token isn't present in the env variables");
 		}
@@ -13,11 +14,11 @@ export class BotMock implements IBot {
 	}
 	async init() { }
 	async setWebHook(_: string) {
-		logger.info(`MOCK HOOK being set`)
+		this.logger.info(`MOCK HOOK being set`)
 	}
 	processUpdate(..._: Parameters<Bot["processUpdate"]>) { }
 	broadcastMessage(...args: Parameters<Bot["broadcastMessage"]>): ReturnType<Bot["broadcastMessage"]> {
-		logger.trace('sending a MOCK telegram message', ...args);
+		this.logger.trace('sending a MOCK telegram message', ...args);
 		return Promise.allSettled([
 			{
 				message_id: Math.floor(Math.random() * 1e9),
@@ -29,4 +30,6 @@ export class BotMock implements IBot {
 			}
 		]);
 	}
+
+	async destroy() {}
 }

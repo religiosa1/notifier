@@ -16,4 +16,5 @@ export interface IBot {
 		opts: SendMessageProps
 	): Promise<PromiseSettledResult<void | Message>[]>;
 	init(): Promise<void>;
+	destroy(): Promise<void>;
 }

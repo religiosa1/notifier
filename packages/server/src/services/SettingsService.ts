@@ -3,6 +3,10 @@ import { writeFile, readFile, access, constants } from "fs/promises";
 import { stripComments } from "jsonc-parser";
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
 import { Emitter } from "src/util/Emitter";
+import { Lock } from "src/util/Lock";
+
+type MaybePromise<T> = Promise<T> | T;
+type Disposer = () => MaybePromise<void>;
 
 export class SettingsService {
 	readonly currentConfigName = "config.current.json";
@@ -10,16 +14,30 @@ export class SettingsService {
 
 	private config: ServerConfig | undefined;
 	private storagePath: string = __dirname;
-	private emitter = new Emitter<{ change(config: ServerConfig, oldConfig?: ServerConfig): unknown }>();
+	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
+	private disposerLock = new Lock();
 
-	async loadConfig(): Promise<ServerConfig> {
+	async loadConfig(): Promise<ServerConfig | undefined> {
 		const currentConfigName = join(this.storagePath, this.currentConfigName);
 		const initialConfigName = join(this.storagePath, this.initialConfigName);
 
-		const fileToGet = await isReadable(currentConfigName) ? currentConfigName : initialConfigName;
+		const [ hasCurrentConfig, hasInitialConfig ] = await Promise.all([
+			isReadable(initialConfigName),
+			isReadable(currentConfigName),
+		]);
+		if (!hasCurrentConfig && !hasInitialConfig) {
+			this.emitter.emit("change", undefined );
+			return undefined;
+		}
+		const fileToGet = hasCurrentConfig ? currentConfigName : initialConfigName;
+
 		const dataString = await readFile(fileToGet, "utf8");
 		const data = JSON.parse(stripComments(dataString, " "));
-		return serverConfigSchema.parse(data);
+		if (!serverConfigSchema.safeParse(data).success) {
+			return undefined;
+		}
+		this.config = data;
+		return data;
 	}
 
 	getConfig(): ServerConfig | undefined {
@@ -28,6 +46,7 @@ export class SettingsService {
 
 	async setConfig(config: ServerConfig): Promise<void> {
 		serverConfigSchema.parse(config);
+		await this.disposerLock.wait();
 		await writeFile(
 			join(this.storagePath, this.currentConfigName),
 			JSON.stringify(config, undefined, 4),
@@ -39,14 +58,22 @@ export class SettingsService {
 	}
 
 	subscribe(
-		cb: (config: ServerConfig, oldConfig?: ServerConfig) => unknown,
+		cb: (config?: ServerConfig, oldConfig?: ServerConfig) => MaybePromise<Disposer | void>,
 		fields?: Array<keyof ServerConfig>
 	): () => void {
-		return this.emitter.on("change", (config, oldConfig) => {
-			const shouldCall = fields?.some((field) => config[field] !== oldConfig?.[field]) ?? true;
-			if (shouldCall) {
-				cb(config, oldConfig);
+		let disposer: Disposer | void;
+		return this.emitter.on("change", async (config, oldConfig) => {
+			if (typeof disposer === "function") {
+				const unlock = this.disposerLock.lock();
+				try {
+					// we're waiting for an old disposer to finish prior to launching the new handler
+					await disposer();
+				} finally {
+					unlock();
+				}
 			}
+			const shouldCall = fields?.some((field) => config?.[field] !== oldConfig?.[field]) ?? true;
+			disposer = shouldCall ? await cb(config, oldConfig) : undefined;
 		});
 	}
 	unsubscribeAll(): void {
