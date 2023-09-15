@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { serverConfigSchema } from "@shared/models/ServerConfig";
 import { inject } from "src/injection";
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
@@ -47,6 +47,29 @@ export default fp(async function (fastify) {
 				await this.authorizeJWT(req, reply);
 			}
 			await settingsService.setConfig(req.body);
+			return reply.send(result(null));
+		}
+	});
+
+	fastify.withTypeProvider<ZodTypeProvider>().route({
+		method: "PUT",
+		url: "/setup",
+		schema: {
+			body: serverConfigSchema,
+			response: {
+				200: resultSuccessSchema(z.null()),
+				410: resultFailureSchema,
+			}
+		},
+		async handler(req, reply) {
+			const config = settingsService.getConfig();
+			if (config) {
+				return reply.send(result(new ResultError(410, "Server has already been configured.")));
+			}
+			await settingsService.setConfig(req.body);
+
+			// TODO: database connection, seeding, bot connection etc.
+
 			return reply.send(result(null));
 		}
 	});

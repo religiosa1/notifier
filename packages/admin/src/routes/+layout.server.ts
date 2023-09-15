@@ -11,18 +11,15 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 	const auth = cookies.get("Authorization");
 
 	if (!global_hasValidServerSettings) {
-		if (["/login", "/settings"].includes(url.pathname)) {
+		if (url.pathname === "/setup") {
 			return;
 		}
 		global_hasValidServerSettings = await fetch(serverUrl('/settings')).then(r => r.ok);
 		if (!global_hasValidServerSettings) {
-			throw redirect(303, base + `/settings?initialSetup`);
+			throw redirect(303, base + `/setup`);
 		}
 	}
 
-	// That's not a real authorization check, it's more for the convenience.
-	// Real authorization check occurs in the fetch calls.
-	// see hooks.server.ts
 	if (!auth) {
 		if (url.pathname === "/login") {
 			return {};

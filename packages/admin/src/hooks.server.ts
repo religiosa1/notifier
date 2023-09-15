@@ -14,10 +14,6 @@ export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
 		return fetch(request);
 	}
 	return fetch(request).then(r => {
-		// Config unavailable
-		if (r.status === 550) {
-			throw redirect(303, base + uri`/settings?initialSetup`);
-		}
 		if (r.status === 403 || r.status === 401) {
 			throw redirect(303, base + uri`/login?referer=${event.url.pathname}`);
 		}
