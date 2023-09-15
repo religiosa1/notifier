@@ -4,6 +4,9 @@ import { stripComments } from "jsonc-parser";
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
 import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
+import { watchFile } from 'node:fs';
+import { inject } from "src/injection";
+
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
@@ -12,32 +15,52 @@ export class SettingsService {
 	readonly currentConfigName = "config.current.json";
 	readonly initialConfigName = "config.json";
 
-	private config: ServerConfig | undefined;
 	private storagePath: string = __dirname;
 	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
 	private disposerLock = new Lock();
+
+	#config: ServerConfig | undefined;
+	private get config() {
+		return this.#config;
+	}
+	private set config(value: ServerConfig | undefined) {
+		const oldConfig = this.#config;
+		this.#config = value;
+		this.emitter.emit("change", value, oldConfig);
+	}
+
+	constructor() {
+		const watchHandler = () => {
+			const log = inject("logger");
+			log.warn("Settings file was changed");
+			this.loadConfig().catch((e) => {
+				log.warn("Unable to load settings file", e);
+				this.config = undefined;
+			})
+		};
+		watchFile(join(this.storagePath, this.initialConfigName), watchHandler);
+		watchFile(join(this.storagePath, this.currentConfigName), watchHandler);
+	}
 
 	async loadConfig(): Promise<ServerConfig | undefined> {
 		const currentConfigName = join(this.storagePath, this.currentConfigName);
 		const initialConfigName = join(this.storagePath, this.initialConfigName);
 
 		const [ hasCurrentConfig, hasInitialConfig ] = await Promise.all([
-			isReadable(initialConfigName),
 			isReadable(currentConfigName),
+			isReadable(initialConfigName),
 		]);
 		if (!hasCurrentConfig && !hasInitialConfig) {
-			this.emitter.emit("change", undefined );
-			return undefined;
+			return this.config = undefined;
 		}
 		const fileToGet = hasCurrentConfig ? currentConfigName : initialConfigName;
 
 		const dataString = await readFile(fileToGet, "utf8");
 		const data = JSON.parse(stripComments(dataString, " "));
 		if (!serverConfigSchema.safeParse(data).success) {
-			return undefined;
+			return this.config = undefined;
 		}
-		this.config = data;
-		return data;
+		return this.config = data;;
 	}
 
 	getConfig(): ServerConfig | undefined {
@@ -52,9 +75,7 @@ export class SettingsService {
 			JSON.stringify(config, undefined, 4),
 			"utf8"
 		);
-		const oldConfig = this.config;
 		this.config = config;
-		this.emitter.emit("change", config, oldConfig);
 	}
 
 	subscribe(

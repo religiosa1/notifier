@@ -5,11 +5,13 @@ import { channelNameSchema } from "@shared/models/Channel";
 import type { IBot } from "src/Bot/Models";
 import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { db } from "src/db";
+import { inject } from "src/injection";
 
 interface NotifyOptions {
 	bot: IBot
 }
-export default fp<NotifyOptions>(async function (fastify, { bot }) {
+export default fp<NotifyOptions>(async function (fastify) {
+	const bot = inject("Bot");
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
 		url: "/notify",
@@ -29,6 +31,9 @@ export default fp<NotifyOptions>(async function (fastify, { bot }) {
 		},
 		onRequest: fastify.authorizeAnyMethod,
 		async handler(req, reply) {
+			if (!bot) {
+				throw new ResultError(503, "Bot isn't initialized");
+			}
 			const channels = Array.isArray(req.body.channels)
 				? req.body.channels
 				: [req.body.channels];

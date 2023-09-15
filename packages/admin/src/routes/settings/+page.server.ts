@@ -1,20 +1,24 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { serverConfigSchema } from "@shared/models/ServerConfig";
+import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
 import { getFormData } from "~/helpers/getFormData";
 import z from "zod";
 import { randomBytes } from "crypto";
-import { unwrapValidationError } from "~/helpers/unwrapResult";
+import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
+import { serverUrl } from "~/helpers/serverUrl";
+import { redirect } from "@sveltejs/kit";
 
 const settingsFormDataSchema = serverConfigSchema.extend({
 	apiUrl: z.string().url()
 });
 type SettingsFormData = z.infer<typeof settingsFormDataSchema>;
 
-export const load: PageServerLoad = async ({ fetch }) => {
-	// TODO: try getting this data from server
+
+export const load: PageServerLoad = async ({ fetch, locals }) => {
+	const serverSettings = fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => {});
 	const settings: Partial<SettingsFormData> = {
 		apiUrl: "http://127.0.0.1:8085/",
-		jwtSecret: randomBytes(256).toString('base64'),
+		jwtSecret: randomBytes(256).toString("base64"),
+		...serverSettings
 	};
 	return {
 		settings
@@ -22,14 +26,24 @@ export const load: PageServerLoad = async ({ fetch }) => {
 }
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, fetch, url }) => {
 		const formData = await request.formData();
 		try {
 			const data = getFormData(formData, settingsFormDataSchema);
-			console.log("data", data);
-			return { success: true };
+			var serverSettings = await fetch(serverUrl("/settings"), {
+				method: "PUT",
+				body: JSON.stringify(data),
+			}).then(unwrapResult<ServerConfig>);
 		} catch (e) {
 			return unwrapValidationError(e, Object.fromEntries(formData));
 		}
+		if (url.searchParams.has('initialSetup')) {
+			throw redirect(303, "/login");
+		}
+
+		return {
+			success: true,
+			settings: serverSettings
+		};
 	}
 }

@@ -6,11 +6,13 @@ declare module "fastify" {
 	export interface FastifyInstance<
 		HttpServer = http.Server,
 		HttpRequest = http.IncomingMessage,
-		HttpResponse = http.ServerResponse
+		HttpResponse = http.ServerResponse,
+		Logger extends FastifyBaseLogger = FastifyBaseLogger,
+		TypeProvider extends FastifyTypeProvider = FastifyTypeProviderDefault,
 	> {
-		authorizeJWT(): void;
-		authorizeKey(): void;
-    authorizeAnyMethod(): void;
+		authorizeJWT: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>,
+		authorizeKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    authorizeAnyMethod: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
 	}
 
 	export interface FastifyRequest {

@@ -79,7 +79,7 @@ export default fp(async function (fastify) {
 	// Not actually used anywhere, do we even need it?
 	fastify.decorate(
 		"authorizeKey",
-		authorizeKey.bind(undefined, fastify),
+		authorizeKey.bind(fastify, fastify),
 	);
 
 	fastify.decorate(

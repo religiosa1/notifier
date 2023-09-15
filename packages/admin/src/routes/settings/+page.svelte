@@ -32,6 +32,25 @@
 
 <ErrorPanel action={form} />
 
+{#if !data?.settings}
+<p>
+	Couldn't load the settings file config.json
+</p>
+<p>
+	Most likely, this means that your server hasn't been configured yet. You can do it right now.
+</p>
+<p>
+	Please notice, that while you don't have any settings, the server doesn't
+	ask for any authorization. After you create the settings you will be asked to login with the
+	default credentials (admin:1234567). If something in your configuration
+	(DB connection, public url, etc.) is wrong, you'll have to manually delete <code>config.json</code>
+	file from the server and start all over again.
+</p>
+<p>
+	You can edit the <code>config.json</code> file directly, if you feel confident enough.
+</p>
+{/if}
+
 <form method="POST">
 	<div class="input-group">
 		<label class="form-input">
@@ -102,9 +121,7 @@
 						required
 						value={settings.apiUrl ?? ""}
 					/>
-					<small>
-						This secret is used for signing JWT tokens on server. It has to be cryptograpgically sound.
-					</small>
+					<small>Address of your server, accessible to the Admin site</small>
 				</label>
 			</div>
 			<div class="input-group">
@@ -121,6 +138,7 @@
 					<button type="button" on:click={handleGenerateClick}>Generate</button>
 					<small>
 						This secret is used for signing JWT tokens on server. It has to be cryptograpgically sound.
+						If you leave this field empty, it will be automatically generated.
 					</small>
 				</label>
 			</div>

@@ -9,7 +9,7 @@ export async function authorizeKey(
 	fastify: FastifyInstance,
 	request: FastifyRequest,
 	reply: FastifyReply
-) {
+): Promise<void> {
 	try {
 		const key = (
 			Array.isArray(request.headers["x-api-key"])
