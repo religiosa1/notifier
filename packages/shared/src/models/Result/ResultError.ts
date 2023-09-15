@@ -43,7 +43,7 @@ export class ResultError extends Error implements ResultFaliure {
     if (err instanceof Error) {
       e.error = err.name;
       e.message = err.message;
-      e.details = err;
+      e.details = "cause" in err ? err.cause : undefined;
       if ("statusCode" in err && typeof err.statusCode === "number") {
         e.statusCode = err.statusCode;
       }

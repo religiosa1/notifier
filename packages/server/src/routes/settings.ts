@@ -1,9 +1,10 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { serverConfigSchema } from "@shared/models/ServerConfig";
 import { inject } from "src/injection";
+import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
 
 export default fp(async function (fastify) {
 	const settingsService = inject("SettingsService");
@@ -14,18 +15,17 @@ export default fp(async function (fastify) {
 		schema: {
 			response: {
 				200: resultSuccessSchema(serverConfigSchema),
-				404: resultFailureSchema,
-				500: resultFailureSchema,
+				403: resultFailureSchema,
+				550: resultFailureSchema,
 			}
 		},
 		async handler(req, reply) {
 			const config = settingsService.getConfig();
 			if (!config) {
-				throw new ResultError(500, "Unable to load the config");
+				return reply.send(result(new ConfigUnavailableError()));
 			}
 
 			await this.authorizeJWT(req, reply);
-
 			return reply.send(result(config));
 		}
 	});
@@ -37,8 +37,8 @@ export default fp(async function (fastify) {
 			body: serverConfigSchema,
 			response: {
 				200: resultSuccessSchema(z.null()),
-				404: resultFailureSchema,
-				422: resultFailureSchema,
+				403: resultFailureSchema,
+				550: resultFailureSchema,
 			}
 		},
 		async handler(req, reply) {

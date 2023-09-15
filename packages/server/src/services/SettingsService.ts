@@ -6,16 +6,12 @@ import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
 import { watchFile } from 'node:fs';
 import { inject } from "src/injection";
-
+import { getRootDir } from "src/util/getRootDir";
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
 
 export class SettingsService {
-	readonly currentConfigName = "config.current.json";
-	readonly initialConfigName = "config.json";
-
-	private storagePath: string = __dirname;
 	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
 	private disposerLock = new Lock();
 
@@ -29,7 +25,11 @@ export class SettingsService {
 		this.emitter.emit("change", value, oldConfig);
 	}
 
-	constructor() {
+	constructor(
+		private readonly currentConfigName = "config.current.json",
+		private readonly initialConfigName = "config.json",
+		private readonly storagePath: string = getRootDir()
+	) {
 		const watchHandler = () => {
 			const log = inject("logger");
 			log.warn("Settings file was changed");
@@ -68,14 +68,19 @@ export class SettingsService {
 	}
 
 	async setConfig(config: ServerConfig): Promise<void> {
-		serverConfigSchema.parse(config);
-		await this.disposerLock.wait();
-		await writeFile(
-			join(this.storagePath, this.currentConfigName),
-			JSON.stringify(config, undefined, 4),
-			"utf8"
-		);
-		this.config = config;
+		let storedConfig: ServerConfig | undefined;
+		try {
+			serverConfigSchema.parse(config);
+			await this.disposerLock.wait();
+			await writeFile(
+				join(this.storagePath, this.currentConfigName),
+				JSON.stringify(config, undefined, 4),
+				"utf8"
+			);
+			storedConfig = config
+		} finally {
+			this.config = storedConfig;
+		}
 	}
 
 	subscribe(

@@ -32,22 +32,23 @@
 
 <ErrorPanel action={form} />
 
-{#if !data?.settings}
+{#if !data?.initialSetup}
 <p>
-	Couldn't load the settings file config.json
-</p>
-<p>
-	Most likely, this means that your server hasn't been configured yet. You can do it right now.
+	Your server hasn't been configured. You can do it right now.
 </p>
 <p>
 	Please notice, that while you don't have any settings, the server doesn't
-	ask for any authorization. After you create the settings you will be asked to login with the
+	ask for the authorization. After you create the settings you will have to login with the
 	default credentials (admin:1234567). If something in your configuration
-	(DB connection, public url, etc.) is wrong, you'll have to manually delete <code>config.json</code>
+	(DB connection, public url, etc.) is wrong, you'll have to manually delete <code>config.current.json</code>
 	file from the server and start all over again.
 </p>
 <p>
-	You can edit the <code>config.json</code> file directly, if you feel confident enough.
+	You can edit <code>config.current.json</code> or <code>config.json</code> files directly, if you feel confident enough.
+</p>
+<p>
+	If your server IS configured, but you still see this message, check that server has the required permissions to read
+	<code>config.json</code> and ro read/write <code>config.current.json<code> in the root folder of the server.
 </p>
 {/if}
 

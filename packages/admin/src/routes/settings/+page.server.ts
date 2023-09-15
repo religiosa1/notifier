@@ -13,15 +13,16 @@ const settingsFormDataSchema = serverConfigSchema.extend({
 type SettingsFormData = z.infer<typeof settingsFormDataSchema>;
 
 
-export const load: PageServerLoad = async ({ fetch, locals }) => {
-	const serverSettings = fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => {});
+export const load: PageServerLoad = async ({ fetch }) => {
+	const serverSettings = await fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => undefined);
 	const settings: Partial<SettingsFormData> = {
 		apiUrl: "http://127.0.0.1:8085/",
 		jwtSecret: randomBytes(256).toString("base64"),
 		...serverSettings
 	};
 	return {
-		settings
+		settings,
+		initialSetup: !!serverSettings
 	}
 }
 

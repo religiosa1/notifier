@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     const hasServerSettings = await fetch(serverUrl("/settings")).then(r => r.ok);
 
     if (!hasServerSettings) {
-      throw redirect(303, "/settings");
+      throw redirect(303, "/settings?initialSetup");
     }
     throw redirect(303, uri`/login?referrer=${url.pathname}`)
   }
