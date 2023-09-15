@@ -2,6 +2,7 @@
   "name": "@tg-notifier/server",
   "version": "2.0.0",
   "description": "Telegram notifier bot",
+  "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {

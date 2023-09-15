@@ -2,6 +2,7 @@
   "name": "@tg-notifier/models",
   "version": "1.0.0",
   "description": "common models for notiffier project",
+  "type": "module",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",

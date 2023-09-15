@@ -6,7 +6,6 @@
     "declaration": true,
     "outDir": "dist",
     "target": "es2020",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    "module": "commonjs",                                /* Specify what module code is generated. */
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,6 +13,8 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": false,
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
