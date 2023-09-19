@@ -8,12 +8,39 @@ import { counted } from "@shared/models/Counted";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
-import { db } from "src/db";
+import { inject } from "src/injection";
+import { eq, inArray, sql } from "drizzle-orm";
+import { schema } from "src/db";
 
 export default fp(async function (fastify) {
+	const dbm = inject("db");
+
+	const usersCountQuery = dbm.prepare((db) =>
+		db.select({ count: sql<number>`count(*)` }).from(schema.users)
+			.where(eq(schema.users.authorizationStatus, AuthorizationEnum.pending))
+			.prepare("users_count_query")
+	);
+	const usersQuery = dbm.prepare((db) => db.query.users.findMany({
+			offset: sql.placeholder("skip"),
+			limit: sql.placeholder("take"),
+			with: {
+				groups: {
+					with: {
+						group: {
+							columns: {
+								id: true,
+								name: true,
+							}
+						}
+					}
+				},
+			}
+		}).prepare("users_query")
+	);
+
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
-		url: "/auth-request",
+		url: "/user-confirmation-request",
 		schema: {
 			querystring: paginationSchema,
 			response: {
@@ -23,31 +50,35 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [count, users] = await db.$transaction([
-				db.user.count({
-					where: { authorizationStatus: AuthorizationEnum.pending }
-				}),
-				db.user.findMany({
-					skip,
-					take,
-					include: {
-						groups: {
-							select: { id: true, name: true }
-						}
-					},
-					where: { authorizationStatus: AuthorizationEnum.pending }
-				}),
+
+			const [
+				[{ count = -1 } = {} ],
+				users
+			] = await Promise.all([
+				usersCountQuery.value.execute(),
+				usersQuery.value.execute({ skip, take }),
 			]);
+
 			return reply.send(result({
 				count,
-				data: users as UserModel.UserWithGroups[],
+				data: users.map(user => ({
+					...user,
+					groups: user.groups.map(groups => groups.group)
+				})) satisfies UserModel.UserWithGroups[]
 			}));
 		}
 	});
 
+
+	const deleteQuery = dbm.prepare(db => db.update(schema.users)
+		.set({ authorizationStatus: AuthorizationEnum.declined, updatedAt: sql`CURRENT_TIMESTAMP` })
+		.where(inArray(schema.users.id, sql.placeholder("ids")))
+		.returning({ count: sql<number>`count(*)` })
+		.prepare("delete_query")
+	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",
-		url: "/auth-request",
+		url: "/user-confirmation-request",
 		schema: {
 			querystring: z.object({ id: batchIdsSchema }),
 			response: {
@@ -57,14 +88,9 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const { count } = await db.user.updateMany({
-				where: {
-					id: { in: ids }
-				},
-				data: {
-					authorizationStatus: AuthorizationEnum.declined
-				}
-			});
+
+			const [{ count = -1 } = {}] = await deleteQuery.value.execute({ ids });
+
 			const data = {
 				count,
 				outOf: ids.length,
@@ -74,9 +100,15 @@ export default fp(async function (fastify) {
 		}
 	});
 
+
+	const acceptQuery = dbm.prepare(db => db.update(schema.users)
+		.set({ authorizationStatus: AuthorizationEnum.accepted, updatedAt: sql`CURRENT_TIMESTAMP` })
+		.returning({ count: sql<number>`count(*)` })
+		.prepare("accept_query")
+	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "PUT",
-		url: "/auth-request",
+		url: "/user-confirmation-request",
 		schema: {
 			querystring: z.object({ id: batchIdsSchema }),
 			response: {
@@ -85,15 +117,10 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
+
 			const ids = parseIds(req.query.id);
-			const { count } = await db.user.updateMany({
-				where: {
-					id: { in: ids }
-				},
-				data: {
-					authorizationStatus: AuthorizationEnum.accepted
-				}
-			});
+			const [{ count = -1 } = {}] = await acceptQuery.value.execute({ ids });
+
 			const data = {
 				count,
 				outOf: ids.length,

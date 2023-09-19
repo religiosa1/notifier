@@ -1,73 +1,75 @@
-import type { DbTransactionClient } from "src/db";
-import type { UserCreate, UserUpdate, UserDetail } from "@shared/models/User";
-import { userDetailSchema } from "@shared/models/User";
-import { omit } from "@shared/helpers/omit";
+import type { UserCreate, UserUpdate, UserDetail, User } from "@shared/models/User";
 import { hash } from 'src/Authorization/hash';
+import { schema, type DbTransactionClient } from "src/db";
+import { inject } from "src/injection";
+import { assert } from "src/util/assert";
+import { eq, inArray, sql } from "drizzle-orm";
 
-export async function getUser(tx: DbTransactionClient, userId: number): Promise<UserDetail> {
-	const user = await tx.user.findUniqueOrThrow({
-		where: { id: userId },
-		include: { groups: { select: { id: true, name: true } } }
+export async function getUser(
+	userId: number,
+	tx: DbTransactionClient = inject("db").connection
+): Promise<UserDetail> {
+	const user = await tx.query.users.findFirst({
+		where: (user, {eq}) => eq(user.id, userId),
+		with: { groups: { with: {
+			group: {
+				columns: {
+					id: true,
+					name: true
+				}
+			}
+		}}}
 	});
-	return userDetailSchema.parse(user);
+	assert(user);
+	return {
+		...user,
+		groups: user.groups.map(g => g.group),
+	};
 }
 
-export async function getUserIdByTgId(tx: DbTransactionClient, telegramId: number): Promise<number | undefined> {
-	return tx.user.findUnique({
-		select: { id: true },
-		where: { telegramId },
+export async function getUserIdByTgId(
+	telegramId: number,
+	tx: DbTransactionClient = inject("db").connection
+): Promise<number | undefined> {
+	return tx.query.users.findFirst({
+		columns: { id: true },
+		where: (user, {eq}) => eq(user.telegramId, telegramId),
 	}).then(r => r?.id);
 }
 
-export async function createUser(tx: DbTransactionClient, user: UserCreate) {
+export async function createUser(
+	user: UserCreate,
+	tx: DbTransactionClient = inject("db").connection
+): Promise<User>{
 	const password = await hash(user.password);
-	return tx.user.create({
-		data: {
-			...omit(user, ["channels", "groups", "password"]),
-			password,
-			groups: nameArrayToUpsert(user.groups)
-		},
-		include: {
-			groups: { select: { id: true, name: true } },
-		}
-	})
+	const [createdUser] = await tx.insert(schema.users).values({
+		...user,
+		password
+	}).returning();
+	assert(createdUser);
+	return createdUser;
 }
 
-export async function editUser(tx: DbTransactionClient, id: number, user: UserUpdate) {
-	const password = await hash(user.password);
-	return tx.user.update({
-		where: { id },
-		data: {
-			...omit(user, ["channels", "groups", "password"]),
-			password,
-			groups: nameArrayToUpsert(user.groups),
-		},
-		include: {
-			groups: { select: { id: true, name: true } },
-		}
-	})
+export async function editUser(id: number, user: UserUpdate, tx: DbTransactionClient = inject("db").connection) {
+	const password = user.password ? await hash(user.password) : undefined;
+	const [updatedUser] = await tx.update(schema.users)
+		.set({ ...user, password })
+		.where(eq(schema.users.id, id))
+		.returning();
+	assert(updatedUser);
+	// TODO upsert groups
+	return {
+		...updatedUser,
+		groups: [],
+	};
 }
 
-export async function deleteUsers(tx: DbTransactionClient, ids: number[]): Promise<number> {
+export async function deleteUsers(ids: number[], tx: DbTransactionClient = inject("db").connection): Promise<number> {
 	if (!ids?.length) {
 		return 0;
 	}
-	const { count } = await tx.user.deleteMany({
-		where: { id: { in: ids } }
-	});
+	const [{ count = -1} = {}] = await tx.delete(schema.users)
+		.where(inArray(schema.users.id, ids))
+		.returning({ count: sql<number>`count(*)`})
 	return count;
-}
-
-function nameArrayToUpsert(arr: string[] | undefined | null) {
-	if (!arr || !Array.isArray(arr)) {
-		return;
-	}
-	return {
-		connectOrCreate: arr.filter(i => i && typeof i === "string").map((name) => {
-			return {
-				where: { name },
-				create: { name },
-			}
-		}),
-	};
 }

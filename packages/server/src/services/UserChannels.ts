@@ -1,114 +1,155 @@
-import type { Channel, UserChannel } from "@prisma/client";
-import type { ChannelSubscription } from "@shared/models/Channel";
-import type { DbTransactionClient } from "src/db";
+import type { Channel, ChannelSubscription } from "@shared/models/Channel";
+import { eq, and, inArray, sql, getTableColumns } from "drizzle-orm";
+import { WithSubqueryWithSelection } from "drizzle-orm/pg-core";
+import { schema, type DbTransactionClient } from "src/db";
+import { inject } from "src/injection";
+import { assert } from "src/util/assert";
 
 export type BatchPayload = {
 	count: number
 }
 
-export function getUserChannels(
-	tx: DbTransactionClient,
+export async function getUserChannels(
 	userId: number,
 	{
-		skip,
-		take
-	} = {
-			skip: 0,
-			take: 20,
-		}
+		skip = 0,
+		take = 20,
+	} = {},
+	tx: DbTransactionClient = inject("db").connection
 ): Promise<[data: Channel[], total: number]> {
-	return Promise.all([
-		tx.channel.findMany({
-			skip,
-			take,
-			where: {
-				userChannels: { some: { userId } }
-			}
-		}),
-		tx.userChannel.count({
-			where: { userId }
-		}),
-	] as const);
+	const userChannels = tx.$with("user_channels").as(
+		tx.select().from(schema.channels)
+			.innerJoin(schema.usersToChannels, eq(schema.channels.id, schema.usersToChannels.channelId))
+			.orderBy(schema.channels.id)
+			.where(eq(schema.usersToChannels.userId, userId))
+	);
+
+	const [ channels, [ {count = -1} = {} ]] = await Promise.all([
+		tx.selectDistinct(getTableColumns(schema.channels)).from(userChannels).limit(take).offset(skip),
+		tx.select({ count: sql<number>`COUNT(DISTINCT ${schema.channels.id})` }).from(userChannels),
+	]);
+	return [channels, count];
 }
 
-export function availableChannels(
-	tx: DbTransactionClient,
-	userId: number
+export async function availableUnsubscribedChannels(
+	userId: number,
+	tx: DbTransactionClient = inject("db").connection
 ): Promise<Channel[]> {
-	return tx.channel.findMany({
-		where: {
-			Groups: { some: { Users: { some: { id: userId } } } },
-			userChannels: { none: { userId } },
-		}
-	});
+	const data = await tx.select(getTableColumns(schema.channels))
+		.from(schema.channels)
+		.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
+		.innerJoin(schema.groups, eq(schema.channelsToGroups.groupId, schema.groups.id))
+		.innerJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.groups.id))
+		.leftJoin(schema.usersToChannels, and(
+			eq(schema.usersToChannels.userId, schema.usersToGroups.userId),
+			eq(schema.usersToChannels.channelId, schema.channels.id)
+		))
+		.where(and(
+			eq(schema.usersToGroups.userId, userId),
+		))
+		.groupBy(schema.channels.id)
+		.having(sql`COUNT(${schema.usersToChannels.channelId}) > 0`)
+
+	return data;
 }
 
+/** Get a list of all channels available to user, with their subscription status for the user */
 export async function allAvailableChannels(
-	tx: DbTransactionClient,
-	userId: number
+	userId: number,
+	tx: DbTransactionClient = inject("db").connection
 ): Promise<ChannelSubscription[]> {
-	const data = await tx.channel.findMany({
-		include: { userChannels: true },
-		where: {
-			Groups: { some: { Users: { some: { id: userId } } } },
-		},
-	});
-	return data.map(i => ({
-		id: i.id,
-		name: i.name,
-		subscribed: i.userChannels.length > 0,
-	}));
-}
+	const data = await tx.select({
+		id: schema.channels.id,
+		name: schema.channels.name,
+		subscribed: sql<boolean>`COUNT(${schema.usersToChannels.channelId}) <> 0`,
+	}).from(schema.channels)
+		.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
+		.innerJoin(schema.groups, eq(schema.channelsToGroups.groupId, schema.groups.id))
+		.innerJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.groups.id))
+		.leftJoin(schema.usersToChannels, and(
+			eq(schema.usersToChannels.userId, schema.usersToGroups.userId),
+			eq(schema.usersToChannels.channelId, schema.channels.id)
+		))
+		.where(and(
+			eq(schema.usersToGroups.userId, userId),
+		))
+		.groupBy(schema.channels.id);
 
+	// TODO
+	console.log("allAvailableChannels, check that subscribed is really boolean!", data);
+	return data;
+}
 
 export async function connectUserChannel(
-	tx: DbTransactionClient,
 	userId: number,
-	channelId: number
-): Promise<UserChannel> {
-	const perms = await tx.channel.findFirst({
-		where: {
-			id: channelId,
-			Groups: { some: {
-				Users: { some: { id: userId}}
-			}}
-		},
-	});
-	if (perms == null) {
+	channelId: number,
+	tx: DbTransactionClient = inject("db").connection
+): Promise<{ id: number, userId: number, channelId: number }> {
+	const [permisionGroup] = await tx.select({ id: schema.groups.id }).from(schema.groups)
+		.innerJoin(schema.channelsToGroups, and(
+			eq(schema.channelsToGroups.groupId, schema.groups.id),
+			eq(schema.channelsToGroups.channelId, channelId)
+		))
+		.innerJoin(schema.usersToGroups, and(
+			eq(schema.usersToGroups.groupId, schema.groups.id),
+			eq(schema.usersToGroups.userId, userId),
+		))
+		.limit(1);
+
+	if (!permisionGroup) {
 		throw new Error("The user doesn't have the required permissions to join the channel");
 	}
-	return tx.userChannel.create({ data: { userId, channelId } });
+	const [userChannel] = await tx.insert(schema.usersToChannels).values({ userId, channelId }).returning();
+	assert(userChannel);
+	return userChannel;
 }
 
-export function disconnectUserChannels(
-	tx: DbTransactionClient,
+export async function disconnectUserChannels(
 	userId: number,
 	channelIds: number[],
+	tx: DbTransactionClient = inject("db").connection
 ): Promise<BatchPayload> {
-	return tx.userChannel.deleteMany({
-		where: {
-			userId,
-			channelId: { in: channelIds }
-		}
-	});
+	if (!userId || !channelIds?.length) {
+		return { count: 0 };
+	}
+	const rowsToDelete = tx.$with("rows_to_delete").as(tx.select({ id: schema.usersToChannels.id })
+		.from(schema.usersToChannels)
+		.where(and(
+			eq(schema.usersToChannels.userId, userId),
+			inArray(schema.usersToChannels.userId, channelIds),
+		))
+	);
+
+	return deleteUserChannelsWith(rowsToDelete, tx);
 }
 
 /** Removing all of the UserChannels, to which users don't have access. */
-export function removeRestricredChannels(tx: DbTransactionClient): Promise<number> {
-	// I can't manage to do this effectively in Prisma, so here goes some raw sql.
-	return tx.$executeRaw`
-		WITH orphaned AS (
-			SELECT UserChannel.channelId, UserChannel.userId FROM UserChannel
-			JOIN Channel ON UserChannel.channelId = Channel.id
-			JOIN User ON UserChannel.userId = User.id
-			LEFT JOIN _ChannelToGroup ON Channel.id = _ChannelToGroup.A
-			LEFT JOIN [Group] ON _ChannelToGroup.B = [Group].id
-			LEFT JOIN _GroupToUser ON _GroupToUser.B = User.id AND [Group].id = _GroupToUser.A
-			WHERE _GroupToUser.B is NULL
-		)
-		DELETE FROM UserChannel WHERE
-			userId IN (SELECT userId FROM orphaned)
-			AND
-			channelId IN (SELECT channelId FROM orphaned)
-	`;
+export async function removeRestricredChannels(tx: DbTransactionClient = inject("db").connection): Promise<BatchPayload> {
+	const orphanedSq = tx.$with("orphaned").as(
+		tx.select({id: schema.usersToChannels.id}).from(schema.usersToChannels)
+			.innerJoin(schema.channels, eq(schema.channels.id, schema.usersToChannels.channelId))
+			.innerJoin(schema.users, eq(schema.users.id, schema.usersToChannels.userId))
+			.leftJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
+			.leftJoin(schema.groups, eq(schema.groups.id, schema.channelsToGroups.groupId))
+			.leftJoin(schema.usersToGroups, and(
+				eq(schema.users.id, schema.usersToGroups.userId),
+				eq(schema.groups.id, schema.usersToGroups.groupId),
+			))
+	);
+
+	return deleteUserChannelsWith(orphanedSq, tx);
+}
+
+type RowsToDeleteWith = WithSubqueryWithSelection<{
+	id: typeof schema.usersToChannels.id,
+}, string>;
+
+async function deleteUserChannelsWith(
+	rowsToDelete: RowsToDeleteWith,
+	tx: DbTransactionClient = inject("db").connection
+): Promise<BatchPayload> {
+	const [{count = -1} = {}] = await tx.delete(schema.usersToChannels)
+		.where(inArray(schema.usersToChannels.id, rowsToDelete))
+		.returning({ count: sql<number>`count(*)`})
+	return { count };
 }

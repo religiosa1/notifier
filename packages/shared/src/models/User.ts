@@ -1,6 +1,6 @@
 import z from "zod";
-import { AuthorizationEnum } from "./AuthorizationEnum";
-import { UserRoleEnum } from "./UserRoleEnum";
+import { AuthorizationEnum, authorizationEnumSchema } from "./AuthorizationEnum";
+import {  UserRoleEnum, userRoleEnumSchema } from "./UserRoleEnum";
 import { userPreviewSchema } from "./UserPreview";
 import { groupNameSchema } from "./Group";
 
@@ -9,8 +9,8 @@ export const passwordSchema = z.string().min(6).nullable();
 export const userSchema = userPreviewSchema.extend({
 	telegramId: z.number({ coerce: true }),
 	password: z.optional(passwordSchema),
-	authorizationStatus: z.nativeEnum(AuthorizationEnum).default(AuthorizationEnum.pending),
-	role: z.nativeEnum(UserRoleEnum).default(AuthorizationEnum.pending),
+	authorizationStatus: authorizationEnumSchema.default(AuthorizationEnum.pending),
+	role: userRoleEnumSchema.default(UserRoleEnum.regular),
 });
 export type User = z.infer<typeof userSchema>;
 

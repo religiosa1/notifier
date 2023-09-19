@@ -36,7 +36,7 @@
 }
 }>
 	<h3>The channel is accessible to the following groups</h3>
-	<SelectableTable items={data.channel?.Groups} bind:selected={selectedGroups}>
+	<SelectableTable items={data.channel?.groups} bind:selected={selectedGroups}>
 		<svelte:fragment slot="header">
 			<th>Name</th>
 		</svelte:fragment>
@@ -51,7 +51,7 @@
 		</svelte:fragment>
 	</SelectableTable>
 
-	{#if data?.channel?.Groups.length}
+	{#if data?.channel?.groups.length}
 		<div class="form-controls">
 			<button class="danger" disabled={selectedGroups.size === 0}>Disconnect selected</button>
 			<button class="danger" formaction="?/disconnectAllGroups">Disconnect all</button>

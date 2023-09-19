@@ -10,9 +10,9 @@ declare module "fastify" {
 		Logger extends FastifyBaseLogger = FastifyBaseLogger,
 		TypeProvider extends FastifyTypeProvider = FastifyTypeProviderDefault,
 	> {
-		authorizeJWT: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>,
-		authorizeKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
-    authorizeAnyMethod: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+		authorizeJWT: (request: any, reply: any) => Promise<void>;
+		authorizeKey: (request: any, reply: any) => Promise<void>; // (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+		authorizeAnyMethod: () => void; // (request: FastifyRequest, reply: FastifyReply) => Promise<void>
 	}
 
 	export interface FastifyRequest {

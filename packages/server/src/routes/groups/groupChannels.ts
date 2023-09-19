@@ -1,7 +1,6 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { db } from "src/db";
 import * as GroupModel from "@shared/models/Group";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
@@ -9,19 +8,23 @@ import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import type { FastifyInstance } from "fastify";
 import { channelNameSchema } from "@shared/models/Channel";
 import { removeRestricredChannels } from "src/services/UserChannels";
+import { inject } from "src/injection";
+import { schema } from "src/db";
+import { assert } from "src/util/assert";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 export function groupChannels<Instace extends FastifyInstance>(fastify: Instace) {
+	const dbm = inject("db");
+
 	const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
-	const baseGroupChannelsUrl = "/groups/:groupId/channels";
-	const baseGroupChannelsParams = z.object({
-		groupId: z.number({ coerce: true }).int().gt(0),
-	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
-		url: baseGroupChannelsUrl,
+		url: "/groups/:groupId/channels",
 		schema: {
-			params: baseGroupChannelsParams,
+			params: z.object({
+				groupId: z.number({ coerce: true }).int().gt(0),
+			}),
 			body: z.object({
 				name: channelNameSchema,
 			}),
@@ -32,34 +35,59 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
+			const db = dbm.connection;
 			const { groupId } = req.params;
 			const { name } = req.body;
-			const data = await db.group.update({
-				where: { id: groupId },
-				include: {
-					Users: true,
-					Channels: true,
-				},
-				data: {
-					Channels: {
-						connectOrCreate: {
-							create: { name },
-							where: { name },
-						}
+
+			const group = await db.transaction(async (tx) => {
+				const [ channel ] = await tx.insert(schema.channels)
+					.values({ name }).onConflictDoNothing()
+					.returning({ id: schema.channels.id});
+				assert(channel);
+
+				await tx.insert(schema.channelsToGroups).values({
+					groupId,
+					channelId: channel.id
+				}).onConflictDoNothing();
+
+				const group = await tx.query.groups.findFirst({
+					where: eq(schema.groups.id, groupId),
+					with: {
+						users: { with: {
+								user: {
+									columns: {
+										id: true,
+										name: true,
+									}
+								},
+						}},
+						channels: { with: {
+								channel: true
+						}},
 					}
-				},
-			}).catch(handlerDbNotFound(groupNotFound(groupId)));
-			fastify.log.info(`Group channels updated by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
+				});
+				assert(group);
+				return {
+					...group,
+					users: group.users.map(i => i.user),
+					channels: group.channels.map(i => i.channel),
+				};
+			});
+
+			// .catch(handlerDbNotFound(groupNotFound(groupId)));
+			fastify.log.info(`Group channels updated by ${req.user.id}-${req.user.name}`, group);
+			return reply.send(result(group));
 		}
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",
-		url: baseGroupChannelsUrl,
+		url: "/groups/:groupId/channels",
 		schema: {
 			querystring: z.object({ id: z.optional(batchIdsSchema) }),
-			params: baseGroupChannelsParams,
+			params: z.object({
+				groupId: z.number({ coerce: true }).int().gt(0),
+			}),
 			response: {
 				200: resultSuccessSchema(batchOperationStatsSchema),
 				404: resultFailureSchema,
@@ -67,31 +95,26 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const groupId = req.params.groupId;
+			const db = dbm.connection;
+			const { groupId } = req.params;
 			const ids = parseIds(req.query.id || "");
 
-			const response = await db.$transaction(async (tx) => {
-				const groups = await tx.group.update({
-					where: { id: groupId },
-					include: {
-						Channels: {
-							select: { id: true },
-							where: ids.length
-								? { id: { in: ids } }
-								: undefined
-						}
-					},
-					data: {
-						Channels: ids.length
-							? { disconnect: ids.map(id => ({ id })) }
-							: { set: [] }
-					}
-				});
+			const count = await db.transaction(async (tx) => {
+				const [{ count = -1} = {}] = await tx.delete(schema.channelsToGroups).where(
+					ids.length
+						? and(
+							eq(schema.channelsToGroups.groupId, sql.placeholder("groupId")),
+							inArray(schema.channelsToGroups.channelId, sql.placeholder("ids")),
+						) : eq(
+							schema.channelsToGroups.groupId, sql.placeholder("groupId")
+						),
+				)
+				.returning({ count: sql<number>`count(*)` })
 				await removeRestricredChannels(tx);
-				return groups;
+				return count;
 			}).catch(handlerDbNotFound(groupNotFound(groupId)));
 			const data = {
-				count: response.Channels.length,
+				count,
 				outOf: ids.length,
 			};
 			fastify.log.info(`Group channels batch disconnect by ${req.user.id}-${req.user.name}`, data);

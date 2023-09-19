@@ -62,7 +62,7 @@
 		<input
 			name="databaseUrl"
 			type="url"
-			placeholder="postgres://default:pass@domain.work/db"
+			placeholder="postgres://postgres:1234567@127.0.0.1:5432/notifier"
 			value={data?.databaseUrl ?? ""}
 			required
 		/>

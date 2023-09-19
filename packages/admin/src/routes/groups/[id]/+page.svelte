@@ -41,7 +41,7 @@
 		selectedUsers = new Set();
 	}
 	}>
-		<SelectableTable items={data.group?.Users} bind:selected={selectedUsers}>
+		<SelectableTable items={data.group?.users} bind:selected={selectedUsers}>
 			<svelte:fragment slot="header">
 				<th>Name</th>
 			</svelte:fragment>
@@ -55,7 +55,7 @@
 			</svelte:fragment>
 		</SelectableTable>
 
-		{#if data?.group?.Users.length}
+		{#if data?.group?.users.length}
 			<div class="form-controls">
 				<button class="danger" disabled={selectedUsers.size === 0}>Remove selected users</button>
 				<button class="danger" formaction="?/disconnectAllUsers">Remove all users</button>
@@ -85,7 +85,7 @@
 		selectedChannels = new Set();
 	}
 	}>
-		<SelectableTable items={data.group?.Channels} bind:selected={selectedChannels}>
+		<SelectableTable items={data.group?.channels} bind:selected={selectedChannels}>
 			<svelte:fragment slot="header">
 				<th>Name</th>
 			</svelte:fragment>
@@ -99,7 +99,7 @@
 			</svelte:fragment>
 		</SelectableTable>
 
-		{#if data?.group?.Channels.length}
+		{#if data?.group?.channels.length}
 			<div class="form-controls">
 				<button class="danger" disabled={selectedChannels.size === 0}>Remove selected channels</button>
 				<button class="danger" formaction="?/disconnectAllChannels">Remove all channels</button>

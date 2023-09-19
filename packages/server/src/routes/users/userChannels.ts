@@ -1,6 +1,5 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { db } from "src/db";
 import type { FastifyInstance } from "fastify";
 import * as ChannelModel from "@shared/models/Channel";
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
@@ -33,7 +32,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [data, count] = await UserChannelsService.getUserChannels(db, userId, { skip, take });
+			const [data, count] = await UserChannelsService.getUserChannels(userId, { skip, take });
 			return reply.send(result({ count, data }));
 		}
 	});
@@ -52,7 +51,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 
-			const data = await UserChannelsService.availableChannels(db, userId);
+			const data = await UserChannelsService.availableUnsubscribedChannels(userId);
 			return reply.send(result(data));
 		}
 	});
@@ -72,7 +71,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const channelId = req.body.id;
-			await UserChannelsService.connectUserChannel(db, userId, channelId);
+			await UserChannelsService.connectUserChannel(userId, channelId);
 			fastify.log.info(`Channel added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(null));
 		}
@@ -96,7 +95,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 			const { userId } = req.params;
 			const ids = parseIds(req.query.id);
 
-			const { count } = await UserChannelsService.disconnectUserChannels(db, userId, ids)
+			const { count } = await UserChannelsService.disconnectUserChannels(userId, ids)
 				.catch(handlerDbNotFound(userNotFound(userId)))
 
 			const data = {
