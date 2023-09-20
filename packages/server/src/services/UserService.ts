@@ -40,14 +40,27 @@ export async function getUserIdByTgId(
 export async function createUser(
 	user: UserCreate,
 	tx: DbTransactionClient = inject("db").connection
-): Promise<User>{
+): Promise<UserDetail>{
 	const password = await hash(user.password);
 	const [createdUser] = await tx.insert(schema.users).values({
 		...user,
 		password
 	}).returning();
 	assert(createdUser);
-	return createdUser;
+	if (user.groups?.length) {
+		const groups = await tx.insert(schema.groups).values(
+			user.groups.map(i => ({ name: i }))
+		).returning();
+
+		tx.insert(schema.usersToGroups).values(groups.map(g => ({
+			groupId: g.id,
+			userId: createdUser.id
+		})));
+	}
+	if (user.groups?.length) {
+		// TODO create channels checking permissions
+	}
+	return getUser(createdUser.id);
 }
 
 export async function editUser(id: number, user: UserUpdate, tx: DbTransactionClient = inject("db").connection) {
@@ -70,6 +83,6 @@ export async function deleteUsers(ids: number[], tx: DbTransactionClient = injec
 	}
 	const [{ count = -1} = {}] = await tx.delete(schema.users)
 		.where(inArray(schema.users.id, ids))
-		.returning({ count: sql<number>`count(*)`})
+		.returning({ count: sql<number>`count(*)::int`})
 	return count;
 }

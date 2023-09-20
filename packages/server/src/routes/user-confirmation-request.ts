@@ -16,13 +16,14 @@ export default fp(async function (fastify) {
 	const dbm = inject("db");
 
 	const usersCountQuery = dbm.prepare((db) =>
-		db.select({ count: sql<number>`count(*)` }).from(schema.users)
+		db.select({ count: sql<number>`count(*)::int` }).from(schema.users)
 			.where(eq(schema.users.authorizationStatus, AuthorizationEnum.pending))
 			.prepare("users_count_query")
 	);
 	const usersQuery = dbm.prepare((db) => db.query.users.findMany({
 			offset: sql.placeholder("skip"),
 			limit: sql.placeholder("take"),
+			where: (user, {eq}) => eq(user.authorizationStatus, AuthorizationEnum.pending),
 			with: {
 				groups: {
 					with: {
@@ -103,7 +104,7 @@ export default fp(async function (fastify) {
 
 	const acceptQuery = dbm.prepare(db => db.update(schema.users)
 		.set({ authorizationStatus: AuthorizationEnum.accepted, updatedAt: sql`CURRENT_TIMESTAMP` })
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 		.prepare("accept_query")
 	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({

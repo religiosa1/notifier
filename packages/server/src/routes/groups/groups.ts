@@ -21,14 +21,14 @@ export default fp(async function (fastify) {
 	const dbm = inject("db");
 	// const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
 
-	const countGroupsQuery = dbm.prepare((db) => db.select({ count: sql<number>`count(*)`})
+	const countGroupsQuery = dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
 		.from(schema.groups)
 		.prepare("count_groups_query")
 	);
 	const groupsQuery = dbm.prepare((db) => db.select({
 			...getTableColumns(schema.groups),
-			channelsCount: sql<number>`count(${schema.channelsToGroups.channelId})`,
-			usersCount: sql<number>`count(${schema.usersToGroups.userId})`
+			channelsCount: sql<number>`count(${schema.channelsToGroups.channelId})::int`,
+			usersCount: sql<number>`count(${schema.usersToGroups.userId})::int`
 		}).from(schema.groups)
 			.leftJoin(schema.channelsToGroups, eq(schema.channelsToGroups.groupId, schema.groups.id))
 			.leftJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.groups.id))
@@ -111,7 +111,7 @@ export default fp(async function (fastify) {
 
 	const deleteGroupsQuery = dbm.prepare((db) => db.delete(schema.groups)
 		.where(inArray(schema.groups.id, sql.placeholder("ids")))
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 		.prepare("delete_group_query")
 	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({

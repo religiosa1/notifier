@@ -36,7 +36,7 @@ export async function createKey(userId: number): Promise<string> {
 }
 
 const countKeysQuery = dbm.prepare((db) => db.select({
-	count: sql<number>`count(*)`,
+	count: sql<number>`count(*)::int`,
 }).from(schema.apiKeys)
 	.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
 	.prepare("count_keys_query")
@@ -86,7 +86,7 @@ export async function deleteKey(
 
 const deleteAllKeysQuery = dbm.prepare(db => db.delete(schema.apiKeys)
 	.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-	.returning({ count: sql<number>`count(*)`})
+	.returning({ count: sql<number>`count(*)::int`})
 	.prepare("delete_all_keys")
 );
 export async function deleteAllKeys(userId: number): Promise<number> {

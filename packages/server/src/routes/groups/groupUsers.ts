@@ -84,11 +84,11 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 			eq(schema.usersToGroups.groupId, sql.placeholder("groupId")),
 			inArray(schema.usersToGroups.userId, sql.placeholder("ids")),
 		))
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 	);
 	const deleteAllGroupsUsersQuery = dbm.prepare((db) => db.delete(schema.usersToGroups)
 		.where(eq(schema.usersToGroups.groupId, sql.placeholder("groupId")))
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",

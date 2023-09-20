@@ -7,11 +7,11 @@ import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 import { paginationDefaults, paginationSchema } from "@shared/models/Pagination";
 import { counted } from "@shared/models/Counted";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
+// import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import * as UserChannelsService from "src/services/UserChannels";
 
 export function userChannels<Instace extends FastifyInstance>(fastify: Instace) {
-	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
+	// const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
 	const baseUserChannelsUrl = "/users/:userId/channels";
 	const baseUserChannelsParams = z.object({
 		userId: z.number({ coerce: true }).int().gt(0),
@@ -96,7 +96,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 			const ids = parseIds(req.query.id);
 
 			const { count } = await UserChannelsService.disconnectUserChannels(userId, ids)
-				.catch(handlerDbNotFound(userNotFound(userId)))
+				// .catch(handlerDbNotFound(userNotFound(userId)))
 
 			const data = {
 				count,

@@ -26,7 +26,7 @@ export async function getUserChannels(
 
 	const [ channels, [ {count = -1} = {} ]] = await Promise.all([
 		tx.selectDistinct(getTableColumns(schema.channels)).from(userChannels).limit(take).offset(skip),
-		tx.select({ count: sql<number>`COUNT(DISTINCT ${schema.channels.id})` }).from(userChannels),
+		tx.select({ count: sql<number>`COUNT(DISTINCT ${schema.channels.id})::int` }).from(userChannels),
 	]);
 	return [channels, count];
 }
@@ -150,6 +150,6 @@ async function deleteUserChannelsWith(
 ): Promise<BatchPayload> {
 	const [{count = -1} = {}] = await tx.delete(schema.usersToChannels)
 		.where(inArray(schema.usersToChannels.id, rowsToDelete))
-		.returning({ count: sql<number>`count(*)`})
+		.returning({ count: sql<number>`count(*)::int`})
 	return { count };
 }

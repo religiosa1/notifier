@@ -17,7 +17,7 @@ async function main() {
 	}
 
 	console.log("Connecting...");
-	const db = drizzle(postgres(databaseUrl, { max: 1 }));
+	const db = drizzle(postgres(databaseUrl, { max: 1}), { schema });
 	console.log("creating groups...");
 	await db.insert(schema.groups)
 		.values({ id: 1, name: "default" })

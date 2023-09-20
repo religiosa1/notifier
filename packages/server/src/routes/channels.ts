@@ -16,13 +16,13 @@ import {assert} from "src/util/assert";
 export default fp(async function (fastify) {
 	const dbm = inject("db");
 
-	const countChannelsQuery = dbm.prepare(db => db.select({ count: sql<number>`count(*)` })
+	const countChannelsQuery = dbm.prepare(db => db.select({ count: sql<number>`count(*)::int` })
 		.from(schema.channels).prepare("count_channels_query")
 	);
 	const channeslQuery = dbm.prepare(db => db.select({
 			...getTableColumns(schema.channels),
-			usersCount: sql<number>`COUNT(${schema.usersToChannels.userId})`,
-			groupsCount: sql<number>`COUNT(${schema.channelsToGroups.groupId})`,
+			usersCount: sql<number>`COUNT(${schema.usersToChannels.userId})::int`,
+			groupsCount: sql<number>`COUNT(${schema.channelsToGroups.groupId})::int`,
 		}).from(schema.channels)
 			.innerJoin(schema.usersToChannels, eq(schema.usersToChannels.channelId, schema.channels.id))
 			.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
@@ -91,7 +91,7 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const { group, name } = req.query;
+			const { group, name = "" } = req.query;
 			const channels = group
 				? await channelSearchQueryForGroup.value.execute({ group, name })
 				: await channelSearchQuery.value.execute({ name });
@@ -227,7 +227,7 @@ export default fp(async function (fastify) {
 
 	const deleteChannelsQuery = dbm.prepare((db) => db.delete(schema.channels)
 		.where(inArray(schema.channels.id, sql.placeholder("ids")))
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 		.prepare("delete_channels_query")
 	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
@@ -308,12 +308,12 @@ export default fp(async function (fastify) {
 			eq(schema.channelsToGroups.channelId, sql.placeholder("channelId")),
 			inArray(schema.channelsToGroups.groupId, sql.placeholder("ids"))
 		))
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 		.prepare("delete_channel_groups")
 	);
 	const deleteAllChannelGroups = dbm.prepare(db => db.delete(schema.channelsToGroups)
 		.where(eq(schema.channelsToGroups.channelId, sql.placeholder("channelId")))
-		.returning({ count: sql<number>`count(*)` })
+		.returning({ count: sql<number>`count(*)::int` })
 		.prepare("delete_channel_groups")
 	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({

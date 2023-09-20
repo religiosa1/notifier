@@ -14,7 +14,9 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 		if (url.pathname === "/setup") {
 			return;
 		}
-		global_hasValidServerSettings = await fetch(serverUrl('/settings')).then(r => r.ok);
+		global_hasValidServerSettings = await fetch(serverUrl('/settings')).then(r => {
+			return r.ok || r.status === 401 // 401 is possible only if settings were created
+		}, () => false);
 		if (!global_hasValidServerSettings) {
 			throw redirect(303, base + `/setup`);
 		}

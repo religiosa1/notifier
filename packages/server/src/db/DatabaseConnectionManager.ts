@@ -28,7 +28,7 @@ export class DatabaseConnectionManager {
 		this.dispose = settingsService.subscribe((config) => {
 			const {databaseUrl} = config ?? {};
 			try {
-				this.connection = databaseUrl ? drizzle(postgres(databaseUrl)) : undefined;
+				this.connection = databaseUrl ? drizzle(postgres(databaseUrl), { schema }) : undefined;
 			} catch(e) {
 				const logger = inject("logger");
 				logger.error("Unable to connect to DB", e);
@@ -43,7 +43,9 @@ export class DatabaseConnectionManager {
 	}
 
 	prepare<T extends PreparedQuery<any>>(cb: (db: PostgresJsDatabase<typeof schema>) => T): RefObject<T> {
-		const ref = new RefObject<T>();
+		const ref = new RefObject<T>(
+			this.#connection ? cb(this.#connection) : undefined
+		);
 		this.emitter.on("change", (db) => {
 			ref.value = db ? cb(db) : undefined;
 		})

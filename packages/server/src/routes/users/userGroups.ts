@@ -74,7 +74,7 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 						eq(schema.usersToGroups.userId, userId),
 						eq(schema.usersToGroups.groupId, groupId),
 					))
-					.returning({ count: sql<number>`count(*)`});
+					.returning({ count: sql<number>`count(*)::int`});
 				await removeRestricredChannels(tx);
 				return count;
 			})

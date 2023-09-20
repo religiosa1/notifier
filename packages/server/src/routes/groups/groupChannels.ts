@@ -4,7 +4,6 @@ import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models
 import * as GroupModel from "@shared/models/Group";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
 import type { FastifyInstance } from "fastify";
 import { channelNameSchema } from "@shared/models/Channel";
 import { removeRestricredChannels } from "src/services/UserChannels";
@@ -103,16 +102,17 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 				const [{ count = -1} = {}] = await tx.delete(schema.channelsToGroups).where(
 					ids.length
 						? and(
-							eq(schema.channelsToGroups.groupId, sql.placeholder("groupId")),
-							inArray(schema.channelsToGroups.channelId, sql.placeholder("ids")),
+							eq(schema.channelsToGroups.groupId, groupId),
+							inArray(schema.channelsToGroups.channelId, ids),
 						) : eq(
-							schema.channelsToGroups.groupId, sql.placeholder("groupId")
+							schema.channelsToGroups.groupId, groupId
 						),
 				)
-				.returning({ count: sql<number>`count(*)` })
+				.returning({ count: sql<number>`count(*)::int` })
 				await removeRestricredChannels(tx);
 				return count;
-			}).catch(handlerDbNotFound(groupNotFound(groupId)));
+			})
+			// .catch(handlerDbNotFound(groupNotFound(groupId)));
 			const data = {
 				count,
 				outOf: ids.length,
