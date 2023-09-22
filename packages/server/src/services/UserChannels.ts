@@ -112,6 +112,7 @@ export async function disconnectUserChannels(
 	if (!userId || !channelIds?.length) {
 		return { count: 0 };
 	}
+
 	const rowsToDelete = tx.$with("rows_to_delete").as(tx.select({ id: schema.usersToChannels.id })
 		.from(schema.usersToChannels)
 		.where(and(

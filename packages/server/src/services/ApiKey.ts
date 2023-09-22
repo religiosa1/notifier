@@ -3,10 +3,8 @@ import { base32, base64 } from "rfc4648";
 import { apiKeySchema } from "@shared/models/ApiKey";
 import { hash } from "src/Authorization/hash";
 import { inject } from "src/injection";
-import { schema } from "src/db";
-import { and, eq, sql } from "drizzle-orm";
 
-const dbm = inject("db");
+const apiKeysRepository = inject("ApiKeysRepository");
 
 function generateApiKey(): string {
 	const key = base64.stringify(randomBytes(30))
@@ -26,31 +24,11 @@ export async function createKey(userId: number): Promise<string> {
 	const apiKey = generateApiKey();
 	const [prefix, key] = parseApiKey(apiKey);
 	const hashedKey = await hash(key);
-	const db = dbm.connection;
-	db.insert(schema.apiKeys).values({
-		userId,
-		prefix,
-		hash: hashedKey,
-	});
+	await apiKeysRepository.insertKey(userId, prefix, hashedKey);
 	return apiKey;
 }
 
-const countKeysQuery = dbm.prepare((db) => db.select({
-	count: sql<number>`count(*)::int`,
-}).from(schema.apiKeys)
-	.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-	.prepare("count_keys_query")
-);
-const getKeysQuery = dbm.prepare((db) => db.select({
-		prefix: schema.apiKeys.prefix,
-		createdAt: schema.apiKeys.createdAt,
-	}).from(schema.apiKeys)
-		.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-		.limit(sql.placeholder("take"))
-		.offset(sql.placeholder("skip"))
-		.prepare("get_keys_query")
-);
-export async function getKeys(
+export async function listKeys(
 	userId: number,
 	{
 		skip = 0,
@@ -63,33 +41,17 @@ export async function getKeys(
 	}>,
 	total: number,
 ]> {
-	const [ keys, [{ count = -1} = {}]] = await Promise.all([
-		getKeysQuery.value.execute({ userId, skip, take }),
-		countKeysQuery.value.execute({ userId }),
-	]);
+	const { keys, count } = await apiKeysRepository.listKeys(userId, { skip, take });
 	return [keys, count ];
 }
 
-const deleteKeysQuery = dbm.prepare(db => db.delete(schema.apiKeys)
-	.where(and(
-		eq(schema.apiKeys.userId, sql.placeholder("userId")),
-		eq(schema.apiKeys.prefix, sql.placeholder("prefix")),
-	))
-	.prepare("delete_keys_query")
-);
 export async function deleteKey(
 	userId: number,
 	prefix: string
 ): Promise<void> {
-	await deleteKeysQuery.value.execute({ userId, prefix });
+	await apiKeysRepository.deleteKey(userId, prefix);
 }
 
-const deleteAllKeysQuery = dbm.prepare(db => db.delete(schema.apiKeys)
-	.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-	.returning({ count: sql<number>`count(*)::int`})
-	.prepare("delete_all_keys")
-);
 export async function deleteAllKeys(userId: number): Promise<number> {
-	const [{ count = -1 } = {}] =await deleteAllKeysQuery.value.execute({ userId });
-	return count;
+	return apiKeysRepository.deleteAllKeysForUser(userId);
 }

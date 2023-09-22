@@ -7,42 +7,15 @@ import * as UserModel from "@shared/models/User";
 import { counted } from "@shared/models/Counted";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
-// import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-// import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
-import * as UserService from "src/services/UserService";
 
 import { userChannels } from "./userChannels";
 import { userGroups } from "./userGroups";
 import { userKeys } from "./userKeys";
 import { inject } from "src/injection";
-import { getTableColumns, ilike, sql, and, eq, isNull } from "drizzle-orm";
-import { schema } from "src/db";
-import { assert } from "src/util/assert";
 
 export default fp(async function (fastify) {
-	const dbm = inject("db");
+	const usersRepository = inject("UsersRepository");
 
-	// All counts in postgres drizzle should have ::int type specifier at the end:
-	// https://github.com/drizzle-team/drizzle-orm/issues/999
-	const countUsersQuery = dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
-		.from(schema.users)
-		.prepare("count_users_query")
-	);
-	const getUsersQuery = dbm.prepare((db) => db.query.users.findMany({
-			limit: sql.placeholder("take"),
-			offset: sql.placeholder("skip"),
-			with: {
-				groups: { with: { group: {
-					columns: {
-						id: true,
-						name: true,
-					}
-				}}}
-			}
-		})
-		.prepare("get_users_query")
-	);
-	// const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
 		url: "/users",
@@ -55,20 +28,11 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [
-				[ { count = -1} = {}],
-				users
-			] = await Promise.all([
-				countUsersQuery.value.execute(),
-				getUsersQuery.value.execute({ skip, take }),
-			]);
+			const { count, users } = await usersRepository.listUsers({ skip, take });
 
 			return reply.send(result({
-				count: count,
-				data: users.map(user => ({
-					...user,
-					groups: user.groups.map(g => g.group),
-				}))
+				count,
+				data: users,
 			}));
 		}
 	});
@@ -85,9 +49,7 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const user = await UserService.createUser(req.body)
-			assert(user);
-				// .catch(handlerUniqueViolation()) as UserModel.UserDetail;
+			const user = await usersRepository.insertUser(req.body)
 			fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(user));
 		}
@@ -105,7 +67,7 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const count = await UserService.deleteUsers(ids);
+			const count = await usersRepository.deleteUsers(ids);
 			const data = {
 				count,
 				outOf: ids.length,
@@ -130,8 +92,7 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.userId;
-			const user = await UserService.getUser(id)
-				// .catch(handlerDbNotFound(userNotFound(id)));
+			const user = await usersRepository.getUserDetail(id);
 			return reply.send(result(user));
 		}
 	});
@@ -153,9 +114,8 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId } = req.params;
-			const user = await UserService.editUser(userId, req.body)
-				// .catch(handlerDbNotFound(userNotFound(userId)))
-				// .catch(handlerUniqueViolation()) as UserModel.UserDetail;
+			const user = await usersRepository.updateUser(userId, req.body)
+
 			fastify.log.info(`User ${userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(user));
 		}
@@ -176,29 +136,12 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.userId;
-			await UserService.deleteUsers([id])
-				// .catch(handlerDbNotFound(userNotFound(id)));
+			await usersRepository.assertUserExists(id);
+			await usersRepository.deleteUsers([id])
 			fastify.log.info(`User ${id} delete by ${req.user.id}-${req.user.name}`);
 			return reply.send(result(null));
 		}
 	});
-
-	const searchUsersQuery = dbm.prepare((db) => db.select().from(schema.users)
-		.where(ilike(schema.users.name, sql.placeholder("name")))
-		.prepare("search_users_query")
-	);
-
-	const searchUsersForGroup = dbm.prepare((db) => db.select(getTableColumns(schema.users)).from(schema.users)
-		.leftJoin(schema.usersToGroups, and(
-			eq(schema.usersToGroups.userId, schema.users.id),
-			eq(schema.usersToGroups.groupId, sql.placeholder("group"))
-		))
-		.where(and(
-			ilike(schema.users.name, sql.placeholder("name")),
-			isNull(schema.usersToGroups.groupId)
-		))
-		.prepare("search_users_for_group")
-	);
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
@@ -214,9 +157,8 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const { name = "", group } = req.query;
-			const query = group ? searchUsersForGroup : searchUsersQuery;
-			const users = await query.value.execute({ name, group });
+			const { name, group } = req.query;
+			const users = await usersRepository.searchUsers({ name, groupId: group });
 			return reply.send(result(users));
 		}
 	});

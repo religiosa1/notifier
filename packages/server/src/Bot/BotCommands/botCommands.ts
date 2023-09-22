@@ -1,8 +1,10 @@
-import { createUser } from "src/services/UserService";
 import * as ApiKeyService from "src/services/ApiKey";
 import * as UserChannelsService from "src/services/UserChannels";
 import { BotCommand } from "./BotCommand";
-import { getChannelId } from "src/services/ChannelService";
+import { inject } from "src/injection";
+
+const usersRepository = inject("UsersRepository");
+const channelsRepository = inject("ChannelsRepository");
 
 /** Available bot commands */
 export const botCommands: BotCommand[] = [
@@ -10,6 +12,7 @@ export const botCommands: BotCommand[] = [
 		"start",
 		"",
 		async ({ logger, reply, userId, msg }) => {
+			// FIXME this command doesn't even require the authorization status check, only that we have a request
 			if (!isNaN(userId)) {
 				await reply("You've already started using the bot.");
 				return;
@@ -18,7 +21,7 @@ export const botCommands: BotCommand[] = [
 				throw new Error("There's no 'chat' information in the message, unable to process");
 			}
 			logger.info({ event: "start command", chat: msg.chat }),
-			await createUser({
+			await usersRepository.insertUser({
 				name: msg.chat.username,
 				telegramId: msg.chat.id,
 			});
@@ -61,7 +64,7 @@ export const botCommands: BotCommand[] = [
 		"join_channel",
 		"Join a notification channel (subscribe)",
 		async ({ reply, userId }, [channel]) => {
-			const channelId = await getChannelId(channel!);
+			const channelId = await channelsRepository.getChannelId(channel!);
 			if (channelId == null) {
 				await reply("No such channel");
 				return;
@@ -75,7 +78,7 @@ export const botCommands: BotCommand[] = [
 		"leave_channel",
 		"Leave a notification channel",
 		async ({ reply, userId }, [channel]) => {
-			const channelId = await getChannelId(channel!);
+			const channelId = await channelsRepository.getChannelId(channel!);
 			if (channelId == null) {
 				await reply("No such channel");
 				return;
@@ -91,7 +94,7 @@ export const botCommands: BotCommand[] = [
 		"list_keys",
 		"List your API keys to the bot",
 		async ({ reply, userId }) => {
-			const [apiKeys] = await ApiKeyService.getKeys(userId, { skip: 0, take: 100 });
+			const [apiKeys] = await ApiKeyService.listKeys(userId, { skip: 0, take: 100 });
 			await reply(listMessage(
 				"Available keys:",
 				apiKeys.map(i => i.prefix),

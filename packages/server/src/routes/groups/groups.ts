@@ -1,40 +1,19 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
 import { counted } from "@shared/models/Counted";
 import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-// import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-// import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
 import { groupUsers } from "./groupUsers";
 import { groupChannels } from "src/routes/groups/groupChannels";
-import { removeRestricredChannels } from "src/services/UserChannels";
 import { inject } from "src/injection";
-import { and, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-orm";
-import { schema } from "src/db";
-import { assert } from "src/util/assert";
 
 export default fp(async function (fastify) {
-	const dbm = inject("db");
-	// const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
+	const groupsRepository = inject("GroupsRepository");
 
-	const countGroupsQuery = dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
-		.from(schema.groups)
-		.prepare("count_groups_query")
-	);
-	const groupsQuery = dbm.prepare((db) => db.select({
-			...getTableColumns(schema.groups),
-			channelsCount: sql<number>`count(${schema.channelsToGroups.channelId})::int`,
-			usersCount: sql<number>`count(${schema.usersToGroups.userId})::int`
-		}).from(schema.groups)
-			.leftJoin(schema.channelsToGroups, eq(schema.channelsToGroups.groupId, schema.groups.id))
-			.leftJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.groups.id))
-			.groupBy(schema.groups.id)
-		.prepare("groups_query")
-	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
 		url: "/groups",
@@ -50,13 +29,8 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [
-				[{count = -1} = {}],
-				groups
-			] = await Promise.all([
-				countGroupsQuery.value.execute(),
-				groupsQuery.value.execute({ skip, take }),
-			]);
+
+			const { groups, count } = await groupsRepository.listGroups({ skip, take });
 
 			return reply.send(result({
 				count,
@@ -65,23 +39,6 @@ export default fp(async function (fastify) {
 		}
 	});
 
-	const createGroupQuery = dbm.prepare(db => db.insert(schema.groups)
-		.values({ name: sql.placeholder("name") })
-		.returning({ id: schema.groups.id })
-		.prepare("create_group_query")
-	);
-	const retrieveGroupQuery = dbm.prepare(db => db.query.groups.findFirst({
-		where: eq(schema.groups.id, sql.placeholder("id")),
-		with: {
-			channels: { with: { channel: true } },
-			users: { with: { user: {
-				columns: {
-					id: true,
-					name: true
-				}
-			}}}
-		}
-	}).prepare("retrieve_group_query"))
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
 		url: "/groups",
@@ -95,25 +52,15 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { name } = req.body;
-			const [ { id } = { id: undefined } ] = await createGroupQuery.value.execute({ name });
-			assert(id);
-			const group = await retrieveGroupQuery.value.execute({ id });
-			assert(group);
-			// catch(handlerUniqueViolation());
+			const { id } = await groupsRepository.insertGroup(name);
+			const group = await groupsRepository.getGroupPreview(id);
 			fastify.log.info(`Group created by ${req.user.id}-${req.user.name}`, group);
 			return reply.send(result({
 				...group,
-				users: group.users.map(i => i.user),
-				channels: group.channels.map(i => i.channel)
 			}));
 		}
 	});
 
-	const deleteGroupsQuery = dbm.prepare((db) => db.delete(schema.groups)
-		.where(inArray(schema.groups.id, sql.placeholder("ids")))
-		.returning({ count: sql<number>`count(*)::int` })
-		.prepare("delete_group_query")
-	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",
 		url: "/groups",
@@ -125,13 +72,10 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const ids = parseIds(req.query.id);
-			const count = await db.transaction(async (tx) => {
-				const [{ count = -1} ={}] = await deleteGroupsQuery.value.execute({ids});
-				await removeRestricredChannels(tx);
-				return count;
-			});
+
+			const count = await groupsRepository.deleteGroups(ids);
+
 			const data = {
 				count,
 				outOf: ids.length,
@@ -157,51 +101,20 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const { name, channel, user } = req.query;
 
-			const groupsQuery = db.select(getTableColumns(schema.groups)).from(schema.groups);
-			const whereClasues = [
-				ilike(schema.groups.name, name ?? ""),
-			];
-			if (channel) {
-				groupsQuery.leftJoin(schema.channelsToGroups, and(
-					eq(schema.channelsToGroups.groupId, schema.groups.id),
-					eq(schema.channelsToGroups.channelId, channel)
-				));
-				whereClasues.push(isNull(schema.channelsToGroups.groupId));
-			}
-			if (user) {
-				groupsQuery.innerJoin(schema.usersToGroups, and(
-					eq(schema.usersToGroups.groupId, schema.groups.id),
-					eq(schema.usersToGroups.userId, user)
-				));
-				whereClasues.push(isNull(schema.usersToGroups.groupId));
-			}
-			groupsQuery.where(and(...whereClasues));
+			const groups = await groupsRepository.searchAvailableGroups({
+				name,
+				channelId: channel,
+				userId: user,
+			});
 
-			const groups = await groupsQuery;
 			return reply.send(result(groups));
 		}
 	});
 
-	const getGroupDetailQuery = dbm.prepare(db => db.query.groups.findFirst({
-		where: eq(schema.groups.id, sql.placeholder("id")),
-		with: {
-			users: { with: { user: {
-				columns: {
-					id: true,
-					name: true,
-				}
-			}}},
-			channels: { with: { channel: {
-				columns: {
-					id: true,
-					name: true
-				}
-			}}}
-		}
-	}).prepare("get_group_detail_query"))
+	//============================================================================
+
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
 		url: "/groups/:groupId",
@@ -217,14 +130,8 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.groupId;
-			const group = await getGroupDetailQuery.value.execute({ id });
-			assert(group);
-			//.catch(handlerDbNotFound(groupNotFound(id)));
-			return reply.send(result({
-				...group,
-				users: group.users.map(i => i.user),
-				channels: group.channels.map(i => i.channel),
-			}));
+			const group = await groupsRepository.getGroupDetail(id);
+			return reply.send(result(group));
 		}
 	});
 
@@ -244,28 +151,14 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const id = req.params.groupId;
 			const { name } = req.body;
-			const [group] = await db.update(schema.groups).set({
-				name,
-				updatedAt: sql`CURRENT_TIMESTAMP`
-			})
-				.where(eq(schema.groups.id, id))
-				.returning();
-			assert(group);
-				// .catch(handlerDbNotFound(groupNotFound(id)))
-				// .catch(handlerUniqueViolation());
+			const group = await groupsRepository.updateGroup(id, name);
 			fastify.log.info(`Group update by ${req.user.id}-${req.user.name}`, group);
 			return reply.send(result(group));
 		}
 	});
 
-	const deleteGroupQuery = dbm.prepare(db => db.delete(schema.groups)
-		.where(eq(schema.groups.id, sql.placeholder("id")))
-		.returning()
-		.prepare("delete_group_query")
-	);
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "DELETE",
 		url: "/groups/:groupId",
@@ -280,16 +173,12 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const id = req.params.groupId;
-			const group = await db.transaction(async (tx) => {
-				const [group] = await deleteGroupQuery.value.execute({ id });
-				await removeRestricredChannels(tx);
-				return group;
-			});
-			assert(group);
-			// }).catch(handlerDbNotFound(groupNotFound(id)));
-			fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
+			const count = await groupsRepository.deleteGroups([ id ]);
+			if (!count) {
+				throw new ResultError(404, `Group with id "${id}" not foind`);
+			}
+			fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, id);
 			return reply.send(result(null));
 		}
 	});

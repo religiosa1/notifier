@@ -11,11 +11,12 @@ import { inject } from "src/injection";
 import { schema } from "src/db";
 import { assert } from "src/util/assert";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { NotFoundError } from "src/error/NotFoundError";
 
 export function groupChannels<Instace extends FastifyInstance>(fastify: Instace) {
 	const dbm = inject("db");
 
-	const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
+	const groupNotFound = (id: string | number) => () => new NotFoundError(`group with id '${id}' doesn't exist`);
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
@@ -65,7 +66,7 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 						}},
 					}
 				});
-				assert(group);
+				assert(group, groupNotFound(groupId));
 				return {
 					...group,
 					users: group.users.map(i => i.user),
@@ -73,7 +74,6 @@ export function groupChannels<Instace extends FastifyInstance>(fastify: Instace)
 				};
 			});
 
-			// .catch(handlerDbNotFound(groupNotFound(groupId)));
 			fastify.log.info(`Group channels updated by ${req.user.id}-${req.user.name}`, group);
 			return reply.send(result(group));
 		}

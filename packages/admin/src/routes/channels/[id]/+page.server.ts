@@ -24,7 +24,7 @@ export const actions: Actions = {
 		const name = fd.get("name");
 		try {
 			await fetch(serverUrl(uri`/channels/${params.id}`), {
-				method: "POST",
+				method: "PUT",
 				body: JSON.stringify({ name })
 			}).then(unwrapResult);
 		} catch(err) {
@@ -46,7 +46,7 @@ export const actions: Actions = {
 		const name = fd.get("name");
 		try {
 			await fetch(serverUrl(uri`/channels/${params.id}/groups`), {
-				method: "PUT",
+				method: "POST",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);
 		}
