@@ -30,11 +30,11 @@ export default fp(async function (fastify) {
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
 
-			const { groups, count } = await groupsRepository.listGroups({ skip, take });
+			const [ data, count ] = await groupsRepository.listGroups({ skip, take });
 
 			return reply.send(result({
+				data,
 				count,
-				data: groups
 			}));
 		}
 	});

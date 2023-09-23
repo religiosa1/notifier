@@ -41,8 +41,7 @@ export async function listKeys(
 	}>,
 	total: number,
 ]> {
-	const { keys, count } = await apiKeysRepository.listKeys(userId, { skip, take });
-	return [keys, count ];
+	return apiKeysRepository.listKeys(userId, { skip, take });
 }
 
 export async function deleteKey(

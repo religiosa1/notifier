@@ -32,24 +32,24 @@ export class UserConfirmationRequestsRepository {
 		.prepare("list_confirmation_requests")
 	);
 
-	async listConfirmationRequests({ skip = 0, take = 20 } = {}): Promise<{
-		count: number;
-		users: UserWithGroups[];
-	}> {
+	async listConfirmationRequests({ skip = 0, take = 20 } = {}): Promise<[
+		users: UserWithGroups[],
+		totalCount: number,
+	]> {
 		const [
+			users,
 			[{count = -1} = {}],
-			users
 		] = await Promise.all([
-			this.queryCountConfirmationRequests.value.execute(),
 			this.queryListConfirmationRequests.value.execute({ skip, take }),
+			this.queryCountConfirmationRequests.value.execute(),
 		]);
-		return {
-			count,
-			users: users.map(user => ({
+		return [
+			users.map(user => ({
 				...user,
 				groups: user.groups.map(g => g.group)
 			})),
-		}
+			count,
+		];
 	}
 
 	//============================================================================

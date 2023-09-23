@@ -3,7 +3,6 @@ import { and, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-o
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
 import { inject } from "src/injection";
-import { removeRestricredChannels } from "src/services/UserChannels";
 import { assert } from "src/util/assert";
 
 const groupNotFound = (id: string | number) => () => new NotFoundError(`group with id '${id}' doesn't exist`);
@@ -43,21 +42,18 @@ export class GroupsRepository {
 		.prepare("list_groups")
 	);
 
-	async listGroups({ skip = 0, take = 20 } = {}): Promise<{
-		groups: Array<Group & { channelsCount: number, usersCount: number }>
-		count: number;
-	}> {
+	async listGroups({ skip = 0, take = 20 } = {}): Promise<[
+		groups: Array<Group & { channelsCount: number, usersCount: number }>,
+		totalCount: number,
+	]> {
 		const [
-			[{count = -1} = {}],
-			groups
-		] = await Promise.all([
-			this.queryCountGroups.value.execute(),
-			this.querListGroups.value.execute({ skip, take }),
-		]);
-		return {
 			groups,
-			count
-		}
+			[{count = -1} = {}],
+		] = await Promise.all([
+			this.querListGroups.value.execute({ skip, take }),
+			this.queryCountGroups.value.execute(),
+		]);
+		return [ groups, count ];
 	}
 
 	//============================================================================
@@ -147,12 +143,9 @@ export class GroupsRepository {
 		if (!ids?.length) {
 			return 0;
 		}
-		const db = this.dbm.connection;
-		return await db.transaction(async (tx) => {
-			const [{ count = -1} = {}] = await this.deleteGroupsQuery.value.execute({ids});
-			await removeRestricredChannels(tx);
-			return count;
-		});
+		// orphaned user-to-channel relations handled by a db trigger
+		const [{ count = -1} = {}] = await this.deleteGroupsQuery.value.execute({ids});
+		return count;
 	}
 
 	//============================================================================

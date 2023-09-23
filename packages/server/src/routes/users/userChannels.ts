@@ -7,11 +7,11 @@ import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 import { paginationDefaults, paginationSchema } from "@shared/models/Pagination";
 import { counted } from "@shared/models/Counted";
-// import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import * as UserChannelsService from "src/services/UserChannels";
+import { inject } from "src/injection";
 
 export function userChannels<Instace extends FastifyInstance>(fastify: Instace) {
-	// const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
+	const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+
 	const baseUserChannelsUrl = "/users/:userId/channels";
 	const baseUserChannelsParams = z.object({
 		userId: z.number({ coerce: true }).int().gt(0),
@@ -32,8 +32,8 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [data, count] = await UserChannelsService.getUserChannels(userId, { skip, take });
-			return reply.send(result({ count, data }));
+			const [data, count] = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
+			return reply.send(result({ data, count  }));
 		}
 	});
 
@@ -42,6 +42,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		url: '/users/:userId/available-channels',
 		schema: {
 			params: baseUserChannelsParams,
+			querystring: paginationSchema,
 			response: {
 				200: resultSuccessSchema(z.array(ChannelModel.channelSchema)),
 				404: resultFailureSchema,
@@ -50,8 +51,8 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId } = req.params;
-
-			const data = await UserChannelsService.availableUnsubscribedChannels(userId);
+			const { skip, take } = { ...paginationDefaults, ...req.query };
+			const data = await userToChannelRelationsRepository.listAvailableUnsubscribedChannelsForUser(userId, { skip, take });
 			return reply.send(result(data));
 		}
 	});
@@ -71,7 +72,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 		async handler(req, reply) {
 			const { userId } = req.params;
 			const channelId = req.body.id;
-			await UserChannelsService.connectUserChannel(userId, channelId);
+			await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
 			fastify.log.info(`Channel added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(null));
 		}
@@ -95,7 +96,7 @@ export function userChannels<Instace extends FastifyInstance>(fastify: Instace) 
 			const { userId } = req.params;
 			const ids = parseIds(req.query.id);
 
-			const { count } = await UserChannelsService.disconnectUserChannels(userId, ids)
+			const count = await userToChannelRelationsRepository.disconnectUserChannels(userId, ids)
 				// .catch(handlerDbNotFound(userNotFound(userId)))
 
 			const data = {

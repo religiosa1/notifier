@@ -10,7 +10,7 @@ import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 
 export default fp(async function (fastify) {
 	const channelsRepository = inject("ChannelsRepository");
-	const channelToGroupRelationRepository = inject("ChannelToGroupRelationRepository");
+	const channelToGroupRelationsRepository = inject("ChannelToGroupRelationsRepository");
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
@@ -30,7 +30,7 @@ export default fp(async function (fastify) {
 		async handler(req, reply) {
 			const { name } = req.body;
 			const { channelId } = req.params;
-			await channelToGroupRelationRepository.connectOrCreateChannelGroup(channelId, name);
+			await channelToGroupRelationsRepository.connectOrCreateGroupToChannel(channelId, name);
 			fastify.log.info(`Channel group added by ${req.user.id}-${req.user.name}`, channelId, name);
 			return reply.send(result(null));
 		}
@@ -57,8 +57,8 @@ export default fp(async function (fastify) {
 			await channelsRepository.assertChannelExist(channelId);
 
 			const count = ids.length
-				? await channelToGroupRelationRepository.deleteChannelGroupsByIds(channelId, ids)
-				: await channelToGroupRelationRepository.deleteAllChannelGroups(channelId)
+				? await channelToGroupRelationsRepository.deleteGroupsFromChannelByIds(channelId, ids)
+				: await channelToGroupRelationsRepository.deleteAllGroupsFromChannel(channelId)
 
 			const data = {
 				count,

@@ -28,11 +28,11 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const { count, channels } = await channelsRepository.listChannels({ skip , take });
+			const [ data, count ] = await channelsRepository.listChannels({ skip , take });
 
 			return reply.send(result({
+				data,
 				count,
-				data: channels,
 			}));
 		}
 	});

@@ -62,25 +62,25 @@ export class UsersRepository {
 		.prepare("get_users_query")
 	);
 
-	async listUsers({ skip = 0, take = 20} = {}): Promise<{
-		count: number;
-		users: UserWithGroups[];
-	}> {
+	async listUsers({ skip = 0, take = 20} = {}): Promise<[
+		users: UserWithGroups[],
+		totalCount: number,
+	]> {
 		const [
+			users,
 			[ { count = -1} = {}],
-			users
 		] = await Promise.all([
-			this.queryCountUsers.value.execute(),
 			this.queryListUsers.value.execute({ skip, take }),
+			this.queryCountUsers.value.execute(),
 		]);
 
-		return {
-			count,
-			users: users.map(user => ({
+		return [
+			users.map(user => ({
 				...user,
 				groups: user.groups.map(g => g.group),
-			}))
-		};
+			})),
+			count,
+		];
 	}
 
 	//============================================================================

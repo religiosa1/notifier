@@ -24,11 +24,11 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const { count, users } = await userConfirmationRequestsRepository.listConfirmationRequests({ skip, take });
+			const [ data, count ] = await userConfirmationRequestsRepository.listConfirmationRequests({ skip, take });
 
 			return reply.send(result({
+				data,
 				count,
-				data: users
 			}));
 		}
 	});

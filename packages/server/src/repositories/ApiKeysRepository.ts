@@ -34,21 +34,18 @@ export class ApiKeysRepository {
 			.prepare("list_keys")
 	);
 
-	async listKeys(userId: number, { skip = 0, take = 20} = {}): Promise<{
-		count: number,
+	async listKeys(userId: number, { skip = 0, take = 20} = {}): Promise<[
 		keys: Array<{
 			prefix: string;
 			createdAt: Date;
-		}>
-	}> {
-		const [[{ count = -1} = {}], keys] = await Promise.all([
-			this.queryCountKeys.value.execute({ userId }),
+		}>,
+		totalCount: number,
+	]> {
+		const [keys, [{ count = -1} = {}]] = await Promise.all([
 			this.queryGetKeys.value.execute({ userId, skip, take }),
+			this.queryCountKeys.value.execute({ userId }),
 		]);
-		return {
-			keys,
-			count
-		}
+		return [ keys, count ];
 	}
 
 	//============================================================================

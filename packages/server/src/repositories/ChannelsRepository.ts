@@ -1,3 +1,4 @@
+import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { Channel, ChannelDetail } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
 import { getTableColumns, sql, eq, ilike, isNull, and, inArray } from "drizzle-orm";
@@ -55,24 +56,43 @@ export class ChannelsRepository {
 		.prepare("channels_query")
 	);
 
-	async listChannels({ skip = 0, take = 20} = {}): Promise<{
-			count: number;
+	async listChannels({ skip = 0, take = 20} = {}): Promise<[
 			channels: Array<Channel & {
 				usersCount: number;
 				groupsCount: number;
-			}>
-	}> {
+			}>,
+			totalCount: number
+	]> {
 		const [
+			channels,
 			[{ count = -1} = {}],
-			channels
 		] = await Promise.all([
+			this.queryListChannels.value.execute({ skip, take}),
 			this.queryCountChannels.value.execute(),
-			this.queryListChannels.value.execute({ skip, take})
 		]);
-		return {
-			count,
-			channels
+		return [ channels, count ];
+	}
+
+	// GET USER IDS FOR CHANNELS
+
+	private readonly queryGetUserChatIdsForChannels = this.dbm.prepare(
+		(db) => db.select({ telegramId: schema.users.telegramId }).from(schema.users)
+		.innerJoin(schema.usersToChannels, eq(schema.usersToChannels.userId, schema.users.id))
+		.innerJoin(schema.channels, eq(schema.usersToChannels.channelId, schema.channels.id))
+		.where(
+			and(
+				eq(schema.users.authorizationStatus, AuthorizationEnum.accepted),
+				inArray(schema.channels.name, sql.placeholder('channels'))
+			)
+		).prepare("get_user_chat_ids_for_channels")
+	);
+
+	async getUserChatIdsForChannel(channelNames: string[]): Promise<number[]> {
+		if (!channelNames?.length) {
+			return [];
 		}
+		const data = await this.queryGetUserChatIdsForChannels.value.execute({ channelNames });
+		return data.map(user => user.telegramId);
 	}
 
 	//============================================================================

@@ -1,10 +1,10 @@
 import * as ApiKeyService from "src/services/ApiKey";
-import * as UserChannelsService from "src/services/UserChannels";
 import { BotCommand } from "./BotCommand";
 import { inject } from "src/injection";
 
 const usersRepository = inject("UsersRepository");
 const channelsRepository = inject("ChannelsRepository");
+const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
 
 /** Available bot commands */
 export const botCommands: BotCommand[] = [
@@ -38,7 +38,8 @@ export const botCommands: BotCommand[] = [
 		"list_channels",
 		"List all notification channels available to you",
 		async ({ reply, userId }) => {
-			const channels = await UserChannelsService.allAvailableChannels(userId);
+			// TODO pagination and "more items" command
+			const [channels] = await userToChannelRelationsRepository.listAllAvailableChannelsForUser(userId);
 			console.log("channels", channels);
 			await reply(listMessage(
 				"Available channels",
@@ -51,7 +52,8 @@ export const botCommands: BotCommand[] = [
 		"list_subscriptions",
 		"List your current subscriptions",
 		async ({ reply, userId }) => {
-			const [channels] = await UserChannelsService.getUserChannels(userId);
+			// TODO pagination and "more items" command
+			const [channels] = await userToChannelRelationsRepository.listUserChannels(userId);
 			await reply(listMessage(
 				"You're currently subscribed to following notification channels:",
 				channels.map(i => i.name),
@@ -69,7 +71,7 @@ export const botCommands: BotCommand[] = [
 				await reply("No such channel");
 				return;
 			}
-			await UserChannelsService.connectUserChannel(userId, channelId);
+			await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
 			await reply("Successfully joined the channel: " + channel);
 		},
 		["CHANNEL"],
@@ -83,7 +85,7 @@ export const botCommands: BotCommand[] = [
 				await reply("No such channel");
 				return;
 			}
-			await UserChannelsService.disconnectUserChannels(userId, [channelId]);
+			await userToChannelRelationsRepository.disconnectUserChannels(userId, [channelId]);
 			await reply("Successfully left the channel: " + channel);
 		},
 		["CHANNEL"],

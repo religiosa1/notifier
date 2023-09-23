@@ -4,12 +4,13 @@ import pino, { BaseLogger } from "pino";
 import { IBot } from "src/Bot/Models";
 import { DatabaseConnectionManager } from "src/db/DatabaseConnectionManager";
 import { GroupsRepository } from "src/repositories/GroupsRepository";
-import { UsersToGroupRelationRepository } from "src/repositories/UsersToGroupRelationRepository";
+import { UserToGroupRelationsRepository } from "src/repositories/UserToGroupRelationsRepository";
 import { UsersRepository } from "src/repositories/UsersRepository";
 import { ApiKeysRepository } from "src/repositories/ApiKeysRepository";
 import { ChannelsRepository } from "src/repositories/ChannelsRepository";
-import { ChannelToGroupRelationRepository } from "src/repositories/ChannelToGroupsRelationRepository";
+import { ChannelToGroupRelationsRepository } from "src/repositories/ChannelToGroupRelationsRepository";
 import { UserConfirmationRequestsRepository } from "src/repositories/UserConfirmationRequestsRepository";
+import { UserToChannelRelationsRepository } from "src/repositories/UserToChannelRelationsRepository";
 
 export const container = {
 	SettingsService: undefined as unknown as SettingsService,
@@ -17,14 +18,14 @@ export const container = {
 	logger: pino({ level: 'info' }) as BaseLogger,
 	Bot: undefined as IBot | undefined,
 	db: undefined as unknown as DatabaseConnectionManager,
-
 	GroupsRepository: undefined as unknown as GroupsRepository,
 	UsersRepository: undefined as unknown as UsersRepository,
 	UserConfirmationRequestsRepository: undefined as unknown as UserConfirmationRequestsRepository,
-	UsersToGroupRelationRepository: undefined as unknown as UsersToGroupRelationRepository,
+	UserToGroupRelationsRepository: undefined as unknown as UserToGroupRelationsRepository,
 	ApiKeysRepository: undefined as unknown as ApiKeysRepository,
 	ChannelsRepository: undefined as unknown as ChannelsRepository,
-	ChannelToGroupRelationRepository: undefined as unknown as ChannelToGroupRelationRepository,
+	ChannelToGroupRelationsRepository: undefined as unknown as ChannelToGroupRelationsRepository,
+	UserToChannelRelationsRepository: undefined as unknown as UserToChannelRelationsRepository
 };
 type Container = typeof container;
 
@@ -33,10 +34,11 @@ container.db = new DatabaseConnectionManager();
 container.GroupsRepository = new GroupsRepository();
 container.UsersRepository = new UsersRepository();
 container.UserConfirmationRequestsRepository = new UserConfirmationRequestsRepository();
-container.UsersToGroupRelationRepository = new UsersToGroupRelationRepository();
+container.UserToGroupRelationsRepository = new UserToGroupRelationsRepository();
 container.ApiKeysRepository = new ApiKeysRepository();
 container.ChannelsRepository = new ChannelsRepository();
-container.ChannelToGroupRelationRepository = new ChannelToGroupRelationRepository();
+container.ChannelToGroupRelationsRepository = new ChannelToGroupRelationsRepository();
+container.UserToChannelRelationsRepository = new UserToChannelRelationsRepository();
 
 export function inject<TItem extends keyof Container>(key: TItem): Container[TItem] {
 	if (!(key in container)) {

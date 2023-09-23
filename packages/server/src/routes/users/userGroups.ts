@@ -3,15 +3,11 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import type { FastifyInstance } from "fastify";
 import * as GroupModel from "@shared/models/Group";
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { removeRestricredChannels } from "src/services/UserChannels";
 import { inject } from "src/injection";
-import { schema } from "src/db";
-import { assert } from "src/util/assert";
-import { and, eq, sql } from "drizzle-orm";
 
 export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
-	const dbm = inject("db");
-	// const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
+	const userToGroupRelationsRepository = inject("UserToGroupRelationsRepository");
+
 	const baseUserGroupsUrl = "/users/:userId/groups";
 	const baseUserGroupsParams = z.object({
 		userId: z.number({ coerce: true }).int().gt(0),
@@ -31,21 +27,9 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const id = req.params.userId;
 			const name = req.body.name;
-
-			await db.transaction(async (tx) => {
-				const [group] = await tx.insert(schema.groups).values({ name })
-					.returning()
-					.onConflictDoNothing();
-				assert(group);
-				await tx.insert(schema.usersToGroups).values({
-					userId: id,
-					groupId: group?.id
-				});
-			});
-			// .catch(handlerDbNotFound(userNotFound(id)))
+			await userToGroupRelationsRepository.connectGroupToUser(id, name);
 			fastify.log.info(`Group added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(null));
 		}
@@ -66,19 +50,8 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const { userId, groupId } = req.params;
-			await db.transaction(async (tx) => {
-				const count = await tx.delete(schema.usersToGroups)
-					.where(and(
-						eq(schema.usersToGroups.userId, userId),
-						eq(schema.usersToGroups.groupId, groupId),
-					))
-					.returning({ count: sql<number>`count(*)::int`});
-				await removeRestricredChannels(tx);
-				return count;
-			})
-			//.catch(handlerDbNotFound("Failed to delete the group"));
+			await userToGroupRelationsRepository.deleteGroupFromUser(userId, groupId);
 			return reply.send(result(null));
 		}
 	});
@@ -96,14 +69,8 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const db = dbm.connection;
 			const { userId } = req.params;
-			await db.transaction(async (tx) => {
-				await tx.delete(schema.usersToGroups).where(eq(schema.usersToGroups.userId, userId));
-				// If we removed all of the users groups, than he has no permissions for any channels
-				await tx.delete(schema.usersToChannels).where(eq(schema.usersToChannels.userId, userId));
-			});
-			// .catch(handlerDbNotFound(userNotFound(userId)))
+			await userToGroupRelationsRepository.deleteAllGroupsFromUser(userId);
 			return reply.send(result(null));
 		}
 	});

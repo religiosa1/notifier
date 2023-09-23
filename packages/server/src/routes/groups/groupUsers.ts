@@ -9,7 +9,7 @@ import { inject } from "src/injection";
 
 export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 	const groupsRepository = inject("GroupsRepository");
-	const usersToGroupRelationRepository = inject("UsersToGroupRelationRepository");
+	const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
 
 	const baseGroupUsersUrl = "/groups/:groupId/users";
 	const baseGroupUsersParams = z.object({
@@ -34,7 +34,7 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 			const { groupId } = req.params;
 			const { name } = req.body;
 
-			await usersToGroupRelationRepository.connectGroupUser(groupId, name);
+			await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
 			const group = await groupsRepository.getGroupDetail(groupId);
 
 			fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, group);
@@ -58,7 +58,7 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 			const groupId = req.params.groupId;
 			const ids = req.query.id !== undefined ? parseIds(req.query.id) : undefined;
 
-			const count = await usersToGroupRelationRepository.deleteGroupUsers(groupId, ids);
+			const count = await usersToGroupRelationRepository.deleteUserFromGroup(groupId, ids);
 
 			const data = {
 				count,
