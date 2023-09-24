@@ -1,23 +1,21 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { db } from "src/db";
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
 import * as UserModel from "@shared/models/User";
 import { counted } from "@shared/models/Counted";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
-import * as UserService from "src/services/UserService";
 
 import { userChannels } from "./userChannels";
 import { userGroups } from "./userGroups";
 import { userKeys } from "./userKeys";
+import { inject } from "src/injection";
 
 export default fp(async function (fastify) {
-	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
+	const usersRepository = inject("UsersRepository");
+
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
 		url: "/users",
@@ -30,23 +28,11 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			// why Prisma is so stupid?..
-			// https://github.com/prisma/prisma/issues/7550
-			const [count, users] = await db.$transaction([
-				db.user.count(),
-				db.user.findMany({
-					skip,
-					take,
-					include: {
-						groups: {
-							select: { id: true, name: true }
-						}
-					}
-				}),
-			]);
+			const [data, count] = await usersRepository.listUsers({ skip, take });
+
 			return reply.send(result({
+				data,
 				count,
-				data: users as UserModel.UserWithGroups[],
 			}));
 		}
 	});
@@ -63,8 +49,7 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const user = await UserService.createUser(db, req.body)
-				.catch(handlerUniqueViolation()) as UserModel.UserDetail;
+			const user = await usersRepository.insertUser(req.body)
 			fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(user));
 		}
@@ -82,7 +67,7 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const count = await UserService.deleteUsers(db, ids);
+			const count = await usersRepository.deleteUsers(ids);
 			const data = {
 				count,
 				outOf: ids.length,
@@ -107,8 +92,7 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.userId;
-			const user = await UserService.getUser(db, id)
-				.catch(handlerDbNotFound(userNotFound(id)));
+			const user = await usersRepository.getUserDetail(id);
 			return reply.send(result(user));
 		}
 	});
@@ -130,9 +114,8 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId } = req.params;
-			const user = await UserService.editUser(db, userId, req.body)
-				.catch(handlerDbNotFound(userNotFound(userId)))
-				.catch(handlerUniqueViolation()) as UserModel.UserDetail;
+			const user = await usersRepository.updateUser(userId, req.body)
+
 			fastify.log.info(`User ${userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(user));
 		}
@@ -153,8 +136,8 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.userId;
-			await UserService.deleteUsers(db, [id])
-				.catch(handlerDbNotFound(userNotFound(id)));
+			await usersRepository.assertUserExists(id);
+			await usersRepository.deleteUsers([id])
 			fastify.log.info(`User ${id} delete by ${req.user.id}-${req.user.name}`);
 			return reply.send(result(null));
 		}
@@ -174,16 +157,9 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const { query } = req;
-			const users = await db.user.findMany({
-				where: {
-					name: { contains: query.name ?? "" },
-					groups: query.group ? { none: { id: query.group } } : undefined,
-				}
-			});
-			return reply.send(result(
-				users.map(i => UserModel.userSchema.parse(i))
-			));
+			const { name, group } = req.query;
+			const users = await usersRepository.searchUsers({ name, groupId: group });
+			return reply.send(result(users));
 		}
 	});
 

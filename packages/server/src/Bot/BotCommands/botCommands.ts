@@ -1,9 +1,10 @@
-import { db } from "src/db";
-import { createUser } from "src/services/UserService";
 import * as ApiKeyService from "src/services/ApiKey";
-import * as UserChannelsService from "src/services/UserChannels";
 import { BotCommand } from "./BotCommand";
-import { getChannelId } from "src/services/ChannelService";
+import { inject } from "src/injection";
+
+const usersRepository = inject("UsersRepository");
+const channelsRepository = inject("ChannelsRepository");
+const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
 
 /** Available bot commands */
 export const botCommands: BotCommand[] = [
@@ -11,6 +12,7 @@ export const botCommands: BotCommand[] = [
 		"start",
 		"",
 		async ({ logger, reply, userId, msg }) => {
+			// FIXME this command doesn't even require the authorization status check, only that we have a request
 			if (!isNaN(userId)) {
 				await reply("You've already started using the bot.");
 				return;
@@ -19,7 +21,7 @@ export const botCommands: BotCommand[] = [
 				throw new Error("There's no 'chat' information in the message, unable to process");
 			}
 			logger.info({ event: "start command", chat: msg.chat }),
-			await createUser(db, {
+			await usersRepository.insertUser({
 				name: msg.chat.username,
 				telegramId: msg.chat.id,
 			});
@@ -36,7 +38,8 @@ export const botCommands: BotCommand[] = [
 		"list_channels",
 		"List all notification channels available to you",
 		async ({ reply, userId }) => {
-			const channels = await UserChannelsService.allAvailableChannels(db, userId);
+			// TODO pagination and "more items" command
+			const [channels] = await userToChannelRelationsRepository.listAllAvailableChannelsForUser(userId);
 			console.log("channels", channels);
 			await reply(listMessage(
 				"Available channels",
@@ -49,7 +52,8 @@ export const botCommands: BotCommand[] = [
 		"list_subscriptions",
 		"List your current subscriptions",
 		async ({ reply, userId }) => {
-			const [channels] = await UserChannelsService.getUserChannels(db, userId);
+			// TODO pagination and "more items" command
+			const [channels] = await userToChannelRelationsRepository.listUserChannels(userId);
 			await reply(listMessage(
 				"You're currently subscribed to following notification channels:",
 				channels.map(i => i.name),
@@ -62,12 +66,12 @@ export const botCommands: BotCommand[] = [
 		"join_channel",
 		"Join a notification channel (subscribe)",
 		async ({ reply, userId }, [channel]) => {
-			const channelId = await getChannelId(db, channel!);
+			const channelId = await channelsRepository.getChannelId(channel!);
 			if (channelId == null) {
 				await reply("No such channel");
 				return;
 			}
-			await UserChannelsService.connectUserChannel(db, userId, channelId);
+			await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
 			await reply("Successfully joined the channel: " + channel);
 		},
 		["CHANNEL"],
@@ -76,12 +80,12 @@ export const botCommands: BotCommand[] = [
 		"leave_channel",
 		"Leave a notification channel",
 		async ({ reply, userId }, [channel]) => {
-			const channelId = await getChannelId(db, channel!);
+			const channelId = await channelsRepository.getChannelId(channel!);
 			if (channelId == null) {
 				await reply("No such channel");
 				return;
 			}
-			await UserChannelsService.disconnectUserChannels(db, userId, [channelId]);
+			await userToChannelRelationsRepository.disconnectUserChannels(userId, [channelId]);
 			await reply("Successfully left the channel: " + channel);
 		},
 		["CHANNEL"],
@@ -92,7 +96,7 @@ export const botCommands: BotCommand[] = [
 		"list_keys",
 		"List your API keys to the bot",
 		async ({ reply, userId }) => {
-			const [apiKeys] = await ApiKeyService.getKeys(db, userId, { skip: 0, take: 999 });
+			const [apiKeys] = await ApiKeyService.listKeys(userId, { skip: 0, take: 100 });
 			await reply(listMessage(
 				"Available keys:",
 				apiKeys.map(i => i.prefix),
@@ -104,7 +108,7 @@ export const botCommands: BotCommand[] = [
 		"new_key",
 		"Generate a new API key",
 		async ({ reply, userId }) => {
-			const apiKey = await ApiKeyService.createKey(db, userId);
+			const apiKey = await ApiKeyService.createKey(userId);
 			await reply("Your newly generated API key:\n" + apiKey);
 		}
 	),
@@ -112,7 +116,7 @@ export const botCommands: BotCommand[] = [
 		"remove_key",
 		"remove an API key",
 		async ({ reply, userId }, [prefix]) => {
-			await ApiKeyService.deleteKey(db, userId, prefix!);
+			await ApiKeyService.deleteKey(userId, prefix!);
 			await reply("Successfully removed the key.");
 		},
 		["KEY"],

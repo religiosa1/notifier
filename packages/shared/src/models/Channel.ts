@@ -10,7 +10,7 @@ export const channelSchema = z.object({
 export type Channel = z.infer<typeof channelSchema>;
 
 export const channelDetailSchema = channelSchema.extend({
-  Groups: z.array(groupSchema)
+  groups: z.array(groupSchema)
 });
 export type ChannelDetail = z.infer<typeof channelDetailSchema>;
 

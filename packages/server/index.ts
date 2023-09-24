@@ -12,7 +12,7 @@ import usersRoutes from "src/routes/users";
 import groupsRoutes from "src/routes/groups";
 import channelsRoutes from "src/routes/channels";
 import notify from "src/routes/notify";
-import authRequest from "src/routes/auth-request";
+import authRequest from "src/routes/user-confirmation-request";
 import { inject, register } from "src/injection";
 import { checkSettings } from "src/middleware/checkSettings";
 import settings from "src/routes/settings";
@@ -102,4 +102,3 @@ const start = async () => {
 	}
 }
 start();
-

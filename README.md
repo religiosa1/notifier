@@ -16,6 +16,15 @@ Allows:
 
 
 ## Deployment TODO
+Server requires a working instance of PostgreSQL with a created database.
+TODO currently we store the connection string in the file `config.current.json`
+under the field `databaseUrl`. This should be fixed, but at the moment, just fill
+this field with the required connection string to your database.
+To run migrations manually launch:
+```sh
+npm run db:migrate # to create the required database structure
+NOTIFIER_ADMIN_PWD=1234567 npm run db:seed # to populate the database with the initial data
+```
 
 ## Short workflow description TODO
 

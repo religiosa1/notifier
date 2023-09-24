@@ -7,7 +7,7 @@
 <h3>Main functionality</h3>
 <nav class="tile-nav">
 	<a class="tile-nav__item button secondary" href="./send-notification"> send notification </a>
-	<a class="tile-nav__item button secondary" href="./auth-request">
+	<a class="tile-nav__item button secondary" href="./user-confirmation-request">
 		pending authorization requests
 	</a>
 </nav>

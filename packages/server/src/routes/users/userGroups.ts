@@ -1,14 +1,13 @@
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { db } from "src/db";
 import type { FastifyInstance } from "fastify";
 import * as GroupModel from "@shared/models/Group";
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import { removeRestricredChannels } from "src/services/UserChannels";
+import { inject } from "src/injection";
 
 export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
-	const userNotFound = (id: string | number) => `user with id '${id}' doesn't exist`;
+	const userToGroupRelationsRepository = inject("UserToGroupRelationsRepository");
+
 	const baseUserGroupsUrl = "/users/:userId/groups";
 	const baseUserGroupsParams = z.object({
 		userId: z.number({ coerce: true }).int().gt(0),
@@ -30,17 +29,7 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		async handler(req, reply) {
 			const id = req.params.userId;
 			const name = req.body.name;
-			await db.user.update({
-				where: { id },
-				data: {
-					groups: {
-						connectOrCreate: [{
-							where: { name },
-							create: { name },
-						}]
-					}
-				}
-			}).catch(handlerDbNotFound(userNotFound(id)))
+			await userToGroupRelationsRepository.connectGroupToUser(id, name);
 			fastify.log.info(`Group added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
 			return reply.send(result(null));
 		}
@@ -62,17 +51,7 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId, groupId } = req.params;
-			await db.$transaction(async (tx) => {
-				await tx.user.update({
-					where: { id: userId },
-					data: {
-						groups: {
-							disconnect: { id: groupId }
-						}
-					}
-				});
-				await removeRestricredChannels(tx);
-			}).catch(handlerDbNotFound("Failed to delete the group"));
+			await userToGroupRelationsRepository.deleteGroupFromUser(userId, groupId);
 			return reply.send(result(null));
 		}
 	});
@@ -91,14 +70,7 @@ export function userGroups<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { userId } = req.params;
-			await db.$transaction([
-				db.user.update({
-					where: { id: userId },
-					data: { groups: { set: [] } },
-				}),
-				// If we removed all of the users groups, than he has no permissions for any channels
-				db.userChannel.deleteMany({ where: { userId } }),
-			]).catch(handlerDbNotFound(userNotFound(userId)))
+			await userToGroupRelationsRepository.deleteAllGroupsFromUser(userId);
 			return reply.send(result(null));
 		}
 	});

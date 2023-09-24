@@ -8,7 +8,7 @@ import { serverUrl } from '~/helpers/serverUrl';
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const pagination = getPaginationParams(url);
-	const users = await fetch(serverUrl(paginate(pagination, '/auth-request')))
+	const users = await fetch(serverUrl(paginate(pagination, '/user-confirmation-request')))
 		.then(unwrapResult) as Counted<UserWithGroups[]>;
 
 	return {
@@ -21,8 +21,8 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 };
 
 export const actions: Actions = {
-	decline: addVerb(batchDelete({ route: "/auth-request" }), "declined"),
-	accept: addVerb(batchDelete({ route: "/auth-request", method: "PUT" }), "accepted"),
+	decline: addVerb(batchDelete({ route: "/user-confirmation-request" }), "declined"),
+	accept: addVerb(batchDelete({ route: "/user-confirmation-request", method: "PUT" }), "accepted"),
 }
 
 function addVerb<

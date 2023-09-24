@@ -1,22 +1,18 @@
 import fp from "fastify-plugin";
 import z from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
 import { counted } from "@shared/models/Counted";
 import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { omit } from "@shared/helpers/omit";
-import { db } from "src/db";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
 import { groupUsers } from "./groupUsers";
 import { groupChannels } from "src/routes/groups/groupChannels";
-import { removeRestricredChannels } from "src/services/UserChannels";
+import { inject } from "src/injection";
 
 export default fp(async function (fastify) {
-	const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
+	const groupsRepository = inject("GroupsRepository");
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
@@ -33,28 +29,12 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [count, groups] = await db.$transaction((tx) => {
-				const countPrms = tx.group.count();
-				const groupsPrms = tx.group.findMany({
-					skip,
-					take,
-					include: {
-						Users: { select: { id: true } },
-						Channels: { select: { id: true } },
-					},
-				}).then((groups) => groups.map((i) => ({
-					...omit(i, ["Users", "Channels"]),
-					channelsCount: i.Channels.length,
-					usersCount: i.Users.length,
-				})));
-				return Promise.all([
-					countPrms,
-					groupsPrms,
-				])
-			});
+
+			const [ data, count ] = await groupsRepository.listGroups({ skip, take });
+
 			return reply.send(result({
+				data,
 				count,
-				data: groups,
 			}));
 		}
 	});
@@ -71,13 +51,13 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const group = await db.group.create({
-				data: {
-					name: req.body.name,
-				}
-			}).catch(handlerUniqueViolation());
+			const { name } = req.body;
+			const { id } = await groupsRepository.insertGroup(name);
+			const group = await groupsRepository.getGroupPreview(id);
 			fastify.log.info(`Group created by ${req.user.id}-${req.user.name}`, group);
-			return reply.send(result(group));
+			return reply.send(result({
+				...group,
+			}));
 		}
 	});
 
@@ -93,15 +73,9 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const { count } = await db.$transaction(async (tx) => {
-				const resp = await tx.group.deleteMany({
-					where: {
-						id: { in: ids }
-					}
-				});
-				await removeRestricredChannels(tx);
-				return resp;
-			});
+
+			const count = await groupsRepository.deleteGroups(ids);
+
 			const data = {
 				count,
 				outOf: ids.length,
@@ -127,17 +101,19 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const { query } = req;
-			const groups = await db.group.findMany({
-				where: {
-					name: { contains: query.name ?? "" },
-					Channels: query.channel ? { none: { id: query.channel } } : undefined,
-					Users: query.user ? { none: { id: req.query.user } } : undefined,
-				}
+			const { name, channel, user } = req.query;
+
+			const groups = await groupsRepository.searchAvailableGroups({
+				name,
+				channelId: channel,
+				userId: user,
 			});
+
 			return reply.send(result(groups));
 		}
 	});
+
+	//============================================================================
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
@@ -154,23 +130,7 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.groupId;
-			const group = await db.group.findUniqueOrThrow({
-				where: { id },
-				include: {
-					Users: {
-						select: {
-							id: true,
-							name: true,
-						}
-					},
-					Channels: {
-						select: {
-							id: true,
-							name: true,
-						}
-					},
-				}
-			}).catch(handlerDbNotFound(groupNotFound(id)));
+			const group = await groupsRepository.getGroupDetail(id);
 			return reply.send(result(group));
 		}
 	});
@@ -192,12 +152,8 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.groupId;
-			const group = await db.group.update({
-				where: { id },
-				data: req.body,
-			})
-				.catch(handlerDbNotFound(groupNotFound(id)))
-				.catch(handlerUniqueViolation());
+			const { name } = req.body;
+			const group = await groupsRepository.updateGroup(id, name);
 			fastify.log.info(`Group update by ${req.user.id}-${req.user.name}`, group);
 			return reply.send(result(group));
 		}
@@ -218,14 +174,11 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.groupId;
-			const group = await db.$transaction(async (tx) => {
-				const resp = await db.group.delete({
-					where: { id }
-				});
-				await removeRestricredChannels(tx);
-				return resp;
-			}).catch(handlerDbNotFound(groupNotFound(id)));
-			fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, group);
+			const count = await groupsRepository.deleteGroups([ id ]);
+			if (!count) {
+				throw new ResultError(404, `Group with id "${id}" not foind`);
+			}
+			fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, id);
 			return reply.send(result(null));
 		}
 	});

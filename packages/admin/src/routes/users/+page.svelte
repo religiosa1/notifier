@@ -62,7 +62,7 @@
 	</div>
 </form>
 <p>
-	<a href="/auth-request">list of pending authorization requests</a>
+	<a href="/user-confirmation-request">list of pending authorization requests</a>
 </p>
 
 <DeleteConfirmationModal

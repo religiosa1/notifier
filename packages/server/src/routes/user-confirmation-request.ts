@@ -7,13 +7,14 @@ import * as UserModel from "@shared/models/User";
 import { counted } from "@shared/models/Counted";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
-import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
-import { db } from "src/db";
+import { inject } from "src/injection";
 
 export default fp(async function (fastify) {
+	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
+
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
-		url: "/auth-request",
+		url: "/user-confirmation-request",
 		schema: {
 			querystring: paginationSchema,
 			response: {
@@ -23,31 +24,19 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [count, users] = await db.$transaction([
-				db.user.count({
-					where: { authorizationStatus: AuthorizationEnum.pending }
-				}),
-				db.user.findMany({
-					skip,
-					take,
-					include: {
-						groups: {
-							select: { id: true, name: true }
-						}
-					},
-					where: { authorizationStatus: AuthorizationEnum.pending }
-				}),
-			]);
+			const [ data, count ] = await userConfirmationRequestsRepository.listConfirmationRequests({ skip, take });
+
 			return reply.send(result({
+				data,
 				count,
-				data: users as UserModel.UserWithGroups[],
 			}));
 		}
 	});
 
+
 	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/auth-request",
+		method: "PUT",
+		url: "/user-confirmation-request",
 		schema: {
 			querystring: z.object({ id: batchIdsSchema }),
 			response: {
@@ -56,15 +45,10 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
+
 			const ids = parseIds(req.query.id);
-			const { count } = await db.user.updateMany({
-				where: {
-					id: { in: ids }
-				},
-				data: {
-					authorizationStatus: AuthorizationEnum.declined
-				}
-			});
+			const count = await userConfirmationRequestsRepository.acceptConfirmationRequests(ids);
+
 			const data = {
 				count,
 				outOf: ids.length,
@@ -75,8 +59,8 @@ export default fp(async function (fastify) {
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/auth-request",
+		method: "DELETE",
+		url: "/user-confirmation-request",
 		schema: {
 			querystring: z.object({ id: batchIdsSchema }),
 			response: {
@@ -86,14 +70,9 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const { count } = await db.user.updateMany({
-				where: {
-					id: { in: ids }
-				},
-				data: {
-					authorizationStatus: AuthorizationEnum.accepted
-				}
-			});
+
+			const count = await userConfirmationRequestsRepository.declineConfirmationRequests(ids);
+
 			const data = {
 				count,
 				outOf: ids.length,

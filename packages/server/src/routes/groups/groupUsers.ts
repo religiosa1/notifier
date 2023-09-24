@@ -5,12 +5,12 @@ import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models
 import * as GroupModel from "@shared/models/Group";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { db } from "src/db";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
-import { removeRestricredChannels } from "src/services/UserChannels";
+import { inject } from "src/injection";
 
 export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
-	const groupNotFound = (id: string | number) => `group with id '${id}' doesn't exist`;
+	const groupsRepository = inject("GroupsRepository");
+	const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
+
 	const baseGroupUsersUrl = "/groups/:groupId/users";
 	const baseGroupUsersParams = z.object({
 		groupId: z.number({ coerce: true }).int().gt(0),
@@ -32,19 +32,13 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { groupId } = req.params;
-			const name = req.body.name;
-			const data = await db.group.update({
-				where: { id: groupId },
-				include: {
-					Users: true,
-					Channels: true,
-				},
-				data: {
-					Users: { connect: { name } },
-				},
-			}).catch(handlerDbNotFound(groupNotFound(groupId)));
-			fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
+			const { name } = req.body;
+
+			await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
+			const group = await groupsRepository.getGroupDetail(groupId);
+
+			fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, group);
+			return reply.send(result(group));
 		}
 	});
 
@@ -62,32 +56,13 @@ export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const groupId = req.params.groupId;
-			const ids = parseIds(req.query.id || "");
+			const ids = req.query.id !== undefined ? parseIds(req.query.id) : undefined;
 
-			const response = await db.$transaction(async (tx) => {
-				const resp = await tx.group.update({
-					where: { id: groupId },
-					include: {
-						Users: {
-							select: { id: true },
-							where: ids.length
-								? { id: { in: ids } }
-								: undefined
-						}
-					},
-					data: {
-						Users: ids.length
-							? { disconnect: ids.map(id => ({ id })) }
-							: { set: [] }
-					}
-				});
-				await removeRestricredChannels(tx);
-				return resp
-			}).catch(handlerDbNotFound(groupNotFound(groupId)));
+			const count = await usersToGroupRelationRepository.deleteUserFromGroup(groupId, ids);
 
 			const data = {
-				count: response.Users.length,
-				outOf: ids.length,
+				count,
+				outOf: ids?.length ?? -1,
 			};
 			fastify.log.info(`Groups users batch disconnect by ${req.user.id}-${req.user.name}`, data);
 			return reply.send(result(data));

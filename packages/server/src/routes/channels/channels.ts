@@ -7,14 +7,11 @@ import { counted } from "@shared/models/Counted";
 import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { groupNameSchema } from "@shared/models/Group";
-import { omit } from "@shared/helpers/omit";
-import { db } from "src/db";
-import { handlerUniqueViolation } from "src/error/handlerUniqueViolation";
-import { handlerDbNotFound } from "src/error/handlerRecordNotFound";
+import { inject } from "src/injection";
+import channelGroups from "./channelGroups";
 
 export default fp(async function (fastify) {
-	const channelNotFound = (id: string | number) => `channel with id '${id}' doesn't exist`;
+	const channelsRepository = inject("ChannelsRepository");
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "GET",
@@ -31,31 +28,11 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [count, channels] = await db.$transaction((tx) => {
-				const countPrms = tx.channel.count();
-				const channelPrms = tx.channel.findMany({
-					skip,
-					take,
-					include: {
-						Groups: { select: { id: true } },
-						userChannels: {
-							select: { userId: true },
-							distinct: ['userId'],
-						}
-					}
-				}).then(channels => channels.map(channel => ({
-					...omit(channel, ["Groups", "userChannels"]),
-					groupsCount: channel.Groups.length,
-					usersCount: channel.userChannels.length,
-				})));
-				return Promise.all([
-					countPrms,
-					channelPrms,
-				]);
-			});
+			const [ data, count ] = await channelsRepository.listChannels({ skip , take });
+
 			return reply.send(result({
+				data,
 				count,
-				data: channels,
 			}));
 		}
 	});
@@ -74,12 +51,12 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const channels = await db.channel.findMany({
-				where: {
-					name: { contains: req.query.name ?? "" },
-					Groups: req.query.group ? { none: { id: req.query.group } } : {},
-				}
-			});
+			const { group, name = "" } = req.query;
+
+			const channels = group
+				? await channelsRepository.searchChannelsForGroup({ name, groupId: group })
+				: await channelsRepository.searchChannels({ name });
+
 			return reply.send(result(channels));
 		}
 	});
@@ -96,11 +73,7 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const channel = await db.channel.create({
-				data: {
-					name: req.body.name,
-				}
-			}).catch(handlerUniqueViolation());
+			const channel = await channelsRepository.insertChannel(req.body.name);
 			fastify.log.info(`Channel created by ${req.user.id}-${req.user.name}`, channel);
 			return reply.send(result(channel));
 		}
@@ -120,11 +93,8 @@ export default fp(async function (fastify) {
 		},
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
-			const id = req.params.channelId;
-			const channel = await db.channel.findUniqueOrThrow({
-				where: { id },
-				include: { Groups: true },
-			}).catch(handlerDbNotFound(channelNotFound(id)))
+			const {channelId} = req.params;
+			const channel = await channelsRepository.getChannelDetail(channelId);
 			return reply.send(result(channel));
 		}
 	});
@@ -146,12 +116,10 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.channelId;
-			const channel = await db.channel.update({
-				where: { id },
-				data: req.body,
-			})
-				.catch(handlerDbNotFound(channelNotFound(id)))
-				.catch(handlerUniqueViolation());
+			const { name } = req.body;
+
+			const channel = await channelsRepository.updateChannel(id, name);
+
 			fastify.log.info(`Channel update by ${req.user.id}-${req.user.name}`, channel);
 			return reply.send(result(channel));
 		}
@@ -172,10 +140,9 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const id = req.params.channelId;
-			const channel = await db.channel.delete({
-				where: { id }
-			}).catch(handlerDbNotFound(channelNotFound(id)));
-			fastify.log.info(`Channel delete by ${req.user.id}-${req.user.name}`, channel);
+			await channelsRepository.assertChannelExist(id);
+			await channelsRepository.deleteChannels([id]);
+			fastify.log.info(`Channel delete by ${req.user.id}-${req.user.name}`, id);
 			return reply.send(result(null));
 		}
 	});
@@ -192,11 +159,7 @@ export default fp(async function (fastify) {
 		onRequest: fastify.authorizeJWT,
 		async handler(req, reply) {
 			const ids = parseIds(req.query.id);
-			const { count } = await db.channel.deleteMany({
-				where: {
-					id: { in: ids }
-				}
-			});
+			const count = await channelsRepository.deleteChannels(ids);
 			const data = {
 				count,
 				outOf: ids.length,
@@ -205,83 +168,5 @@ export default fp(async function (fastify) {
 			return reply.send(result(data));
 		}
 	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: "/channels/:channelId/groups",
-		schema: {
-			params: z.object({
-				channelId: z.number({ coerce: true }).int().gt(0),
-			}),
-			body: z.object({
-				name: groupNameSchema,
-			}),
-			response: {
-				200: resultSuccessSchema(ChannelModel.channelDetailSchema),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { name } = req.body;
-			const data = await db.channel.update({
-				where: { id: req.params.channelId },
-				include: {
-					Groups: true
-				},
-				data: {
-					Groups: {
-						connectOrCreate: {
-							where: { name },
-							create: { name },
-						}
-					}
-				}
-			});
-			fastify.log.info(`Channel group added by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/channels/:channelId/groups",
-		schema: {
-			params: z.object({
-				channelId: z.number({ coerce: true }).int().gt(0),
-			}),
-			querystring: z.object({ id: z.optional(batchIdsSchema) }),
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const ids = parseIds(req.query.id || "");
-			const groupsAction = ids.length
-				? { disconnect: ids.map(id => ({ id })) }
-				: { set: [] }
-			const groupsFilter = ids.length
-				? { id: { in: ids } }
-				: {}
-			const response = await db.channel.update({
-				where: { id: req.params.channelId },
-				include: {
-					Groups: {
-						select: { id: true },
-						where: groupsFilter
-					}
-				},
-				data: {
-					Groups: groupsAction
-				}
-			});
-			const data = {
-				count: response.Groups.length,
-				outOf: ids.length,
-			};
-			fastify.log.info(`Channel groups batch disconnect by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
+	channelGroups(fastify);
 });
