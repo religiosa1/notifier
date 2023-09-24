@@ -12,8 +12,8 @@
     "salt": "tsx scripts/salt.ts",
     "generate-jwt-secret": "tsx scripts/generate-jwt-secret.ts",
     "db:make-migration": "drizzle-kit generate:pg --schema=./src/db/schema.ts",
-    "db:migrate": "drizzle-kit push:pg",
-    "db:seed": "tsx src/db/seed.ts",
+    "db:migrate": "tsx scripts/db-migrate",
+    "db:seed": "tsx scripts/db-seed.ts",
     "test": "jest"
   },
   "author": "Viacheslav Azarov",

@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import "../polyfill";
+import "../src/polyfill";
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
@@ -36,7 +36,7 @@ async function main() {
 			id: 1,
 			telegramId: Number(process.env.ROOT_TELEGRAM_ID) || 1234567,
 			name: 'admin',
-			password: await hash("1234567"),
+			password: await hash(process.env["NOTIFIER_ADMIN_PWD"] || "1234567"),
 			authorizationStatus: AuthorizationEnum.accepted,
 			role: UserRoleEnum.admin,
 		})
