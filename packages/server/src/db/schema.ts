@@ -49,8 +49,8 @@ export const groupsRelations = relations(groups, ({ many }) => ({
 }));
 
 export const usersToGroups = pgTable("users_to_groups", {
-	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
-	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade", onUpdate: "cascade" }),
+	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
 	pk: primaryKey(t.userId, t.groupId),
 }));
@@ -80,8 +80,8 @@ export const channelRelations = relations(channels, ({ many }) => ({
 }));
 
 export const channelsToGroups = pgTable("channels_to_groups", {
-	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade" }),
-	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade", onUpdate: "cascade" }),
+	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
 	pk: primaryKey(t.channelId, t.groupId),
 }));
@@ -99,8 +99,8 @@ export const channelsToGroupsRelations = relations(channelsToGroups, ({ one }) =
 export const usersToChannels = pgTable("users_to_channels", {
 	// with a separate primary key, to make our queries easier
 	id: serial("id").primaryKey(),
-	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade" }),
+	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
+	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
 	uniq: unique().on(t.channelId, t.userId),
 }));
@@ -123,7 +123,7 @@ export const apiKeys = pgTable("api_keys", {
 	prefix: text("prefix").primaryKey(),
   // Actual key part, stored as hash
   hash: text("hash").notNull(),
-	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({

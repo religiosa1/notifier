@@ -36,13 +36,13 @@ export class UserToGroupRelationsRepository {
 				eq(schema.usersToGroups.userId, sql.placeholder("userId")),
 				eq(schema.usersToGroups.groupId, sql.placeholder("groupId")),
 			))
-			.returning({ count: sql<number>`count(*)::int`})
+			.returning()
 			.prepare("delete_group_from_user")
 	);
 
-	async deleteGroupFromUser(userId: number, groupId: number): Promise<number> {
-		const [{ count = -1} = {}] = await this.queryDeleteGroupFromUser.value.execute({ userId, groupId });
-		return count;
+	async deleteGroupFromUser(userId: number, groupId: number): Promise<void> {
+		const data  = await this.queryDeleteGroupFromUser.value.execute({ userId, groupId });
+		assert(data, `Failed to delete group id = ${groupId} from user id = '${userId}'`);
 	}
 
 	async deleteAllGroupsFromUser(userId: number): Promise<void> {
@@ -70,9 +70,12 @@ export class UserToGroupRelationsRepository {
 	async connectGroupToUser(userId: number, groupName: string): Promise<void> {
 		const db = this.dbm.connection;
 		await db.transaction(async (tx) => {
-			const [group] = await tx.insert(schema.groups).values({ name: groupName })
-				.returning()
-				.onConflictDoNothing();
+			let [group] = await tx.select({ id: schema.groups.id }).from(schema.groups)
+				.where(eq(schema.groups.name, groupName));
+			if (!group) {
+				await tx.insert(schema.groups).values({ name: groupName })
+					.returning({ id: schema.groups.id });
+			}
 			assert(group);
 			await tx.insert(schema.usersToGroups).values({
 				userId,

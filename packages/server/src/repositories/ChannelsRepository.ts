@@ -48,8 +48,8 @@ export class ChannelsRepository {
 		usersCount: sql<number>`COUNT(${schema.usersToChannels.userId})::int`,
 		groupsCount: sql<number>`COUNT(${schema.channelsToGroups.groupId})::int`,
 	}).from(schema.channels)
-		.innerJoin(schema.usersToChannels, eq(schema.usersToChannels.channelId, schema.channels.id))
-		.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
+		.leftJoin(schema.usersToChannels, eq(schema.usersToChannels.channelId, schema.channels.id))
+		.leftJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
 		.groupBy(schema.channels.id)
 		.limit(sql.placeholder("take"))
 		.offset(sql.placeholder("skip"))
@@ -75,23 +75,23 @@ export class ChannelsRepository {
 
 	// GET USER IDS FOR CHANNELS
 
-	private readonly queryGetUserChatIdsForChannels = this.dbm.prepare(
-		(db) => db.select({ telegramId: schema.users.telegramId }).from(schema.users)
-		.innerJoin(schema.usersToChannels, eq(schema.usersToChannels.userId, schema.users.id))
-		.innerJoin(schema.channels, eq(schema.usersToChannels.channelId, schema.channels.id))
-		.where(
-			and(
-				eq(schema.users.authorizationStatus, AuthorizationEnum.accepted),
-				inArray(schema.channels.name, sql.placeholder('channels'))
-			)
-		).prepare("get_user_chat_ids_for_channels")
-	);
-
+	/* TODO: That's one query that I'd like to prepare, but a bug in drizzle with array placeholders blocking its
+	 * https://www.answeroverflow.com/m/1116352742026395658
+	 */
 	async getUserChatIdsForChannel(channelNames: string[]): Promise<number[]> {
 		if (!channelNames?.length) {
 			return [];
 		}
-		const data = await this.queryGetUserChatIdsForChannels.value.execute({ channelNames });
+		const db = this.dbm.connection;
+		const data = await db.select({ telegramId: schema.users.telegramId }).from(schema.users)
+			.innerJoin(schema.usersToChannels, eq(schema.usersToChannels.userId, schema.users.id))
+			.innerJoin(schema.channels, eq(schema.usersToChannels.channelId, schema.channels.id))
+			.where(
+				and(
+					eq(schema.users.authorizationStatus, AuthorizationEnum.accepted),
+					inArray(schema.channels.name, channelNames)
+				)
+			);
 		return data.map(user => user.telegramId);
 	}
 
@@ -150,17 +150,15 @@ export class ChannelsRepository {
 	//============================================================================
 	// DELETE
 
-	private readonly queryDeleteChannels = this.dbm.prepare((db) => db.delete(schema.channels)
-		.where(inArray(schema.channels.id, sql.placeholder("ids")))
-		.returning({ count: sql<number>`count(*)::int` })
-		.prepare("delete_channels")
-	);
 	async deleteChannels(ids: number[]): Promise<number> {
 		if (!ids?.length) {
 			return 0;
 		}
-		const [{count = -1} = {}] = await this.queryDeleteChannels.value.execute({ ids });
-		return count;
+		const db = this.dbm.connection;
+		const data = await db.delete(schema.channels)
+			.where(inArray(schema.channels.id, ids))
+			.returning();
+		return data.length;
 	}
 
 	//============================================================================
@@ -179,7 +177,7 @@ export class ChannelsRepository {
 		db.select(getTableColumns(schema.channels)).from(schema.channels)
 			.leftJoin(schema.channelsToGroups, and(
 				eq(schema.channelsToGroups.channelId, schema.channels.id),
-				eq(schema.channelsToGroups.groupId, sql.placeholder("group"))
+				eq(schema.channelsToGroups.groupId, sql.placeholder("groupId"))
 			))
 			.where(and(
 				ilike(schema.channels.name, sql.placeholder("name")),

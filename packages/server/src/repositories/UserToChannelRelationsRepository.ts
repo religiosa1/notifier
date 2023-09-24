@@ -34,29 +34,28 @@ export class UserToChannelRelationsRepository {
 			[{count = -1} = {}],
 			channels
 		] = await Promise.all([
-			this.queryCountUserChannels.value.execute(),
+			this.queryCountUserChannels.value.execute({ userId }),
 			this.queryListUserChannels.value.execute({ userId, skip, take })
 		]);
 		return [ channels, count ];
 	}
 
 	// LIST available unsubscribed channels for user
-	// totalCount ?..
+	// TODO: totalCount
 	private readonly queryListAvailableUnsubscribedChannelsForUser = this.dbm.prepare(
 		(db) => db.select(getTableColumns(schema.channels)).from(schema.channels)
 			.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
-			.innerJoin(schema.groups, eq(schema.channelsToGroups.groupId, schema.groups.id))
-			.innerJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.groups.id))
+			.innerJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.channelsToGroups.groupId))
 			.leftJoin(schema.usersToChannels, and(
 				eq(schema.usersToChannels.userId, schema.usersToGroups.userId),
 				eq(schema.usersToChannels.channelId, schema.channels.id)
 			))
 			.where(eq(schema.usersToGroups.userId, sql.placeholder("userId")))
 			.groupBy(schema.channels.id)
-			.having(sql`COUNT(${schema.usersToChannels.channelId}) > 0`)
+			.having(sql`COUNT(${schema.usersToChannels.channelId}) = 0`)
 			.orderBy(schema.channels.name, schema.channels.id)
 			.limit(sql.placeholder("take"))
-			.offset(sql.placeholder("take"))
+			.offset(sql.placeholder("skip"))
 			.prepare("list_user_available_unsubscribed_channels")
 	);
 	async listAvailableUnsubscribedChannelsForUser(userId: number, { skip = 0, take = 20} = {}): Promise<Channel[]> {
@@ -143,17 +142,18 @@ export class UserToChannelRelationsRepository {
 	//============================================================================
 	// DISCONNECT
 
-	private readonly queryDisconnectUserChannels = this.dbm.prepare(
-		(db) => db.delete(schema.usersToChannels)
-		.where(inArray(schema.usersToChannels.id, sql.placeholder("channelIds")))
-		.returning({ count: sql<number>`count(*)::int`})
-		.prepare("disconnect_user_channels")
-	);
 	async disconnectUserChannels(userId: number, channelIds: number[]): Promise<number> {
 		if (!channelIds?.length) {
 			return 0;
 		}
-		const [{count = -1} = {}] = await this.queryDisconnectUserChannels.value.execute({ userId, channelIds });
-		return count;
+		const db = this.dbm.connection;
+		console.table({ userId, channelIds });
+		const data = await db.delete(schema.usersToChannels)
+			.where(and(
+				eq(schema.usersToChannels.userId, userId),
+				inArray(schema.usersToChannels.channelId, channelIds)
+			))
+			.returning();
+		return data.length;
 	}
 }

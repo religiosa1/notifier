@@ -7,8 +7,8 @@ import { counted } from "@shared/models/Counted";
 import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-
 import { inject } from "src/injection";
+import channelGroups from "./channelGroups";
 
 export default fp(async function (fastify) {
 	const channelsRepository = inject("ChannelsRepository");
@@ -168,4 +168,5 @@ export default fp(async function (fastify) {
 			return reply.send(result(data));
 		}
 	});
+	channelGroups(fastify);
 });

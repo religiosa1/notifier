@@ -45,6 +45,10 @@ async function main() {
 	await db.insert(schema.usersToGroups)
 		.values({ userId: 1, groupId: 1 })
 		.onConflictDoNothing();
+	console.log("Creating usersToChannels relations...");
+	await db.insert(schema.usersToChannels)
+		.values({ userId: 1, channelId: 1 })
+		.onConflictDoNothing();
 }
 
 main()

@@ -57,8 +57,8 @@ export default fp(async function (fastify) {
 			await channelsRepository.assertChannelExist(channelId);
 
 			const count = ids.length
-				? await channelToGroupRelationsRepository.deleteGroupsFromChannelByIds(channelId, ids)
-				: await channelToGroupRelationsRepository.deleteAllGroupsFromChannel(channelId)
+				? await channelToGroupRelationsRepository.disconnectGroupsFromChannelByIds(channelId, ids)
+				: await channelToGroupRelationsRepository.disconnectAllGroupsFromChannel(channelId)
 
 			const data = {
 				count,

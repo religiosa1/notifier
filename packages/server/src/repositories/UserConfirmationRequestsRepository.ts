@@ -55,36 +55,30 @@ export class UserConfirmationRequestsRepository {
 	//============================================================================
 	// ACCEPT
 
-	private readonly queryAcceptConfirmationRequest = this.dbm.prepare(
-		(db) => db.update(schema.users)
-				.set({ authorizationStatus: AuthorizationEnum.accepted, updatedAt: sql`CURRENT_TIMESTAMP` })
-				.where(inArray(schema.users.id, sql.placeholder("userIds")))
-				.returning({ count: sql<number>`count(*)::int` })
-				.prepare("accept_confimation_requests")
-	);
 	async acceptConfirmationRequests(userIds: number[]): Promise<number> {
 		if (!userIds.length) {
 			return 0;
 		}
-		const [{count = -1} = {}] = await this.queryAcceptConfirmationRequest.value.execute({ userIds });
-		return count;
+		const db = this.dbm.connection;
+		const updated = await db.update(schema.users)
+				.set({ authorizationStatus: AuthorizationEnum.accepted, updatedAt: sql`CURRENT_TIMESTAMP` })
+				.where(inArray(schema.users.id, userIds))
+				.returning({ id: schema.users.id });
+		return updated.length;
 	}
 
 	//============================================================================
 	// DECLINE
 
-	private readonly queryDeclineConfirmationRequests = this.dbm.prepare(
-		(db) => db.update(schema.users)
-			.set({ authorizationStatus: AuthorizationEnum.declined, updatedAt: sql`CURRENT_TIMESTAMP` })
-			.where(inArray(schema.users.id, sql.placeholder("userIds")))
-			.returning({ count: sql<number>`count(*)::int` })
-			.prepare("decline_confirmation_requests")
-	);
 	async declineConfirmationRequests(userIds: number[]): Promise<number> {
 		if (!userIds.length) {
 			return 0;
 		}
-		const [{count = -1} = {}] = await this.queryDeclineConfirmationRequests.value.execute({ userIds });
-		return count;
+		const db = this.dbm.connection;
+		const updated = await db.update(schema.users)
+			.set({ authorizationStatus: AuthorizationEnum.declined, updatedAt: sql`CURRENT_TIMESTAMP` })
+			.where(inArray(schema.users.id, userIds))
+			.returning({ id: schema.users.id });
+		return updated.length;
 	}
 }

@@ -56,23 +56,23 @@ export class ApiKeysRepository {
 			eq(schema.apiKeys.userId, sql.placeholder("userId")),
 			eq(schema.apiKeys.prefix, sql.placeholder("prefix")),
 		))
-		.returning({ count: sql<number>`count(*)::int`})
+		.returning()
 		.prepare("delete_key")
 	);
 	async deleteKey(userId: number, prefix: string): Promise<void> {
-		const [ { count = 0 } = {}] = await this.queryDeleteKey.value.execute({ userId, prefix });
-		if (!count) {
+		const data = await this.queryDeleteKey.value.execute({ userId, prefix });
+		if (!data?.length) {
 			throw new ResultError(404, `Can't find a key for user id = "${userId}" and prefix = "${prefix}"`);
 		}
 	}
 
 	private queryDeleteAllKeys = this.dbm.prepare(db => db.delete(schema.apiKeys)
 		.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-		.returning({ count: sql<number>`count(*)::int`})
+		.returning()
 		.prepare("delete_key")
 	);
 	async deleteAllKeysForUser(userId: number): Promise<number> {
-		const [ { count = -1 } = {}] = await this.queryDeleteAllKeys.value.execute({ userId });
-		return count;
+		const data = await this.queryDeleteAllKeys.value.execute({ userId });
+		return data.length;
 	}
 }

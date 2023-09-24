@@ -65,19 +65,21 @@
 		<form method="post" action="?/add" use:enhance>
 			<p>
 				<button disabled={!data.availableChannels.length}>Add a channel</button>
-				<select disabled={!data.availableChannels?.length} name="id">
-					{#each data.availableChannels as channel (channel.id)}
-						<option value={channel.id}>{channel.name}</option>
-					{:else}
-						<option selected>
-							{#if !data.channels.length}
-								There's no channels available to the user. Is he a member of any group?
-							{:else}
-								No more channels available to assign. Try adding the user to some additional groups.
-							{/if}
-						</option>
-					{/each}
-				</select>
+				{#if data.availableChannels.length}
+					<select disabled={!data.availableChannels?.length} name="id">
+						{#each data.availableChannels as channel (channel.id)}
+							<option value={channel.id}>{channel.name}</option>
+						{/each}
+					</select>
+				{:else}
+					<p>
+						{#if !data.channels.length}
+							There's no channels available to the user. Is he a member of any group?
+						{:else}
+							No more channels available to assign. Try adding the user to some additional groups.
+						{/if}
+					</p>
+				{/if}
 			</p>
 		</form>
 	</div>

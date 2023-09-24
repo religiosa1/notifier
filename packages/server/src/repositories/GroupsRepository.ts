@@ -133,19 +133,17 @@ export class GroupsRepository {
 	//============================================================================
 	// DELETE
 
-	private deleteGroupsQuery = this.dbm.prepare((db) => db.delete(schema.groups)
-		.where(inArray(schema.groups.id, sql.placeholder("ids")))
-		.returning({ count: sql<number>`count(*)::int` })
-		.prepare("delete_group_query")
-	);
-
 	async deleteGroups(ids: number[]): Promise<number> {
 		if (!ids?.length) {
 			return 0;
 		}
+		const db = this.dbm.connection;
 		// orphaned user-to-channel relations handled by a db trigger
-		const [{ count = -1} = {}] = await this.deleteGroupsQuery.value.execute({ids});
-		return count;
+		const data = await db.delete(schema.groups)
+			.where(inArray(schema.groups.id, ids))
+			.returning({ id: schema.groups.id })
+
+		return data.length;
 	}
 
 	//============================================================================

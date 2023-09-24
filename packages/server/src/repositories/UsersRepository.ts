@@ -9,6 +9,10 @@ import { assert } from "src/util/assert";
 
 const userNotFound = (id: string | number) => () => new NotFoundError(`user with id '${id}' doesn't exist`);
 
+/* All of the statements using transactions can't be prepared at the moment.
+ * Blocker:  https://github.com/drizzle-team/drizzle-orm/issues/613
+ */
+
 export class UsersRepository {
 	private readonly dbm = inject("db");
 
@@ -109,6 +113,7 @@ export class UsersRepository {
 	//============================================================================
 	// INSERT
 
+	/* TODO potentialle split this functionality and orchestrate it through a UserService? */
 	async insertUser(user: UserCreate): Promise<UserDetail>{
 		const db = this.dbm.connection;
 		const password = await hash(user.password);
@@ -119,8 +124,9 @@ export class UsersRepository {
 			}).returning();
 			assert(createdUser);
 			if (user.groups?.length) {
+				// FIXME select or insert
 				const groupIds = await tx.select({ id: schema.groups.id }).from(schema.groups);
-				tx.insert(schema.usersToGroups).values(groupIds.map(g => ({
+				await tx.insert(schema.usersToGroups).values(groupIds.map(g => ({
 					groupId: g.id,
 					userId: createdUser.id
 				})));
@@ -137,7 +143,7 @@ export class UsersRepository {
 						isNotNull(schema.usersToGroups.userId)
 					));
 				if (allowedChannels.length) {
-					tx.insert(schema.usersToChannels).values(allowedChannels.map(c => ({
+					await tx.insert(schema.usersToChannels).values(allowedChannels.map(c => ({
 						channelId: c.id,
 						userId: createdUser.id
 					})));
@@ -200,26 +206,24 @@ export class UsersRepository {
 	//============================================================================
 	// DELETE
 
-	private queryDeleteUsers = this.dbm.prepare((db) => db.delete(schema.users)
-		.where(inArray(schema.users.id, sql.placeholder('ids')))
-		.returning({ count: sql<number>`count(*)::int`})
-		.prepare("delete_users")
-	);
 	async deleteUsers(ids: number[]): Promise<number> {
 		if (!ids.length) {
 			return 0;
 		}
-		const [{count = -1} = {}] = await this.queryDeleteUsers.value.execute({ ids });
-		return count;
+		const db = this.dbm.connection;
+		const data = await db.delete(schema.users)
+			.where(inArray(schema.users.id, ids))
+			.returning({ id: schema.users.id });
+		return data.length;
 	}
 
 	//============================================================================
 	// SEARCH
 
 	private querySearchUsers = this.dbm.prepare((db) => db.select().from(schema.users)
-	.where(ilike(schema.users.name, sql.placeholder("name")))
-	.prepare("search_users")
-);
+		.where(ilike(schema.users.name, sql.placeholder("name")))
+		.prepare("search_users")
+	);
 
 	// TODO 2 separate queries -- one with group, one without
 	private querySearchUsersForGroup = this.dbm.prepare((db) => db.select(
