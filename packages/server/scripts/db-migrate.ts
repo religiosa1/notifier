@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
 // FIXME actual conifg
-import { databaseUrl } from "config.current.json";
+import { databaseUrl } from "../config.current.json";
 
 const sql = postgres(databaseUrl, { max: 1 })
 const db = drizzle(sql);
