@@ -17,7 +17,7 @@ Allows:
 
 ## Deployment TODO
 Server requires a working instance of PostgreSQL with a created database.
-TODO currently we store the connection string in the file `config.current.json`
+TODO currently we store the connection string in the file `config.json`
 under the field `databaseUrl`. This should be fixed, but at the moment, just fill
 this field with the required connection string to your database.
 To run migrations manually launch:

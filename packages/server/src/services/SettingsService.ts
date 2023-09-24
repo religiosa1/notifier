@@ -26,7 +26,6 @@ export class SettingsService {
 	}
 
 	constructor(
-		private readonly currentConfigName = "config.current.json",
 		private readonly initialConfigName = "config.json",
 		private readonly storagePath: string = getRootDir()
 	) {
@@ -36,26 +35,18 @@ export class SettingsService {
 			this.loadConfig().catch((e) => {
 				log.warn("Unable to load settings file", e);
 				this.config = undefined;
-			})
+			});
 		};
-		watchFile(join(this.storagePath, this.initialConfigName), watchHandler);
-		watchFile(join(this.storagePath, this.currentConfigName), watchHandler);
+		watchFile(this.getConfigFileName(), watchHandler);
 	}
 
 	async loadConfig(): Promise<ServerConfig | undefined> {
-		const currentConfigName = join(this.storagePath, this.currentConfigName);
-		const initialConfigName = join(this.storagePath, this.initialConfigName);
+		const configName = this.getConfigFileName();
 
-		const [ hasCurrentConfig, hasInitialConfig ] = await Promise.all([
-			isReadable(currentConfigName),
-			isReadable(initialConfigName),
-		]);
-		if (!hasCurrentConfig && !hasInitialConfig) {
-			return this.config = undefined;
+		if (!await this.isConfigFileReadable()) {
+			return;
 		}
-		const fileToGet = hasCurrentConfig ? currentConfigName : initialConfigName;
-
-		const dataString = await readFile(fileToGet, "utf8");
+		const dataString = await readFile(configName, "utf8");
 		const data = JSON.parse(stripComments(dataString, " "));
 		if (!serverConfigSchema.safeParse(data).success) {
 			return this.config = undefined;
@@ -72,11 +63,8 @@ export class SettingsService {
 		try {
 			serverConfigSchema.parse(config);
 			await this.disposerLock.wait();
-			await writeFile(
-				join(this.storagePath, this.currentConfigName),
-				JSON.stringify(config, undefined, 4),
-				"utf8"
-			);
+			const output = JSON.stringify(config, undefined, 4);
+			await writeFile(this.getConfigFileName(), output, "utf8");
 			storedConfig = config
 		} finally {
 			this.config = storedConfig;
@@ -104,6 +92,14 @@ export class SettingsService {
 	}
 	unsubscribeAll(): void {
 		this.emitter.clear();
+	}
+
+	private getConfigFileName() {
+		return join(this.storagePath, this.initialConfigName)
+	}
+
+	private isConfigFileReadable(): Promise<boolean> {
+		return isReadable(this.getConfigFileName());
 	}
 }
 

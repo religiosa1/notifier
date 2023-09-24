@@ -148,12 +148,11 @@ export class UserToChannelRelationsRepository {
 		}
 		const db = this.dbm.connection;
 		console.table({ userId, channelIds });
-		const data = await db.delete(schema.usersToChannels)
+		const {count} = await db.delete(schema.usersToChannels)
 			.where(and(
 				eq(schema.usersToChannels.userId, userId),
 				inArray(schema.usersToChannels.channelId, channelIds)
-			))
-			.returning();
-		return data.length;
+			));
+		return count;
 	}
 }

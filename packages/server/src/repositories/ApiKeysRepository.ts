@@ -68,11 +68,10 @@ export class ApiKeysRepository {
 
 	private queryDeleteAllKeys = this.dbm.prepare(db => db.delete(schema.apiKeys)
 		.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-		.returning()
 		.prepare("delete_key")
 	);
 	async deleteAllKeysForUser(userId: number): Promise<number> {
-		const data = await this.queryDeleteAllKeys.value.execute({ userId });
-		return data.length;
+		const {count} = await this.queryDeleteAllKeys.value.execute({ userId });
+		return count;
 	}
 }

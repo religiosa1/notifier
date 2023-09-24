@@ -155,10 +155,8 @@ export class ChannelsRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const data = await db.delete(schema.channels)
-			.where(inArray(schema.channels.id, ids))
-			.returning();
-		return data.length;
+		const {count} = await db.delete(schema.channels).where(inArray(schema.channels.id, ids));
+		return count;
 	}
 
 	//============================================================================

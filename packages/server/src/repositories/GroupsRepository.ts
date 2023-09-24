@@ -139,11 +139,10 @@ export class GroupsRepository {
 		}
 		const db = this.dbm.connection;
 		// orphaned user-to-channel relations handled by a db trigger
-		const data = await db.delete(schema.groups)
-			.where(inArray(schema.groups.id, ids))
-			.returning({ id: schema.groups.id })
+		const {count} = await db.delete(schema.groups)
+			.where(inArray(schema.groups.id, ids));
 
-		return data.length;
+		return count;
 	}
 
 	//============================================================================

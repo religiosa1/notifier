@@ -8,8 +8,7 @@ import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { hash } from "src/Authorization/hash";
 
 import * as schema from "src/db/schema";
-// FIXME actual conifg
-import { databaseUrl } from "../config.current.json";
+import { databaseUrl } from "../config.json";
 
 async function main() {
 	if (!databaseUrl) {

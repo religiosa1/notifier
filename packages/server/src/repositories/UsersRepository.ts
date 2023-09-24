@@ -211,10 +211,8 @@ export class UsersRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const data = await db.delete(schema.users)
-			.where(inArray(schema.users.id, ids))
-			.returning({ id: schema.users.id });
-		return data.length;
+		const data = await db.delete(schema.users).where(inArray(schema.users.id, ids));
+		return data.count;
 	}
 
 	//============================================================================

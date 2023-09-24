@@ -1,7 +1,6 @@
 import type { Config } from "drizzle-kit";
 
-// FIXME actual conifg
-import { databaseUrl } from "./config.current.json";
+import { databaseUrl } from "./config.json";
 
 export default {
   schema: "./src/db/schema.ts",

@@ -52,24 +52,22 @@ export class ChannelToGroupRelationsRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const data = await db.delete(schema.channelsToGroups)
+		const {count} = await db.delete(schema.channelsToGroups)
 			.where(and(
 				eq(schema.channelsToGroups.channelId, channelId),
 				inArray(schema.channelsToGroups.groupId, groupIds)
-			))
-			.returning();
-		return data.length;
+			));
+		return count;
 	}
 
 	private readonly queryDisconnectAllGroupsFromChannel = this.dbm.prepare(
 		(db) => db.delete(schema.channelsToGroups)
 			.where(eq(schema.channelsToGroups.channelId, sql.placeholder("channelId")))
-			.returning()
 			.prepare("delete_all_channel_groups")
 	);
 	async disconnectAllGroupsFromChannel(channelId: number): Promise<number> {
-		const data = await this.queryDisconnectAllGroupsFromChannel.value.execute({ channelId });
-		return data.length;
+		const {count} = await this.queryDisconnectAllGroupsFromChannel.value.execute({ channelId });
+		return count;
 	}
 
 	// DELETE channel from group
@@ -79,23 +77,21 @@ export class ChannelToGroupRelationsRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const data = await db.delete(schema.channelsToGroups)
+		const {count} = await db.delete(schema.channelsToGroups)
 			.where(and(
 				eq(schema.channelsToGroups.groupId, groupId),
 				inArray(schema.channelsToGroups.channelId, channelIds),
-			))
-			.returning();
-		return data.length;
+			));
+		return count;
 	}
 
 	private readonly queryDeleteAllChannelsFromGroup = this.dbm.prepare(
 		(db) => db.delete(schema.channelsToGroups)
 			.where(eq(schema.channelsToGroups.groupId, sql.placeholder("groupId")))
-			.returning({ count: sql<number>`count(*)::int` })
 			.prepare("delete_all_channels_from_group")
 	);
 	async deleteAllChannelsFromGroup(groupId: number): Promise<number> {
-		const [{count = -1} = {}] = await this.queryDeleteAllChannelsFromGroup.value.execute({ groupId });
+		const {count} = await this.queryDeleteAllChannelsFromGroup.value.execute({ groupId });
 		return count;
 	}
 }

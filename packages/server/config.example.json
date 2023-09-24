@@ -1,0 +1,6 @@
+{
+    "botToken": "1234567890:your_key_as_given_by_telegrams_botfather",
+    "jwtSecret": "secret-as-generated-by-the-app-or-npm-run-generate-jwt-secret",
+    "publicUrl": "http://example.com/",
+    "databaseUrl": "postgres://postgres:1234567@127.0.0.1:5432/notifier"
+}
