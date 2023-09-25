@@ -52,6 +52,21 @@ export default fp(async function (fastify) {
 	});
 
 	fastify.withTypeProvider<ZodTypeProvider>().route({
+		method: "POST",
+		url: "/test-database-configuration",
+		schema: {
+			body: z.object({ databaseUrl: z.string() }),
+			response: {
+				200: resultSuccessSchema(z.boolean()),
+			}
+		},
+		async handler(req) {
+			const isDbOk = await settingsService.testConfigsDatabaseConnection(req.body.databaseUrl);
+			return result(isDbOk);
+		}
+	});
+
+	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "PUT",
 		url: "/setup",
 		schema: {

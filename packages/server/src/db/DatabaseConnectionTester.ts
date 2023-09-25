@@ -4,8 +4,7 @@ export class DatabaseConfigurator {
 	async checkConnectionString(connectionString: string): Promise<boolean> {
 		try {
 			const sql = postgres(connectionString, { max: 1 });
-			const data = sql`SELECT version();`
-			console.log("DATA", data);
+			await sql`SELECT version();`
 			return true;
 		} catch {
 			return false;

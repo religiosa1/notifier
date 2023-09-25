@@ -1,7 +1,7 @@
 
 <script lang="ts">
-	import { jwtSecretRegex, type SettingsFormData } from "@shared/models";
-	export let data: Partial<SettingsFormData> | undefined = undefined;
+	import type { SettingsFormData } from "@shared/models";
+	export let data: Partial<SettingsFormData & { isDatabaseUrlOk?: boolean }> | undefined = undefined;
 
 	async function generateJWTSecret() {
 		const key = await crypto.subtle.generateKey(
@@ -20,7 +20,6 @@
 		jwtInput.value = await generateJWTSecret();
 	}
 </script>
-<h2>App settings</h2>
 
 <div class="input-group">
 	<label class="form-input">
@@ -29,7 +28,6 @@
 			name="botToken"
 			placeholder="1234567890:AAFwr0hRwcnB_NqNnFiNJZFWS0AG9fyVBi8"
 			value={data?.botToken ?? ""}
-			required
 		/>
 		<small>
 			This is your notifier bot token as given by telegram's BotFather.<br />
@@ -66,6 +64,16 @@
 			value={data?.databaseUrl ?? ""}
 			required
 		/>
+		<p>
+			<button type="submit" formnovalidate formaction="?/testDbConfiguration">
+				Test provided DB configuration
+			</button>
+			{#if data?.isDatabaseUrlOk === true}
+				<output>Database URL is ok</output>
+			{:else if data?.isDatabaseUrlOk === false}
+				<output class="error">Can't connect using provided URL</output>
+			{/if}
+		</p>
 		<small>
 			<a
 				href="https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING"
@@ -79,7 +87,7 @@
 </div>
 
 <details>
-	<summary>Danger zone</summary>
+	<summary>Advanced</summary>
 	<div class="details-body">
 		<div class="input-group">
 			<label class="form-input">
@@ -101,14 +109,15 @@
 					bind:this={jwtInput}
 					name="jwtSecret"
 					type="text"
-					pattern={jwtSecretRegex.toString()}
+					pattern={`[A-Za-z0-9+\\/]+={0,2}`}
 					value={data?.jwtSecret ?? ""}
 					required
 				/>
 				<button type="button" on:click={handleGenerateClick}>Generate</button>
 				<small>
 					This secret is used for signing JWT tokens on server. It has to be cryptograpgically sound.
-					If you leave this field empty, it will be automatically generated.
+					If you leave this field empty, it will be automatically generated.<br />
+					Making this change will require all users to log in again!
 				</small>
 			</label>
 		</div>

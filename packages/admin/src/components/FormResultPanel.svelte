@@ -1,29 +1,29 @@
-<!--
-  @component
-
-  @deprecated Use FormResultPanel instead
--->
 <script lang="ts">
 	import { hasField } from "~/helpers/hasField";
 	import type { ActionValidationError } from "~/helpers/unwrapResult";
   import Panel from "./Panel.svelte";
 
-  export let action: unknown | null;
+  export let form: unknown | null;
 
   function isValidationError(e: unknown): e is ActionValidationError {
     return !!(hasField(e, "error") && e.error === "Validation error");
   }
 </script>
 
-{#if hasField(action, "error", "string")}
+{#if hasField(form, "error", "string")}
   <Panel style="error">
-    {action.error}
-    {#if isValidationError(action)}
-      {#each action.errorDetails.allErrors as err}
+    {form.error}
+    {#if isValidationError(form)}
+      {#each form.errorDetails.allErrors as err}
         <pre>{err.path}:{#if "validation" in err} ({err.validation}) {/if}: {err.message}</pre>
       {/each}
-    {:else if hasField(action, "errorDetails", "string")}
-      <pre>{action.errorDetails}</pre>
+    {:else if hasField(form, "errorDetails", "string")}
+      <pre>{form.errorDetails}</pre>
     {/if}
   </Panel>
+{/if}
+{#if hasField(form, "success", "boolean")}
+	<Panel style="success">
+		<slot>Success!</slot>
+	</Panel>
 {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
+	import PasswordInput from "~/components/PasswordInput.svelte";
   import type { ActionData } from "./$types";
   export let form: ActionData;
 </script>
@@ -12,16 +13,19 @@
         name="name"
         type="text"
         value={form?.name ?? ''}
+        autocomplete="username"
         required
       />
     </label>
   </p>
   <p class="input-group">
-    <label>
+    <label for={undefined}>
       Password
-      <input
+      <PasswordInput
+        wrapperClass="input"
         name="password"
         type="password"
+        autocomplete="current-password"
         required
       />
     </label>
@@ -40,7 +44,8 @@
 .error {
   color: var(--clr-error);
 }
-.input-group input {
+.input-group input,
+.input-group :global(.input) {
   display: block;
   margin: 0.3rem 0 0;
 }

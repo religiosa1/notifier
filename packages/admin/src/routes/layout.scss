@@ -158,6 +158,7 @@ input, select, textarea {
 	color: var(--clr-txt);
 	border-radius: 0.3rem;
 	font-size: 1rem;
+	box-sizing: border-box;
 
 	&:focus {
 		box-shadow: 0 0 0 2px var(--clr-focus);

@@ -50,6 +50,7 @@
 
 <!-- on escape os handled natively, no need for a separate onKeyDown -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <dialog
 	class="dialog"
 	class:dialog_backdrop-light={lightBackDrop}

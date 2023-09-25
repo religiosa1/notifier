@@ -3,7 +3,7 @@ import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import type { Actions, PageServerLoad } from "./$types";
 
 import { generateJwtSecret } from "~/helpers/generateJwtSecret";
-import { redirect } from "@sveltejs/kit";
+import { fail, redirect } from "@sveltejs/kit";
 import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
 
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
 }
 
 export const actions: Actions = {
-	default: async ({ request, fetch }) => {
+	save: async ({ request, fetch }) => {
 		const formData = await request.formData();
 		try {
 			const data = getFormData(formData, setupFormSchema);
@@ -40,5 +40,21 @@ export const actions: Actions = {
 		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
 
 		throw redirect(303, "/");
-	}
+	},
+	testDbConfiguration: async({request, fetch}) => {
+		const formData = await request.formData();
+		const databaseUrl = formData.get("databaseUrl");
+		var isDbOk = await fetch(serverUrl("/test-database-configuration"), {
+			method: "POST",
+			body: JSON.stringify({ databaseUrl }),
+		}).then(unwrapResult<ServerConfig>);
+		if (!isDbOk) {
+			return fail(400, { ...Object.fromEntries(formData), isDatabaseUrlOk: false })
+		}
+		const retobj = {
+			...Object.fromEntries(formData),
+			isDatabaseUrlOk: true,
+		};
+		return retobj
+	},
 }

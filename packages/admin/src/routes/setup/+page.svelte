@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from "./$types";
 	import ErrorPanel from "~/components/ErrorPanel.svelte";
 	import PasswordInput from "~/components/PasswordInput.svelte";
@@ -32,8 +33,7 @@
 
 <ErrorPanel action={settings} />
 
-<form method="POST">
-
+<form method="POST" action="?/save" use:enhance>
 	<div class="input-group">
 		<!-- This is bullshit: https://github.com/sveltejs/svelte/issues/5300 -->
 		<label class="form-input" for={undefined}>

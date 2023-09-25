@@ -7,6 +7,7 @@ import { Lock } from "src/util/Lock";
 import { watchFile } from 'node:fs';
 import { inject } from "src/injection";
 import { getRootDir } from "src/util/getRootDir";
+import { DatabaseConfigurator } from "src/db/DatabaseConnectionTester";
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
@@ -27,7 +28,8 @@ export class SettingsService {
 
 	constructor(
 		private readonly initialConfigName = "config.json",
-		private readonly storagePath: string = getRootDir()
+		private readonly storagePath: string = getRootDir(),
+		private readonly databaseConfigurator = new DatabaseConfigurator(),
 	) {
 		const watchHandler = () => {
 			const log = inject("logger");
@@ -69,6 +71,10 @@ export class SettingsService {
 		} finally {
 			this.config = storedConfig;
 		}
+	}
+
+	testConfigsDatabaseConnection(connectionString: string): Promise<boolean> {
+		return this.databaseConfigurator.checkConnectionString(connectionString);
 	}
 
 	subscribe(
