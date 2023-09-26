@@ -114,7 +114,7 @@ export type UnwrappedValidationError<T> = ActionFailure<T & ActionValidationErro
 export function unwrapValidationError<T extends Record<string, unknown>>(
   e: unknown,
   formData?: T,
-): UnwrappedValidationError<T> {
+): UnwrappedValidationError<T> | ActionFailure<T & ActionError> {
   if (e instanceof ZodError) {
     const knownKeys = Object.keys( formData || {});
     const unknownErrors = e.errors.filter(i => !knownKeys.includes(i.path.toString()));
@@ -133,5 +133,5 @@ export function unwrapValidationError<T extends Record<string, unknown>>(
       }
     });
   }
-  throw e;
+  return handleActionFailure(e, formData);
 }

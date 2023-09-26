@@ -8,6 +8,7 @@ import { watchFile } from 'node:fs';
 import { inject } from "src/injection";
 import { getRootDir } from "src/util/getRootDir";
 import { DatabaseConfigurator } from "src/db/DatabaseConnectionTester";
+import { ResultError } from "@shared/models/Result";
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
@@ -62,8 +63,12 @@ export class SettingsService {
 
 	async setConfig(config: ServerConfig): Promise<void> {
 		let storedConfig: ServerConfig | undefined;
+		serverConfigSchema.parse(config);
+		const isDbOk = await this.databaseConfigurator.checkConnectionString(config.databaseUrl);
+		if (!isDbOk) {
+			throw new ResultError(400, "Cannot connect to the DB with the provided 'databaseUrl' string");
+		}
 		try {
-			serverConfigSchema.parse(config);
 			await this.disposerLock.wait();
 			const output = JSON.stringify(config, undefined, 4);
 			await writeFile(this.getConfigFileName(), output, "utf8");

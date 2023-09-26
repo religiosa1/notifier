@@ -17,5 +17,11 @@
 	() => ({ result }) => applyAction(result)
 }>
 	<FormResultPanel {form} />
-	<SettingsForm data={settings} />
+
+	<div class="card card_form">
+		<SettingsForm data={settings} />
+		<div class="input-group">
+			<button class="button">Save</button>
+		</div>
+	</div>
 </form>

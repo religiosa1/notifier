@@ -51,14 +51,14 @@
 				<legend>Authorizarion status</legend>
 				{#each Object.values(AuthorizationEnum) as status}
 					<label>
-						{getAuthorizationStatusName(status)}
 						<input
 							name="authorizationStatus"
 							type="radio"
 							required
 							value={status}
-							checked={status == user.authorizationStatus}
+							checked={status === user.authorizationStatus}
 						/>
+						{getAuthorizationStatusName(status)}
 					</label>
 				{/each}
 			</fieldset>
@@ -66,8 +66,8 @@
 				<legend>User role</legend>
 				{#each Object.values(UserRoleEnum) as role}
 					<label>
-						{getRoleName(role)}
 						<input name="role" type="radio" required value={role} checked={role == user.role} />
+						{getRoleName(role)}
 					</label>
 				{/each}
 			</fieldset>

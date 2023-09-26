@@ -65,7 +65,7 @@
 			required
 		/>
 		<p>
-			<button type="submit" formnovalidate formaction="?/testDbConfiguration">
+			<button type="submit" class="secondary" formnovalidate formaction="?/testDbConfiguration">
 				Test provided DB configuration
 			</button>
 			{#if data?.isDatabaseUrlOk === true}
@@ -123,12 +123,12 @@
 		</div>
 	</div>
 </details>
-<div class="input-group">
-	<button class="button">Save</button>
-</div>
 
 <style>
 details {
 	margin-bottom: 1.5em;
+}
+.error {
+	color: var(--clr-error, red);
 }
 </style>

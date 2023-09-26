@@ -1,24 +1,36 @@
 :root {
 	--clr-txt: #222;
-	--clr-bg: #ddc;
-	--clr-hbg: #ffffff;
-	--clr-primary: hsl(246, 44%, 26%);
-	--clr-primary-hover: hsl(246, 52%, 34%);
-	--clr-danger: hsl(350, 60%, 20%);
-	--clr-danger-hover: hsl(350, 68%, 28%);
-	--clr-focus: hsl(217, 90%, 95%);
+	--clr-bg: #f3f3f3;
+	--clr-hbg: #f9f9f9;
+	--clr-hbg-hover: var(--clr-primary);
+	--clr-primary: hsl(246, 34%, 82%);
+	--clr-primary-hover: hsl(246, 44%, 72%);
+	--clr-secondary: #dcdcdc;
+	--clr-secondary-hover: #c7c7c7;
+	--clr-danger: hsl(350, 72%, 75%);
+	--clr-danger-hover: hsl(350, 68%, 58%);
+	--clr-focus-shadow: hsl(217, 90%, 95%);
 	--clr-error: red;
-	--clr-bg-disabled: #555;
+	--clr-bg-disabled: #aaa;
 	--clr-link: #4156e1;
 	--clr-link-hover: #6189F1;
 	--clr-link-visited: #7159C1;
 	--clr-shadow: hsla(246, 44%, 26%, 0.3);
+	--clr-brd: #e5e5e5;
+	--clr-brd-thick: #646464;
 
 	@media (prefers-color-scheme: dark) {
+		--clr-danger: hsl(350, 60%, 20%);
+		--clr-danger-hover: hsl(350, 68%, 28%);
+		--clr-primary: hsl(246, 44%, 26%);
+		--clr-primary-hover: hsl(246, 52%, 34%);
 		--clr-txt: #fff;
 		--clr-bg: #1a1c1e;
-		--clr-hbg: hsl(175, 60%, 4%);
-		--clr-hbg-hover: var(--clr-primary);
+		--clr-hbg: hsl(175, 40%, 5%);
+		--clr-hbg-hover:var(--clr-primary);
+		// --clr-secondary: hsl(175, 60%, 4%);
+		--clr-secondary: hsl(175, 40%, 10%);
+		--clr-secondary-hover: var(--clr-primary);
 		--clr-brd: #2b3740;
 		--clr-bg-disabled: #333;
 	}
@@ -70,9 +82,10 @@ button,
 	transition-property: background-color, text-decoration;
 	cursor: pointer;
 	display: inline-block;
+	border: 1px solid var(--clr-brd);
 
 	&:focus {
-		box-shadow: 0 0 0 2px var(--clr-focus);
+		box-shadow: 0 0 0 2px var(--clr-focus-shadow);
 	}
 
 	&:active {
@@ -84,6 +97,14 @@ button,
 	}
 
 	&.secondary {
+		background-color: var(--clr-secondary);
+
+		&:hover {
+			background-color: var(--clr-secondary-hover);
+		}
+	}
+
+	&.outline {
 		background-color: var(--clr-hbg);
 
 		&:hover {
@@ -152,8 +173,9 @@ button,
 }
 
 input, select, textarea {
+	accent-color: var(--clr-link);
 	background-color: var(--clr-hbg);
-	border: 1px solid transparent;
+	border: 1px solid var(--clr-brd-thick);
 	padding: 0.5rem;
 	color: var(--clr-txt);
 	border-radius: 0.3rem;
@@ -161,7 +183,7 @@ input, select, textarea {
 	box-sizing: border-box;
 
 	&:focus {
-		box-shadow: 0 0 0 2px var(--clr-focus);
+		box-shadow: 0 0 0 2px var(--clr-focus-shadow);
 	}
 }
 
@@ -175,12 +197,13 @@ input:not([type="checkbox"], [type="radio"], [type="submit"]) {
 
 .card {
 	padding: 1rem;
-	margin: 1rem auto;
+	margin: 1rem 0;
 	border-radius: 0.3rem;
 	border: 1px solid var(--clr-brd);
-	max-width: 40rem;
+	// max-width: 40rem;
 	box-sizing: border-box;
 	width: 100%;
+	background-color: var(--clr-hbg);
 }
 .card_form *:first-child { margin-top: 0;}
 
