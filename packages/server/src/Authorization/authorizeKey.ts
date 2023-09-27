@@ -4,20 +4,8 @@ import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { ResultError } from "@shared/models/Result";
 import { parseApiKey } from "src/services/ApiKey";
 import { inject } from "src/injection";
-import { eq, sql } from "drizzle-orm";
-import { schema } from "src/db";
-import { assert } from "src/util/assert";
 
-const dbm = inject("db");
-
-const getKeyHashAndRelatedUserAuthStatusQuery = dbm.prepare((db) => db.select({
-	hash: schema.apiKeys.hash,
-	userAuthorizationStatus: schema.users.authorizationStatus
-}).from(schema.users)
-	.innerJoin(schema.apiKeys, eq(schema.apiKeys.userId, schema.users.id))
-	.where(eq(schema.apiKeys.prefix, sql.placeholder("prefix")))
-	.prepare("get_key_hash_and_related_user_auth_status_query")
-);
+const apiKeysRepository = inject("ApiKeysRepository");
 
 export async function authorizeKey(
 	fastify: FastifyInstance,
@@ -36,9 +24,8 @@ export async function authorizeKey(
 			throw new ResultError(401, "The API key wasn't supplied in the cookies or headers");
 		}
 		const [prefix, keyHash] = parseApiKey(key);
-		const [storedKeyData] = await getKeyHashAndRelatedUserAuthStatusQuery.value.execute({ prefix });
-		assert(storedKeyData);
-		if (storedKeyData.userAuthorizationStatus !== AuthorizationEnum.accepted) {
+		const storedKeyData = await apiKeysRepository.getKeyHashAndAuthStatus(prefix);
+		if (storedKeyData?.authorizationStatus !== AuthorizationEnum.accepted) {
 			throw new ResultError(403, "The user hasn't passed the verification procedure or was declined");
 		}
 		const match = await bcrypt.compare(keyHash, storedKeyData.hash);

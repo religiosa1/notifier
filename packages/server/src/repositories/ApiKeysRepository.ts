@@ -1,3 +1,4 @@
+import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { ResultError } from "@shared/models/Result";
 import { and, eq, sql } from "drizzle-orm";
 import { schema } from "src/db";
@@ -13,6 +14,27 @@ export class ApiKeysRepository {
 			prefix,
 			hash: hashedKey,
 		});
+	}
+
+	//============================================================================
+	// GET
+
+	private readonly queryGetKeyHashAndAuthStatus = this.dbm.prepare(
+		(db) => db.select({
+			hash: schema.apiKeys.hash,
+			authorizationStatus: schema.users.authorizationStatus
+		}).from(schema.apiKeys)
+			.innerJoin(schema.users, eq(schema.users.id, schema.apiKeys.userId))
+			.where(eq(schema.apiKeys.prefix, sql.placeholder("prefix")))
+			.limit(1)
+			.prepare("get_key_hash_and_auth_status")
+	);
+	async getKeyHashAndAuthStatus(prefix: string): Promise<{
+		hash: string,
+		authorizationStatus: AuthorizationEnum
+	} | undefined> {
+		const [data] = await this.queryGetKeyHashAndAuthStatus.value.execute({ prefix });
+		return data;
 	}
 
 	//============================================================================

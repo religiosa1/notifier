@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { fly } from "svelte/transition";
+  import { quintOut } from 'svelte/easing';
+
 	import { tristate } from "~/helpers/tristate";
 
   type T = $$Generic<{ id: number }>;
@@ -51,7 +54,7 @@
   </thead>
   <tbody>
     {#each items as item, index (item.id)}
-      <tr>
+      <tr transition:fly={{delay: 0, duration: 320, x: 50, y: 0, opacity: 0.7, easing: quintOut}}>
         <slot name="body" {item} />
         <td class="text-center">
           {#if selectable(item, index, items)}

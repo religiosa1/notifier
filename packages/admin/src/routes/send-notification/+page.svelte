@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from "./$types";
-	import ErrorPanel from "~/components/ErrorPanel.svelte";
-	import Panel from "~/components/Panel.svelte";
+	import FormResultPanel from "~/components/FormResultPanel.svelte";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	import { enhance } from "$app/forms";
 	import Combobox from "~/components/Combobox.svelte";
@@ -14,13 +13,12 @@
 
 <BreadCrumbs cur="Send notification" />
 
-<ErrorPanel action={form} />
+<FormResultPanel {form} />
 
 <form method="post" action="?/send" use:enhance>
 	<div class="card card_form">
 		<p class="input-group">
-			<!-- svelte-ignore a11y-label-has-associated-control -->
-			<label>
+			<label for={undefined}>
 				<span class="form-label">Channels</span>
 				<Combobox
 					name="channels"
@@ -36,11 +34,6 @@
 				<textarea name="message" value={form?.message ?? ""} required />
 			</label>
 		</p>
-		{#if form?.success}
-			<Panel style="success">
-				Message sent
-			</Panel>
-		{/if}
 		<button class="button">Send</button>
 	</div>
 </form>

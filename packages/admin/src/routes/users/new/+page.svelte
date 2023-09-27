@@ -4,8 +4,7 @@
 	import { AuthorizationEnum, getAuthorizationStatusName } from "@shared/models/AuthorizationEnum";
 	import { getRoleName, UserRoleEnum } from "@shared/models/UserRoleEnum";
 	import type { ActionData, PageData } from "./$types";
-	import ErrorPanel from "~/components/ErrorPanel.svelte";
-	import Panel from "~/components/Panel.svelte";
+	import FormResultPanel from "~/components/FormResultPanel.svelte";
 	import BreadCrumbs from "~/components/BreadCrumbs.svelte";
 	import Combobox from "~/components/Combobox.svelte";
 	import { TELEGRAM_MAX_ID } from "~/constants";
@@ -24,19 +23,15 @@
 	It's not the same as telegram user handle, it's an id. I hope you know what you're doing.
 </p>
 
-{#if form?.createdUser}
-	<Panel>
-		Successfully created a new user
-		<code>
-			{"{"}
-				id: {form.createdUser?.id},
-				name: "<a href="{base}/users/{form.createdUser.id}">{form.createdUser?.name}</a>"
-			{"}"}
-		</code>
-	</Panel>
-{/if}
-
-<ErrorPanel action={form} />
+<FormResultPanel {form}>
+	Successfully created a new user
+	<code>
+		{"{"}
+			id: {form?.createdUser?.id},
+			name: "<a href="{base}/users/{form?.createdUser.id}">{form?.createdUser?.name}</a>"
+		{"}"}
+	</code>
+</FormResultPanel>
 
 <form method="POST" action="?/create" use:enhance>
 	<div class="card card_form">
@@ -105,8 +100,7 @@
 		</p>
 
 		<p class="input-group">
-			<!-- svelte-ignore a11y-label-has-associated-control -->
-			<label>
+			<label for={undefined}>
 				<span class="form-label">Groups</span>
 				<Combobox
 					name="groups"

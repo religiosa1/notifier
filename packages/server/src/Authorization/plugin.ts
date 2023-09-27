@@ -9,27 +9,15 @@ import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
 import { authorizeKey } from "src/Authorization/authorizeKey";
 import { inject } from "src/injection";
-import { schema } from "src/db";
-import { eq, sql } from "drizzle-orm";
 
 export default fp(async function (fastify) {
-	if (!process.env.JWT_SECRET) {
-		throw new Error(
-			"JWT secret is missing in env. Please, generate a secret with " +
-			"npm run generate-jwt-secret and add it to the environemnt"
-		);
-	}
-
-	const dbm = inject("db");
-
+	const usersRepository = inject("UsersRepository");
+	// TODO This needs to be reworked, to support our settings service
 	fastify.register(fastifyJwt, {
 		secret: process.env.JWT_SECRET,
 	});
 
-	const getUserByNameQuery = dbm.prepare((db) => db.select().from(schema.users)
-		.where(eq(schema.users.name, sql.placeholder("name")))
-		.prepare("get_user_by_name_query")
-	);
+
 	fastify.withTypeProvider<ZodTypeProvider>().route({
 		method: "POST",
 		url: '/login',
@@ -51,7 +39,7 @@ export default fp(async function (fastify) {
 				throw new ResultError(400, "Request body does not match the required schema");
 			}
 			const { name, password } = req.body;
-			const [user] = await getUserByNameQuery.value.execute({ name })
+			const user = await usersRepository.getUserByName(name);
 			if (
 				req.validationError ||
 				!user?.password ||

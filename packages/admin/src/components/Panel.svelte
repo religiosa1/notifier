@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { quintOut } from "svelte/easing";
+	import { fade } from "svelte/transition";
+
   export let style: "error" | "success" | null = null;
 </script>
 
 <div
+  transition:fade={{delay: 0, duration: 320, easing: quintOut}}
 	class="panel"
 	class:panel_error={style === "error"}
 	class:panel_success={style === "success"}

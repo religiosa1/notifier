@@ -47,6 +47,7 @@ export const actions: Actions = {
 		}
 		if (new URLSearchParams(request.url).has("addNew")) {
 			return {
+				success: true,
 				createdUser: serverData,
 			} as const;
 		}

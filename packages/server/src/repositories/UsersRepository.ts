@@ -35,11 +35,23 @@ export class UsersRepository {
 			eq(schema.users.telegramId, sql.placeholder("telegramId")),
 			eq(schema.users.authorizationStatus, AuthorizationEnum.accepted)
 		))
+		.limit(1)
 		.prepare("get_userid_by_tgid")
 	);
 	async getAuthorizedUserIdByTgId(telegramId: number): Promise<number | undefined> {
 		const [data] = await this.queryGetAuthorizedUserIdByTgId.value.execute({ telegramId });
 		return data?.id;
+	}
+
+	private readonly queryGetUserByName = this.dbm.prepare(
+		(db) => db.select().from(schema.users)
+			.where(eq(schema.users.name, sql.placeholder("userName")))
+			.limit(1)
+			.prepare("get_user_by_name")
+	);
+	async getUserByName(userName: string): Promise<User | undefined> {
+		const [user] = await this.queryGetUserByName.value.execute({ userName });
+		return user;
 	}
 
 	//============================================================================

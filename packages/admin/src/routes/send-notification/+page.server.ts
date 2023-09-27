@@ -13,7 +13,6 @@ export const load: PageServerLoad = async ({ fetch }) => {
 	}
 };
 
-
 export const actions: Actions = {
 	async send({ fetch, request }) {
 		const formData = await request.formData();
