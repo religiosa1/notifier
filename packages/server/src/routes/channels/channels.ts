@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { result } from "@shared/models/Result";
 import * as ChannelModel from "@shared/models/Channel";
 import { counted } from "@shared/models/Counted";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
@@ -11,10 +11,7 @@ import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { inject } from "src/injection";
 import channelGroups from "./channelGroups";
 import { channelIdRoute } from './models';
-
-async function authorizeJWT() {
-	throw new Error("TODO");
-}
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
 const controller = new Hono();
 controller.use("*", authorizeJWT);

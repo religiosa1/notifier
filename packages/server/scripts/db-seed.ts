@@ -5,7 +5,7 @@ import postgres from 'postgres';
 
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum"
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
-import { hash } from "src/Authorization/hash";
+import { hashPassword } from "src/services/hash";
 
 import * as schema from "src/db/schema";
 import { databaseUrl } from "../config.json";
@@ -35,7 +35,7 @@ async function main() {
 			id: 1,
 			telegramId: Number(process.env.ROOT_TELEGRAM_ID) || 1234567,
 			name: 'admin',
-			password: await hash(process.env["NOTIFIER_ADMIN_PWD"] || "1234567"),
+			password: await hashPassword(process.env["NOTIFIER_ADMIN_PWD"] || "1234567"),
 			authorizationStatus: AuthorizationEnum.accepted,
 			role: UserRoleEnum.admin,
 		})

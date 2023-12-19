@@ -15,6 +15,7 @@ import  userGroupsController  from "./userGroups";
 import  userKeysController  from "./userKeys";
 import { userIdParamsSchema } from './models';
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
 const controller = new Hono();
 controller.use("*", authorizeJWT);
@@ -102,8 +103,3 @@ controller.get(
 );
 
 export default controller;
-
-async function authorizeJWT() {
-	throw new Error("TODO");
-}
-

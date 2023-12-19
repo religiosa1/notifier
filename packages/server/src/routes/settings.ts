@@ -2,10 +2,11 @@ import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
 
-import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { ResultError, result } from "@shared/models/Result";
 import { serverConfigSchema } from "@shared/models/ServerConfig";
 import { inject } from "src/injection";
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
 const controller = new Hono();
 
@@ -14,30 +15,33 @@ const controller = new Hono();
  * 403: resultFailureSchema,
  * 550: resultFailureSchema,
  */
-controller.get("/settings", async (c) => {
-	const settingsService = inject("SettingsService");
-	const config = settingsService.getConfig();
-	if (!config) {
-		return c.json(result(new ConfigUnavailableError()));
+controller.get(
+	"/settings",
+	authorizeJWT,
+	async (c) => {
+		const settingsService = inject("SettingsService");
+		const config = settingsService.getConfig();
+		if (!config) {
+			return c.json(result(new ConfigUnavailableError()));
+		}
+		return c.json(result(config));
 	}
+);
 
-	// FIXME
-	// await this.authorizeJWT(req, reply);
-	return c.json(result(config));
-});
+controller.put(
+	"/settings", 
+	authorizeJWT, 
+	zValidator("json", serverConfigSchema), 
+	async (c) => {
+		const settingsService = inject("SettingsService");
+		const body = c.req.valid("json");
 
-controller.put("/settings", zValidator("json", serverConfigSchema), async (c) => {
-	const settingsService = inject("SettingsService");
-	const config = settingsService.getConfig();
-	const body = c.req.valid("json");
-	if (config) {
-		// FIXME
-		// await this.authorizeJWT(req, reply);
+		await settingsService.setConfig(body);
+		return c.json(result(null));
 	}
-	await settingsService.setConfig(body);
-	return c.json(result(null));
-});
+);
 
+// NO AUTH FOR THE INITIAL SETUP
 controller.put("/setup", zValidator("json", serverConfigSchema), async (c) => {
 	const settingsService = inject("SettingsService");
 	const config = settingsService.getConfig();

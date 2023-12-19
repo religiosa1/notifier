@@ -10,5 +10,5 @@ export const checkSettings = createMiddleware((c, next) => {
 			throw new ConfigUnavailableError();
 		}
 	}
-	return next()
+	return next();
 });

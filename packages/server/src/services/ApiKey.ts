@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { base32, base64 } from "rfc4648";
 import { apiKeySchema } from "@shared/models/ApiKey";
-import { hash } from "src/Authorization/hash";
+import { hashPassword } from "src/services/hash";
 import { inject } from "src/injection";
 
 const apiKeysRepository = inject("ApiKeysRepository");
@@ -23,7 +23,7 @@ export function parseApiKey(apiKey: string): [prefix: string, key: string] {
 export async function createKey(userId: number): Promise<string> {
 	const apiKey = generateApiKey();
 	const [prefix, key] = parseApiKey(apiKey);
-	const hashedKey = await hash(key);
+	const hashedKey = await hashPassword(key);
 	await apiKeysRepository.insertKey(userId, prefix, hashedKey);
 	return apiKey;
 }

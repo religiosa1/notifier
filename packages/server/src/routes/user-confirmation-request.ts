@@ -1,16 +1,14 @@
 import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
-import { 
-	result, 
-	// resultSuccessSchema 
-} from "@shared/models/Result";
+import { result } from "@shared/models/Result";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 // import * as UserModel from "@shared/models/User";
 // import { counted } from "@shared/models/Counted";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 // import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { inject } from "src/injection";
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
 const controller = new Hono();
 controller.use("*", authorizeJWT);
@@ -64,7 +62,3 @@ controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), as
 });
 
 export default controller;
-
-async function authorizeJWT() {
-	throw new Error("TODO");
-}

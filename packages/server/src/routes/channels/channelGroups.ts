@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { result } from "@shared/models/Result";
 import { inject } from "src/injection";
 import { groupNameSchema } from "@shared/models/Group";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";

@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { result } from "@shared/models/Result";
 import { pageinationQuerySchema, paginationDefaults } from "@shared/models/Pagination";
 import { counted } from "@shared/models/Counted";
-import { apiKeyPrefixSchema, apiKeyPreviewSchema } from "@shared/models/ApiKey";
+import { apiKeyPrefixSchema } from "@shared/models/ApiKey";
 import * as ApiKeyService from "src/services/ApiKey";
 import { userIdParamsSchema } from './models';
 

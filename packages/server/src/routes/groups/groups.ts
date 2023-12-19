@@ -14,10 +14,7 @@ import groupUsers  from "./groupUsers";
 import groupChannels from "./groupChannels";
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
 import { groupIdParamSchema } from './models';
-
-async function authorizeJWT() {
-	throw new Error("TODO");
-}
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
 const controller = new Hono();
 

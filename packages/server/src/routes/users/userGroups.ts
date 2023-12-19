@@ -3,7 +3,7 @@ import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
 import * as GroupModel from "@shared/models/Group";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { result } from "@shared/models/Result";
 import { inject } from "src/injection";
 import { userIdParamsSchema } from './models';
 import { intGt, toInt } from '@shared/helpers/zodHelpers';

@@ -89,18 +89,15 @@ export class SettingsService {
 		let disposer: Disposer | void;
 		return this.emitter.on("change", async (config, oldConfig) => {
 			if (typeof disposer === "function") {
-				const unlock = this.disposerLock.lock();
-				try {
-					// we're waiting for an old disposer to finish prior to launching the new handler
-					await disposer();
-				} finally {
-					unlock();
-				}
+				using _lock = this.disposerLock.lock();
+				// we're waiting for an old disposer to finish prior to launching the new handler
+				await disposer();
 			}
 			const shouldCall = fields?.some((field) => config?.[field] !== oldConfig?.[field]) ?? true;
 			disposer = shouldCall ? await cb(config, oldConfig) : undefined;
 		});
 	}
+
 	unsubscribeAll(): void {
 		this.emitter.clear();
 	}

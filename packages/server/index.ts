@@ -11,6 +11,8 @@ import groupsController from "src/routes/groups";
 import channelsController from "src/routes/channels";
 import notifyController from "src/routes/notify";
 import authRequestController from "src/routes/user-confirmation-request";
+import loginController from "src/routes/login";
+
 import { inject, register } from "src/injection";
 import { checkSettings } from "src/middleware/checkSettings";
 import settings from "src/routes/settings";
@@ -34,6 +36,7 @@ app.route("/groups", groupsController);
 app.route("/channels", channelsController);
 app.route("/user-confirmation-request", authRequestController);
 app.route("/notify", notifyController);
+app.route("/login", loginController);
 
 // app.setErrorHandler(function (error, _, reply) {
 // 	this.log.error(error);

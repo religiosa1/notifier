@@ -2,10 +2,9 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { result } from "@shared/models/Result";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import type { FastifyInstance } from "fastify";
 import { channelNameSchema } from "@shared/models/Channel";
 import { inject } from "src/injection";
 import { groupIdParamSchema } from './models';

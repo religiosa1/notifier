@@ -2,9 +2,10 @@ import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
 
-// import { channelNameSchema } from "@shared/models/Channel";
+import { channelNameSchema } from "@shared/models/Channel";
 import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { inject } from "src/injection";
+import { authorizeAnyMethod } from 'src/middleware/authorizeAnyMethod';
 
 const controller = new Hono();
 
@@ -18,10 +19,9 @@ controller.use('*', authorizeAnyMethod);
 controller.post("/",
 	zValidator("json", z.object({
 		channels: z.union([
-			z.string(),
-			z.array(z.string()),
+			channelNameSchema,
+			z.array(channelNameSchema),
 		]),
-		// channels: channelNameSchema,
 		message: z.string(),
 	})),
 	async (c) => {
@@ -48,7 +48,3 @@ controller.post("/",
 );
 
 export default controller;
-
-async function authorizeAnyMethod() {
-	throw new Error("TODO");
-}
