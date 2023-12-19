@@ -1,5 +1,5 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
-import { UserWithGroups } from "@shared/models/User";
+import type { UserWithGroups } from "@shared/models/User";
 import { eq, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { inject } from "src/injection";

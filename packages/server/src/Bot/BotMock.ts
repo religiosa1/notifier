@@ -1,7 +1,7 @@
 import { esc } from "src/util/esc";
 import type { Bot } from "./Bot";
 import type { IBot } from "./Models";
-import { BaseLogger } from "pino";
+import type { BaseLogger } from "pino";
 import { inject } from "src/injection";
 
 /** Basic mock of Bot class for testing purposes */

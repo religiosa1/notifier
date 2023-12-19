@@ -2,13 +2,12 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result } from "@shared/models/Result";
+import type { ContextVariables } from 'src/ContextVariables';
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { inject } from "src/injection";
 import { groupNameSchema } from "@shared/models/Group";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 import { channelIdRoute } from './models';
-import { ContextVariables } from 'src/ContextVariables';
 
 
 const controller = new Hono<{ Variables: ContextVariables }>();
@@ -24,7 +23,7 @@ controller.post(
 		const { channelId } = c.req.valid("param");
 		await channelToGroupRelationsRepository.connectOrCreateGroupToChannel(channelId, name);
 		logger.info(`Channel group added by ${c.get("user").id}-${c.get("user").name}`, channelId, name);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 
@@ -46,12 +45,12 @@ controller.delete(
 			? await channelToGroupRelationsRepository.disconnectGroupsFromChannelByIds(channelId, ids)
 			: await channelToGroupRelationsRepository.disconnectAllGroupsFromChannel(channelId)
 
-		const data = {
+		const data: BatchOperationStats = {
 			count,
 			outOf: ids.length,
 		};
 		logger.info(`Channel groups batch disconnect by ${c.get("user").id}-${c.get("user").name}`, data);
-		return c.json(result(data));
+		return c.json(data);
 	}
 )
 

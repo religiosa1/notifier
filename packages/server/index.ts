@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { serve } from '@hono/node-server'
 
 // import { ResultError } from "@shared/models/Result";
-import { Bot, Update } from "src/Bot";
+import { Bot, type Update } from "src/Bot";
 import usersController from "src/routes/users";
 import groupsController from "src/routes/groups";
 import channelsController from "src/routes/channels";
@@ -16,6 +16,7 @@ import loginController from "src/routes/login";
 import { inject, register } from "src/injection";
 import { checkSettings } from "src/middleware/checkSettings";
 import settings from "src/routes/settings";
+import { responseHandler } from "src/middleware/responseHandler";
 
 const url = process.env.URL || "";
 const port = Number(process.env.PORT) || 8085;
@@ -29,6 +30,7 @@ const logger = inject("logger");
 
 const app = new Hono();
 
+app.use("*", responseHandler);
 app.use("*", checkSettings);
 app.route("/settings", settings);
 app.route("/users", usersController);

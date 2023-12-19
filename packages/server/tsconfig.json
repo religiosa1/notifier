@@ -26,6 +26,7 @@
     "outDir": "dist",
     "declaration": true,
     "exactOptionalPropertyTypes": false,
+    "verbatimModuleSyntax": true,
     "paths": {
       "@shared/*": [  "../shared/src/*" ]
     }

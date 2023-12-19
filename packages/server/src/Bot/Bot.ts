@@ -1,12 +1,12 @@
 import TelegramBot from "node-telegram-bot-api";
 import type { Update, Message } from "node-telegram-bot-api";
 import type { IBot, SendMessageProps } from "src/Bot/Models";
+import type { BaseLogger } from "pino";
 import { botCommands } from "./BotCommands";
 import { esc } from "src/util/esc";
 import { asyncPool } from "src/util/asyncPool";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
-import { BaseLogger } from "pino";
 import { inject } from "src/injection";
 export type { Update };
 

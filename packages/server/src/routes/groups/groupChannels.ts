@@ -2,13 +2,12 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result } from "@shared/models/Result";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import type { ContextVariables } from 'src/ContextVariables';
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { channelNameSchema } from "@shared/models/Channel";
 import { inject } from "src/injection";
 import { groupIdParamSchema } from './models';
-import { ContextVariables } from 'src/ContextVariables';
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 
@@ -25,7 +24,7 @@ controller.post(
 		await channelToGroupRelationsRepository.connectOrCreateChannelToGroup(groupId, name);
 
 		logger.info(`Group channel connected by ${c.get("user").id}-${c.get("user").name}`, groupId, name);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 
@@ -47,7 +46,7 @@ controller.delete(
 			outOf: ids.length,
 		};
 		logger.info(`Group channels batch disconnect by ${c.get("user").id}-${c.get("user").name}`, data);
-		return c.json(result(data));
+		return c.json(data satisfies BatchOperationStats);
 	}
 );
 

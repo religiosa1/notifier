@@ -1,5 +1,5 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
-import { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
+import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
 import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, isNull } from "drizzle-orm";
 import { hashPassword } from "src/services/hash";
 import { schema } from "src/db";

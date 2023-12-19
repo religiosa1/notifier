@@ -2,11 +2,10 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result } from "@shared/models/Result";
 import * as ChannelModel from "@shared/models/Channel";
-import { counted } from "@shared/models/Counted";
+import type { Counted } from '@shared/models/Counted';
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { inject } from "src/injection";
 import channelGroups from "./channelGroups";
@@ -18,25 +17,18 @@ const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 controller.route("/:channelId/groups", channelGroups);
 
-/**
- * 				200: resultSuccessSchema(counted(z.array(ChannelModel.channelSchema.extend({
-					usersCount: z.number(),
-					groupsCount: z.number(),
-				})))),
- */
 controller.get('/', zValidator("query", pageinationQuerySchema), async (c) => {
 	const channelsRepository = inject("ChannelsRepository");
 	const query = c.req.valid("query");
 	const { skip, take } = { ...paginationDefaults, ...query };
 	const [ data, count ] = await channelsRepository.listChannels({ skip , take });
 
-	return c.json(result({
+	return c.json({
 		data,
 		count,
-	}));
+	} satisfies Counted<Array<ChannelModel.Channel & { usersCount: number; groupsCount: number}>>);
 });
 
-/** 200: resultSuccessSchema(z.array(ChannelModel.channelSchema)), */
 controller.get('/search', zValidator("query", z.object({
 	name: z.string().optional(),
 	group: z.string()
@@ -56,35 +48,25 @@ controller.get('/search', zValidator("query", z.object({
 		? await channelsRepository.searchChannelsForGroup({ name, groupId: group })
 		: await channelsRepository.searchChannels({ name });
 
-	return c.json(result(channels));
+	return c.json(channels satisfies ChannelModel.Channel[]);
 });
 
-/** 
-200: resultSuccessSchema(ChannelModel.channelSchema),
-409: resultFailureSchema,
-*/
 controller.post("/", zValidator("json",  ChannelModel.channelCreateSchema), async (c) => {
 	const logger = inject("logger");
 	const channelsRepository = inject("ChannelsRepository");
 	const body = c.req.valid("json");
 	const channel = await channelsRepository.insertChannel(body.name);
 	logger.info(`Channel created by ${c.get("user").id}-${c.get("user").name}`, channel);
-	return c.json(result(channel));
+	return c.json(channel satisfies ChannelModel.Channel);
 });
 
-/* params: z.object({
-				channelId: z.number({ coerce: true }).int().gt(0),
-			}),*/
 controller.get("/:channelId", zValidator("param", channelIdRoute), async (c) => {
 	const channelsRepository = inject("ChannelsRepository");
 	const {channelId} = c.req.valid("param");
 	const channel = await channelsRepository.getChannelDetail(channelId);
-	return c.json(result(channel));
+	return c.json(channel satisfies ChannelModel.ChannelDetail);
 });
 
-/**200: resultSuccessSchema(ChannelModel.channelSchema),
-				404: resultFailureSchema,
-				409: resultFailureSchema, */
 controller.put(
 	"/:channelId", 
 	zValidator("param", channelIdRoute), 
@@ -98,7 +80,7 @@ controller.put(
 		const channel = await channelsRepository.updateChannel(id, name);
 
 		logger.info(`Channel update by ${c.get("user").id}-${c.get("user").name}`, channel);
-		return c.json(result(channel));
+		return c.json(channel satisfies ChannelModel.Channel);
 	}
 );
 
@@ -112,7 +94,7 @@ controller.delete(
 		await channelsRepository.assertChannelExist(id);
 		await channelsRepository.deleteChannels([id]);
 		logger.info(`Channel delete by ${c.get("user").id}-${c.get("user").name}`, id);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 
@@ -127,7 +109,7 @@ controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), as
 		outOf: ids.length,
 	};
 	logger.info(`Channel batch delete by ${c.get("user").id}-${c.get("user").name}`, data);
-	return c.json(result(data));
+	return c.json(data satisfies BatchOperationStats);
 });
 
 export default controller;

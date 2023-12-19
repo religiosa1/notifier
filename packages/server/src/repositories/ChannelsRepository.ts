@@ -1,5 +1,5 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
-import { Channel, ChannelDetail } from "@shared/models/Channel";
+import type { Channel, ChannelDetail } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
 import { getTableColumns, sql, eq, ilike, isNull, and, inArray } from "drizzle-orm";
 import { schema } from "src/db";

@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 
-import { result } from "@shared/models/Result";
 import { pageinationQuerySchema, paginationDefaults } from "@shared/models/Pagination";
-import { counted } from "@shared/models/Counted";
+import type { Counted } from "@shared/models/Counted";
+import type { ApiKeyPreview } from "@shared/models/ApiKey";
 import { apiKeyPrefixSchema } from "@shared/models/ApiKey";
 import * as ApiKeyService from "src/services/ApiKey";
 import { userIdParamsSchema } from './models';
@@ -18,7 +18,7 @@ controller.get(
 		const { userId } = c.req.valid("param");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 		const [data, count] = await ApiKeyService.listKeys(userId, { skip, take });
-		return c.json(result({ data, count }));
+		return c.json({ data, count } satisfies Counted<ApiKeyPreview[]>);
 	}
 );
 
@@ -27,8 +27,8 @@ controller.post(
 	zValidator("param", userIdParamsSchema),
 	async (c) => {
 		const { userId } = c.req.valid("param");
-		const apiKey = await ApiKeyService.createKey(userId);
-		return c.json(result({ apiKey }));
+		const apiKey: string = await ApiKeyService.createKey(userId);
+		return c.json({ apiKey });
 	}
 );
 
@@ -46,8 +46,8 @@ controller.delete(
 
 controller.delete("/", zValidator("param", userIdParamsSchema), async (c) => {
 	const { userId } = c.req.valid("param");
-	const count = await ApiKeyService.deleteAllKeys(userId);
-	return c.json(result(count));
+	const count: number = await ApiKeyService.deleteAllKeys(userId);
+	return c.json(count);
 });
 
 export default controller;

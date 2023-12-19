@@ -1,5 +1,5 @@
 import { PreparedQuery } from 'drizzle-orm/pg-core';
-import { drizzle, PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { DatabaseNotReady } from 'src/error/DatabaseNotReady';
 import { inject } from 'src/injection';

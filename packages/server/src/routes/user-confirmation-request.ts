@@ -1,37 +1,36 @@
 import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
-import { result } from "@shared/models/Result";
+
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
-// import * as UserModel from "@shared/models/User";
-// import { counted } from "@shared/models/Counted";
+import type * as UserModel from "@shared/models/User";
+
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-// import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { inject } from "src/injection";
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
+import type { Counted } from '@shared/models/Counted';
+import type { BatchOperationStats } from '@shared/models/BatchOperationStats';
+import type { ContextVariables } from 'src/ContextVariables';
 
-const controller = new Hono();
+const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 
-/**
- * 	200: resultSuccessSchema(counted(z.array(UserModel.userWithGroupsSchema))),
- */
+
 controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 	const userConfirmationRequestsRepository = inject('UserConfirmationRequestsRepository');
 	const query = c.req.valid('query');
 	const { skip, take } = { ...paginationDefaults, ...query };
 	const [ data, count ] = await userConfirmationRequestsRepository.listConfirmationRequests({ skip, take });
 
-	return c.json(result({
+	return c.json({
 		data,
 		count,
-	}));
+	} satisfies Counted<UserModel.User[]>);
 })
 
-// 200: resultSuccessSchema(batchOperationStatsSchema),
 controller.put("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
 	const userConfirmationRequestsRepository = inject('UserConfirmationRequestsRepository');
-	// const logger = inject('logger');
+	const logger = inject('logger');
 
 	const query = c.req.valid('query');
 	const ids = parseIds(query.id);
@@ -41,13 +40,14 @@ controller.put("/", zValidator("query", z.object({ id: batchIdsSchema })), async
 		count,
 		outOf: ids.length,
 	};
-	// logger.info(`User batch deny by ${user.id}-${req.user.name}`, data);
-	return c.json(result(data));
+	logger.info(`User batch deny by ${c.get("user").id}-${c.get("user").name}`, data);
+	return c.json(data satisfies BatchOperationStats);
 });
 
-// 200: resultSuccessSchema(batchOperationStatsSchema),
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
 	const userConfirmationRequestsRepository = inject('UserConfirmationRequestsRepository');
+	const logger = inject('logger');
+
 	const query = c.req.valid('query');
 	const ids = parseIds(query.id);
 
@@ -57,8 +57,8 @@ controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), as
 		count,
 		outOf: ids.length,
 	};
-	// fastify.log.info(`User batch deny by ${req.user.id}-${req.user.name}`, data);
-	return c.json(result(data));
+	logger.info(`User batch deny by ${c.get("user").id}-${c.get("user").name}`, data);
+	return c.json(data satisfies BatchOperationStats);
 });
 
 export default controller;

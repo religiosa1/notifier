@@ -1,4 +1,4 @@
-import { Group, GroupDetail } from "@shared/models/Group";
+import type { Group, GroupDetail } from "@shared/models/Group";
 import { and, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";

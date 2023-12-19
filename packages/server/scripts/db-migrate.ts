@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
+// FIXME
 import { databaseUrl } from "../config.json";
 
 const sql = postgres(databaseUrl, { max: 1 })

@@ -8,6 +8,7 @@ import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { hashPassword } from "src/services/hash";
 
 import * as schema from "src/db/schema";
+// FIXME
 import { databaseUrl } from "../config.json";
 
 async function main() {

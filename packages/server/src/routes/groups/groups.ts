@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { ResultError, result } from "@shared/models/Result";
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import type { ContextVariables } from 'src/ContextVariables';
+import type { Counted } from '@shared/models/Counted';
+import { ResultError } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
-import { counted } from "@shared/models/Counted";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { inject } from "src/injection";
 
@@ -15,7 +16,6 @@ import groupChannels from "./groupChannels";
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
 import { groupIdParamSchema } from './models';
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
-import { ContextVariables } from 'src/ContextVariables';
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 
@@ -28,10 +28,10 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 	const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 	const [ data, count ] = await groupsRepository.listGroups({ skip, take });
 
-	return c.json(result({
+	return c.json({
 		data,
 		count,
-	}));
+	} satisfies Counted<GroupModel.Group[]>);
 });
 
 controller.post('/', zValidator("json", GroupModel.groupCreateSchema), async(c) => {
@@ -41,9 +41,7 @@ controller.post('/', zValidator("json", GroupModel.groupCreateSchema), async(c) 
 	const { id } = await groupsRepository.insertGroup(name);
 	const group = await groupsRepository.getGroupPreview(id);
 	logger.info(`Group created by ${c.get("user").id}-${c.get("user").name}`, group);
-	return c.json(result({
-		...group,
-	}));
+	return c.json(group satisfies GroupModel.Group);
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
@@ -57,7 +55,7 @@ controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), as
 		outOf: ids.length,
 	};
 	logger.info(`Group batch delete by ${c.get("user").id}-${c.get("user").name}`, data);
-	return c.json(result(data));
+	return c.json(data satisfies BatchOperationStats);
 });
 
 controller.get(
@@ -77,7 +75,7 @@ controller.get(
 			userId: user,
 		});
 
-		return c.json(result(groups));
+		return c.json(groups satisfies GroupModel.Group[]);
 	}
 );
 
@@ -86,7 +84,7 @@ controller.get("/:groupId", zValidator("param", groupIdParamSchema), async(c) =>
 
 	const {groupId: id} = c.req.valid("param");
 	const group = await groupsRepository.getGroupDetail(id);
-	return c.json(result(group));
+	return c.json(group satisfies GroupModel.GroupDetail);
 });
 
 controller.put(
@@ -100,7 +98,7 @@ controller.put(
 		const { name } = c.req.valid("json");
 		const group = await groupsRepository.updateGroup(id, name);
 		logger.info(`Group update by ${c.get("user").id}-${c.get("user").name}`, group);
-		return c.json(result(group));
+		return c.json(group satisfies GroupModel.Group);
 	}
 );
 
@@ -117,7 +115,7 @@ controller.delete(
 			throw new ResultError(404, `Group with id "${id}" not foind`);
 		}
 		logger.info(`Group delete by ${c.get("user").id}-${c.get("user").name}`, id);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 

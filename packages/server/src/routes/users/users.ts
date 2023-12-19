@@ -2,12 +2,11 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { paginationSchema, paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import * as UserModel from "@shared/models/User";
-import { counted } from "@shared/models/Counted";
+import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
+import type { Counted } from "@shared/models/Counted";
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { inject } from "src/injection";
 
 import  userChannelsController  from "./userChannels";
@@ -16,7 +15,7 @@ import  userKeysController  from "./userKeys";
 import { userIdParamsSchema } from './models';
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
-import { ContextVariables } from 'src/ContextVariables';
+import type { ContextVariables } from 'src/ContextVariables';
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
@@ -31,10 +30,10 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 	const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 	const [data, count] = await usersRepository.listUsers({ skip, take });
 
-	return c.json(result({
+	return c.json({
 		data,
 		count,
-	}));
+	} satisfies Counted<UserModel.User[]>);
 });
 
 controller.post("/", zValidator("json", UserModel.userCreateSchema), async (c) => {
@@ -42,7 +41,7 @@ controller.post("/", zValidator("json", UserModel.userCreateSchema), async (c) =
 	const body = c.req.valid("json");
 	const user = await usersRepository.insertUser(body);
 	logger.info(`User create by ${c.get("user").id}-${c.get("user").name}`,body);
-	return c.json(result(user));
+	return c.json(user satisfies UserModel.UserDetail);
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
@@ -54,7 +53,7 @@ controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), as
 		outOf: ids.length,
 	};
 	logger.info(`User batch delete by ${c.get("user").id}-${c.get("user").name}`, ids, data);
-	return c.json(result(data));
+	return c.json(data satisfies BatchOperationStats);
 });
 
 controller.get(
@@ -63,7 +62,7 @@ controller.get(
 	async (c) => {
 		const { userId } = c.req.valid("param");
 		const user = await usersRepository.getUserDetail(userId);
-		return c.json(result(user));
+		return c.json(user satisfies UserModel.UserDetail);
 	}
 );
 
@@ -78,7 +77,7 @@ controller.put(
 		const user = await usersRepository.updateUser(userId, body);
 
 		logger.info(`User ${userId} edit by ${c.get("user").id}-${c.get("user").name}`, body);
-		return c.json(result(user));
+		return c.json(user satisfies UserModel.UserDetail);
 	}
 );
 
@@ -91,7 +90,7 @@ controller.delete(
 		await usersRepository.assertUserExists(userId);
 		await usersRepository.deleteUsers([userId])
 		logger.info(`User ${userId} delete by ${c.get("user").id}-${c.get("user").name}`);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 
@@ -104,7 +103,7 @@ controller.get(
 	async (c) => {
 		const { name, group } = c.req.valid("query");
 		const users = await usersRepository.searchUsers({ name, groupId: group });
-		return c.json(result(users));
+		return c.json(users satisfies UserModel.User[]);
 	} 
 );
 

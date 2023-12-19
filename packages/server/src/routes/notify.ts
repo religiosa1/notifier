@@ -3,7 +3,7 @@ import z from "zod";
 import { zValidator } from '@hono/zod-validator'
 
 import { channelNameSchema } from "@shared/models/Channel";
-import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { ResultError } from "@shared/models/Result";
 import { inject } from "src/injection";
 import { authorizeAnyMethod } from 'src/middleware/authorizeAnyMethod';
 
@@ -11,11 +11,6 @@ const controller = new Hono();
 
 controller.use('*', authorizeAnyMethod);
 
-// response: {
-// 	200: resultSuccessSchema(z.null()),
-// 	404: resultFailureSchema,
-// 	422: resultFailureSchema,
-// }
 controller.post("/",
 	zValidator("json", z.object({
 		channels: z.union([
@@ -43,7 +38,7 @@ controller.post("/",
 			chats,
 			{ text: body.message }
 		);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 

@@ -2,14 +2,14 @@ import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
 
-import { result } from "@shared/models/Result";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import type { Counted } from "@shared/models/Counted";
+import type { ContextVariables } from 'src/ContextVariables';
+import type * as ChannelModel from '@shared/models/Channel';
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 import { pageinationQuerySchema, paginationDefaults } from "@shared/models/Pagination";
-import { counted } from "@shared/models/Counted";
 import { inject } from "src/injection";
 import { userIdParamsSchema } from './models';
-import { ContextVariables } from 'src/ContextVariables';
 
 const controller = new Hono<{ Variables: ContextVariables}>();
 
@@ -22,7 +22,7 @@ controller.get(
 		const { userId } = c.req.valid("param");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 		const [data, count] = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
-		return c.json(result({ data, count  }));
+		return c.json({ data, count } satisfies Counted<ChannelModel.Channel[]>);
 	}
 );
 
@@ -35,7 +35,7 @@ controller.get(
 		const { userId } = c.req.valid("param");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 		const data = await userToChannelRelationsRepository.listAvailableUnsubscribedChannelsForUser(userId, { skip, take });
-		return c.json(result(data));
+		return c.json(data satisfies ChannelModel.Channel[]);
 	}
 );
 
@@ -50,7 +50,7 @@ controller.post(
 		const { id: channelId } = c.req.valid("json");
 		await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
 		logger.info(`Channel added to user ${userId} edit by ${c.get("user").id}-${c.get("user").id}`, channelId);
-		return c.json(result(null));
+		return c.json(null);
 	}
 );
 
@@ -70,7 +70,7 @@ controller.delete(
 			count,
 			outOf: ids.length,
 		};
-		return c.json(result(data));
+		return c.json(data satisfies BatchOperationStats);
 	}
 )
 

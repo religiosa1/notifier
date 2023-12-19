@@ -3,7 +3,7 @@ import z from "zod";
 import { zValidator } from '@hono/zod-validator'
 
 import bcrypt from "bcrypt";
-import { ResultError, result } from "@shared/models/Result";
+import { ResultError } from "@shared/models/Result";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
 import { inject } from "src/injection";
@@ -39,7 +39,7 @@ controller.post(
 		const payload = tokenPayloadSchema.omit({ iat: true, exp: true }).parse(user);
 		const token = sign(payload, jwtSecret, "HS256");
 
-		return c.json(result({ token, user }));
+		return c.json({ token, user });
 	}
 )
 

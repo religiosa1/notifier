@@ -1,4 +1,4 @@
-import { Channel, ChannelSubscription } from "@shared/models/Channel";
+import type { Channel, ChannelSubscription } from "@shared/models/Channel";
 import { and, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { inject } from "src/injection";
