@@ -1,171 +1,109 @@
-import fp from "fastify-plugin";
+import { Hono } from 'hono';
 import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { zValidator } from '@hono/zod-validator';
+
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
+import { paginationSchema, paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import * as UserModel from "@shared/models/User";
 import { counted } from "@shared/models/Counted";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
-
-import { userChannels } from "./userChannels";
-import { userGroups } from "./userGroups";
-import { userKeys } from "./userKeys";
 import { inject } from "src/injection";
 
-export default fp(async function (fastify) {
-	const usersRepository = inject("UsersRepository");
+import  userChannelsController  from "./userChannels";
+import  userGroupsController  from "./userGroups";
+import  userKeysController  from "./userKeys";
+import { userIdParamsSchema } from './models';
+import { intGt, toInt } from '@shared/helpers/zodHelpers';
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/users",
-		schema: {
-			querystring: paginationSchema,
-			response: {
-				200: resultSuccessSchema(counted(z.array(UserModel.userWithGroupsSchema))),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [data, count] = await usersRepository.listUsers({ skip, take });
+const controller = new Hono();
+controller.use("*", authorizeJWT);
 
-			return reply.send(result({
-				data,
-				count,
-			}));
-		}
-	});
+controller.route("/channels", userChannelsController);
+controller.route("/groups", userGroupsController);
+controller.route("/api-keys", userKeysController);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: "/users",
-		schema: {
-			body: UserModel.userCreateSchema,
-			response: {
-				200: resultSuccessSchema(UserModel.userDetailSchema),
-				409: resultFailureSchema,
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const user = await usersRepository.insertUser(req.body)
-			fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
-			return reply.send(result(user));
-		}
-	});
+const usersRepository = inject("UsersRepository");
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/users",
-		schema: {
-			querystring: z.object({ id: batchIdsSchema }),
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const ids = parseIds(req.query.id);
-			const count = await usersRepository.deleteUsers(ids);
-			const data = {
-				count,
-				outOf: ids.length,
-			};
-			fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, ids, data);
-			return reply.send(result(data));
-		}
-	});
+controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
+	const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
+	const [data, count] = await usersRepository.listUsers({ skip, take });
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/users/:userId",
-		schema: {
-			params: z.object({
-				userId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(UserModel.userDetailSchema),
-				404: resultFailureSchema
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.userId;
-			const user = await usersRepository.getUserDetail(id);
-			return reply.send(result(user));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/users/:userId",
-		schema: {
-			params: z.object({
-				userId: z.number({ coerce: true }).int().gt(0),
-			}),
-			body: UserModel.userUpdateSchema,
-			response: {
-				200: resultSuccessSchema(UserModel.userDetailSchema),
-				404: resultFailureSchema,
-				409: resultFailureSchema,
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { userId } = req.params;
-			const user = await usersRepository.updateUser(userId, req.body)
-
-			fastify.log.info(`User ${userId} edit by ${req.user.id}-${req.user.name}`, req.body);
-			return reply.send(result(user));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/users/:userId",
-		schema: {
-			params: z.object({
-				userId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(z.null()),
-				404: resultFailureSchema
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.userId;
-			await usersRepository.assertUserExists(id);
-			await usersRepository.deleteUsers([id])
-			fastify.log.info(`User ${id} delete by ${req.user.id}-${req.user.name}`);
-			return reply.send(result(null));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/users/search",
-		schema: {
-			querystring: z.object({
-				name: z.string().optional(),
-				group: z.number({ coerce: true }).int().gt(0).optional(),
-			}),
-			response: {
-				200: resultSuccessSchema(z.array(UserModel.userSchema)),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { name, group } = req.query;
-			const users = await usersRepository.searchUsers({ name, groupId: group });
-			return reply.send(result(users));
-		}
-	});
-
-	userChannels(fastify);
-	userGroups(fastify);
-	userKeys(fastify);
+	return c.json(result({
+		data,
+		count,
+	}));
 });
 
+controller.post("/", zValidator("json", UserModel.userCreateSchema), async (c) => {
+	const user = await usersRepository.insertUser(c.req.valid("json"));
+	// fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
+	return c.json(result(user));
+});
+
+controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
+	const ids = parseIds(c.req.valid("query").id);
+	const count = await usersRepository.deleteUsers(ids);
+	const data = {
+		count,
+		outOf: ids.length,
+	};
+	// fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, ids, data);
+	return c.json(result(data));
+});
+
+controller.get(
+	"/:userId",
+	zValidator("param", userIdParamsSchema),
+	async (c) => {
+		const { userId } = c.req.valid("param");
+		const user = await usersRepository.getUserDetail(userId);
+		return c.json(result(user));
+	}
+);
+
+controller.put(
+	"/:userId",
+	zValidator("param", userIdParamsSchema),
+	zValidator("json",  UserModel.userUpdateSchema),
+	async (c) => {
+		const { userId } = c.req.valid("param");
+		const body = c.req.valid("json");
+		const user = await usersRepository.updateUser(userId, body);
+
+		// fastify.log.info(`User ${userId} edit by ${req.user.id}-${req.user.name}`, req.body);
+		return c.json(result(user));
+	}
+);
+
+controller.delete(
+	"/:userId",
+	zValidator("param", userIdParamsSchema),
+	async (c) => {
+		const {userId} = c.req.valid("param");
+		await usersRepository.assertUserExists(userId);
+		await usersRepository.deleteUsers([userId])
+		// fastify.log.info(`User ${userId} delete by ${req.user.id}-${req.user.name}`);
+		return c.json(result(null));
+	}
+);
+
+controller.get(
+	"/search",
+	zValidator("query",  z.object({
+		name: z.string().optional(),
+		group: z.string().refine(...intGt(0)).transform(toInt).optional(),
+	})),
+	async (c) => {
+		const { name, group } = c.req.valid("query");
+		const users = await usersRepository.searchUsers({ name, groupId: group });
+		return c.json(result(users));
+	} 
+);
+
+export default controller;
+
+async function authorizeJWT() {
+	throw new Error("TODO");
+}
 

@@ -1,188 +1,122 @@
-import fp from "fastify-plugin";
+import { Hono } from 'hono';
 import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { zValidator } from '@hono/zod-validator';
+
 import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
 import { counted } from "@shared/models/Counted";
-import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
+import { paginationSchema, paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { groupUsers } from "./groupUsers";
-import { groupChannels } from "src/routes/groups/groupChannels";
 import { inject } from "src/injection";
 
-export default fp(async function (fastify) {
+import groupUsers  from "./groupUsers";
+import groupChannels from "./groupChannels";
+import { intGt, toInt } from '@shared/helpers/zodHelpers';
+import { groupIdParamSchema } from './models';
+
+async function authorizeJWT() {
+	throw new Error("TODO");
+}
+
+const controller = new Hono();
+
+controller.route("/users", groupUsers);
+controller.route("/channels", groupChannels);
+controller.use("*", authorizeJWT);
+
+controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
+	const groupsRepository = inject("GroupsRepository");
+	const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
+	const [ data, count ] = await groupsRepository.listGroups({ skip, take });
+
+	return c.json(result({
+		data,
+		count,
+	}));
+});
+
+controller.post('/', zValidator("json", GroupModel.groupCreateSchema), async(c) => {
+	const groupsRepository = inject("GroupsRepository");
+	const { name } = c.req.valid("json");
+	const { id } = await groupsRepository.insertGroup(name);
+	const group = await groupsRepository.getGroupPreview(id);
+	// fastify.log.info(`Group created by ${req.user.id}-${req.user.name}`, group);
+	return c.json(result({
+		...group,
+	}));
+});
+
+controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
+	const groupsRepository = inject("GroupsRepository");
+	const ids = parseIds(c.req.valid("query").id);
+	const count = await groupsRepository.deleteGroups(ids);
+
+	const data = {
+		count,
+		outOf: ids.length,
+	};
+	// fastify.log.info(`Group batch delete by ${req.user.id}-${req.user.name}`, data);
+	return c.json(result(data));
+});
+
+controller.get(
+	"/search",
+	zValidator("query", z.object({
+		name: z.string().optional(),
+		channel: z.string().refine(...intGt(0)).transform(toInt).optional(),
+		user: z.string().refine(...intGt(0)).transform(toInt).optional(),
+	})),
+	async (c) => {
+		const groupsRepository = inject("GroupsRepository");
+		const { name, channel, user } = c.req.valid("query");
+
+		const groups = await groupsRepository.searchAvailableGroups({
+			name,
+			channelId: channel,
+			userId: user,
+		});
+
+		return c.json(result(groups));
+	}
+);
+
+controller.get("/:groupId", zValidator("param", groupIdParamSchema), async(c) => {
 	const groupsRepository = inject("GroupsRepository");
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/groups",
-		schema: {
-			querystring: paginationSchema,
-			response: {
-				200: resultSuccessSchema(counted(z.array(GroupModel.groupSchema.extend({
-					channelsCount: z.number(),
-					usersCount: z.number(),
-				})))),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { skip, take } = { ...paginationDefaults, ...req.query };
-
-			const [ data, count ] = await groupsRepository.listGroups({ skip, take });
-
-			return reply.send(result({
-				data,
-				count,
-			}));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: "/groups",
-		schema: {
-			body: GroupModel.groupCreateSchema,
-			response: {
-				200: resultSuccessSchema(GroupModel.groupSchema),
-				409: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { name } = req.body;
-			const { id } = await groupsRepository.insertGroup(name);
-			const group = await groupsRepository.getGroupPreview(id);
-			fastify.log.info(`Group created by ${req.user.id}-${req.user.name}`, group);
-			return reply.send(result({
-				...group,
-			}));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/groups",
-		schema: {
-			querystring: z.object({ id: batchIdsSchema }),
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const ids = parseIds(req.query.id);
-
-			const count = await groupsRepository.deleteGroups(ids);
-
-			const data = {
-				count,
-				outOf: ids.length,
-			};
-			fastify.log.info(`Group batch delete by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
-
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/groups/search",
-		schema: {
-			querystring: z.object({
-				name: z.string().optional(),
-				channel: z.number({ coerce: true }).int().gt(0).optional(),
-				user: z.number({ coerce: true }).int().gt(0).optional(),
-			}),
-			response: {
-				200: resultSuccessSchema(z.array(GroupModel.groupSchema)),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { name, channel, user } = req.query;
-
-			const groups = await groupsRepository.searchAvailableGroups({
-				name,
-				channelId: channel,
-				userId: user,
-			});
-
-			return reply.send(result(groups));
-		}
-	});
-
-	//============================================================================
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/groups/:groupId",
-		schema: {
-			params: z.object({
-				groupId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(GroupModel.groupDetailSchema),
-				404: resultFailureSchema
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.groupId;
-			const group = await groupsRepository.getGroupDetail(id);
-			return reply.send(result(group));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/groups/:groupId",
-		schema: {
-			params: z.object({
-				groupId: z.number({ coerce: true }).int().gt(0),
-			}),
-			body: GroupModel.groupUpdateSchema,
-			response: {
-				200: resultSuccessSchema(GroupModel.groupSchema),
-				404: resultFailureSchema,
-				409: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.groupId;
-			const { name } = req.body;
-			const group = await groupsRepository.updateGroup(id, name);
-			fastify.log.info(`Group update by ${req.user.id}-${req.user.name}`, group);
-			return reply.send(result(group));
-		}
-	});
-
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/groups/:groupId",
-		schema: {
-			params: z.object({
-				groupId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(z.null()),
-				404: resultFailureSchema
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.groupId;
-			const count = await groupsRepository.deleteGroups([ id ]);
-			if (!count) {
-				throw new ResultError(404, `Group with id "${id}" not foind`);
-			}
-			fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, id);
-			return reply.send(result(null));
-		}
-	});
-
-	groupUsers(fastify);
-	groupChannels(fastify);
+	const {groupId: id} = c.req.valid("param");
+	const group = await groupsRepository.getGroupDetail(id);
+	return c.json(result(group));
 });
+
+controller.put(
+	"/:groupId", 
+	zValidator("param", groupIdParamSchema), 
+	zValidator("json", GroupModel.groupUpdateSchema),
+	async(c) => {
+		const groupsRepository = inject("GroupsRepository");
+		const {groupId: id} = c.req.valid("param");
+		const { name } = c.req.valid("json");
+		const group = await groupsRepository.updateGroup(id, name);
+		// fastify.log.info(`Group update by ${req.user.id}-${req.user.name}`, group);
+		return c.json(result(group));
+	}
+);
+
+
+controller.delete(
+	"/:groupId", 
+	zValidator("param", groupIdParamSchema), 
+	async(c) => {
+		const groupsRepository = inject("GroupsRepository");
+		const {groupId: id} = c.req.valid("param");
+		const count = await groupsRepository.deleteGroups([ id ]);
+		if (!count) {
+			throw new ResultError(404, `Group with id "${id}" not foind`);
+		}
+		//fastify.log.info(`Group delete by ${req.user.id}-${req.user.name}`, id);
+		return c.json(result(null));
+	}
+);
+
+export default controller;

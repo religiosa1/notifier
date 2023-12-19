@@ -1,71 +1,60 @@
+import { Hono } from 'hono';
 import z from "zod";
-import type { FastifyInstance } from "fastify";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { zValidator } from '@hono/zod-validator';
+
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { inject } from "src/injection";
+import { intGt, toInt } from '@shared/helpers/zodHelpers';
 
-export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
-	const groupsRepository = inject("GroupsRepository");
-	const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
 
-	const baseGroupUsersUrl = "/groups/:groupId/users";
-	const baseGroupUsersParams = z.object({
-		groupId: z.number({ coerce: true }).int().gt(0),
-	});
+const baseGroupUsersParams = z.object({
+	groupId: z.string().refine(...intGt(0)).transform(toInt)
+});
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: baseGroupUsersUrl,
-		schema: {
-			params: baseGroupUsersParams,
-			body: z.object({
-				name: z.string().min(1),
-			}),
-			response: {
-				200: resultSuccessSchema(GroupModel.groupDetailSchema),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { groupId } = req.params;
-			const { name } = req.body;
+const controller = new Hono();
 
-			await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
-			const group = await groupsRepository.getGroupDetail(groupId);
+controller.post(
+	"/", 
+	zValidator("param", baseGroupUsersParams),
+	zValidator("json",  z.object({ name: z.string().min(1), })),
+	async (c) => {
+		const groupsRepository = inject("GroupsRepository");
+		const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
 
-			fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, group);
-			return reply.send(result(group));
-		}
-	});
+		const { groupId } = c.req.valid("param");
+		const { name } = c.req.valid("json");
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: baseGroupUsersUrl,
-		schema: {
-			querystring: z.object({ id: z.optional(batchIdsSchema) }),
-			params: baseGroupUsersParams,
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const groupId = req.params.groupId;
-			const ids = req.query.id !== undefined ? parseIds(req.query.id) : undefined;
+		await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
+		const group = await groupsRepository.getGroupDetail(groupId);
 
-			const count = await usersToGroupRelationRepository.deleteUserFromGroup(groupId, ids);
+		// fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, group);
+		return c.json(result(group));
+	}
+);
 
-			const data = {
-				count,
-				outOf: ids?.length ?? -1,
-			};
-			fastify.log.info(`Groups users batch disconnect by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
-}
+controller.delete(
+	"/", 
+	zValidator("param", baseGroupUsersParams),
+	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
+	async (c) => {
+		const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
+
+		const { groupId } = c.req.valid("param");
+		const idsQuery = c.req.valid("query").id
+		const ids = idsQuery !== undefined ? parseIds(idsQuery) : undefined;
+
+		const count = await usersToGroupRelationRepository.deleteUserFromGroup(groupId, ids);
+
+		const data = {
+			count,
+			outOf: ids?.length ?? -1,
+		};
+		// fastify.log.info(`Groups users batch disconnect by ${req.user.id}-${req.user.name}`, data);
+		return c.json(result(data));
+	}
+)
+
+export default controller;

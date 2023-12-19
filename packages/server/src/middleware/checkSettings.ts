@@ -1,16 +1,14 @@
 import { inject } from "src/injection";
-import type { Handler } from '@fastify/middie';
-import { IncomingMessage, ServerResponse } from "http";
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
+import { createMiddleware } from 'hono/factory';
 
-export const checkSettings: Handler = (req: IncomingMessage, _res: ServerResponse, next: (err?: unknown) => void) => {
-	if (req.url === "/settings") {
-		return next();
-	}
+export const checkSettings = createMiddleware((c, next) => {
 	const serverSettings = inject("SettingsService");
-	const config = serverSettings.getConfig();
-	if (!config) {
-		throw new ConfigUnavailableError();
+	if (c.req.routePath.startsWith("/settings")) {
+		const config = serverSettings.getConfig();
+		if (!config) {
+			throw new ConfigUnavailableError();
+		}
 	}
-	next();
-};
+	return next()
+});

@@ -1,109 +1,75 @@
+import { Hono } from 'hono';
 import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import type { FastifyInstance } from "fastify";
-import * as ChannelModel from "@shared/models/Channel";
+import { zValidator } from '@hono/zod-validator';
+
 import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
-import { paginationDefaults, paginationSchema } from "@shared/models/Pagination";
+import { pageinationQuerySchema, paginationDefaults, paginationSchema } from "@shared/models/Pagination";
 import { counted } from "@shared/models/Counted";
 import { inject } from "src/injection";
+import { userIdParamsSchema } from './models';
 
-export function userChannels<Instace extends FastifyInstance>(fastify: Instace) {
-	const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+const controller = new Hono();
 
-	const baseUserChannelsUrl = "/users/:userId/channels";
-	const baseUserChannelsParams = z.object({
-		userId: z.number({ coerce: true }).int().gt(0),
-	});
+controller.get(
+	"/",
+	zValidator("param", userIdParamsSchema),
+	zValidator("query", pageinationQuerySchema),
+	async (c) => {
+		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const { userId } = c.req.valid("param");
+		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
+		const [data, count] = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
+		return c.json(result({ data, count  }));
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: baseUserChannelsUrl,
-		schema: {
-			params: baseUserChannelsParams,
-			querystring: paginationSchema,
-			response: {
-				200: resultSuccessSchema(counted(z.array(ChannelModel.channelSchema))),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { userId } = req.params;
-			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [data, count] = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
-			return reply.send(result({ data, count  }));
-		}
-	});
+controller.get(
+	"/available-channels",
+	zValidator("param", userIdParamsSchema),
+	zValidator("query", pageinationQuerySchema),
+	async (c) => {
+		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const { userId } = c.req.valid("param");
+		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
+		const data = await userToChannelRelationsRepository.listAvailableUnsubscribedChannelsForUser(userId, { skip, take });
+		return c.json(result(data));
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: '/users/:userId/available-channels',
-		schema: {
-			params: baseUserChannelsParams,
-			querystring: paginationSchema,
-			response: {
-				200: resultSuccessSchema(z.array(ChannelModel.channelSchema)),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { userId } = req.params;
-			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const data = await userToChannelRelationsRepository.listAvailableUnsubscribedChannelsForUser(userId, { skip, take });
-			return reply.send(result(data));
-		}
-	});
+controller.post(
+	"/",
+	zValidator("param", userIdParamsSchema),
+	zValidator("json", z.object({ id: z.number({ coerce: true }).int().gt(0) })),
+	async (c) => {
+		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const { userId } = c.req.valid("param");
+		const { id: channelId } = c.req.valid("json");
+		await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
+		// fastify.log.info(`Channel added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
+		return c.json(result(null));
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: baseUserChannelsUrl,
-		schema: {
-			params: baseUserChannelsParams,
-			body: z.object({ id: z.number({ coerce: true }).int().gt(0) }),
-			response: {
-				200: resultSuccessSchema(z.null()),
-				404: resultFailureSchema,
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { userId } = req.params;
-			const channelId = req.body.id;
-			await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
-			fastify.log.info(`Channel added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
-			return reply.send(result(null));
-		}
-	});
+controller.delete(
+	"/",
+	zValidator("param", userIdParamsSchema),
+	zValidator("query",  z.object({ id: batchIdsSchema })),
+	async (c) => {
+		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const { userId } = c.req.valid("param");
+		const ids = parseIds(c.req.valid("query").id);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: baseUserChannelsUrl,
-		schema: {
-			querystring: z.object({ id: batchIdsSchema }),
-			params: z.object({
-				userId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-				404: resultFailureSchema,
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { userId } = req.params;
-			const ids = parseIds(req.query.id);
+		const count = await userToChannelRelationsRepository.disconnectUserChannels(userId, ids)
+			// .catch(handlerDbNotFound(userNotFound(userId)))
 
-			const count = await userToChannelRelationsRepository.disconnectUserChannels(userId, ids)
-				// .catch(handlerDbNotFound(userNotFound(userId)))
+		const data = {
+			count,
+			outOf: ids.length,
+		};
+		return c.json(result(data));
+	}
+)
 
-			const data = {
-				count,
-				outOf: ids.length,
-			};
-			return reply.send(result(data));
-		}
-	});
-}
+export default controller;
