@@ -5,12 +5,13 @@ import { zValidator } from '@hono/zod-validator';
 import { result } from "@shared/models/Result";
 import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
-import { pageinationQuerySchema, paginationDefaults, paginationSchema } from "@shared/models/Pagination";
+import { pageinationQuerySchema, paginationDefaults } from "@shared/models/Pagination";
 import { counted } from "@shared/models/Counted";
 import { inject } from "src/injection";
 import { userIdParamsSchema } from './models';
+import { ContextVariables } from 'src/ContextVariables';
 
-const controller = new Hono();
+const controller = new Hono<{ Variables: ContextVariables}>();
 
 controller.get(
 	"/",
@@ -43,11 +44,12 @@ controller.post(
 	zValidator("param", userIdParamsSchema),
 	zValidator("json", z.object({ id: z.number({ coerce: true }).int().gt(0) })),
 	async (c) => {
+		const logger = inject("logger");
 		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { id: channelId } = c.req.valid("json");
 		await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
-		// fastify.log.info(`Channel added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
+		logger.info(`Channel added to user ${userId} edit by ${c.get("user").id}-${c.get("user").id}`, channelId);
 		return c.json(result(null));
 	}
 );

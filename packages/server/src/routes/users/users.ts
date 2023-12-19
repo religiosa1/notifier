@@ -16,8 +16,9 @@ import  userKeysController  from "./userKeys";
 import { userIdParamsSchema } from './models';
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
+import { ContextVariables } from 'src/ContextVariables';
 
-const controller = new Hono();
+const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 
 controller.route("/channels", userChannelsController);
@@ -37,19 +38,22 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 });
 
 controller.post("/", zValidator("json", UserModel.userCreateSchema), async (c) => {
-	const user = await usersRepository.insertUser(c.req.valid("json"));
-	// fastify.log.info(`User create by ${req.user.id}-${req.user.name}`, req.body);
+	const logger = inject("logger");
+	const body = c.req.valid("json");
+	const user = await usersRepository.insertUser(body);
+	logger.info(`User create by ${c.get("user").id}-${c.get("user").name}`,body);
 	return c.json(result(user));
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
+	const logger = inject("logger");
 	const ids = parseIds(c.req.valid("query").id);
 	const count = await usersRepository.deleteUsers(ids);
 	const data = {
 		count,
 		outOf: ids.length,
 	};
-	// fastify.log.info(`User batch delete by ${req.user.id}-${req.user.name}`, ids, data);
+	logger.info(`User batch delete by ${c.get("user").id}-${c.get("user").name}`, ids, data);
 	return c.json(result(data));
 });
 
@@ -68,11 +72,12 @@ controller.put(
 	zValidator("param", userIdParamsSchema),
 	zValidator("json",  UserModel.userUpdateSchema),
 	async (c) => {
+		const logger = inject("logger");
 		const { userId } = c.req.valid("param");
 		const body = c.req.valid("json");
 		const user = await usersRepository.updateUser(userId, body);
 
-		// fastify.log.info(`User ${userId} edit by ${req.user.id}-${req.user.name}`, req.body);
+		logger.info(`User ${userId} edit by ${c.get("user").id}-${c.get("user").name}`, body);
 		return c.json(result(user));
 	}
 );
@@ -81,10 +86,11 @@ controller.delete(
 	"/:userId",
 	zValidator("param", userIdParamsSchema),
 	async (c) => {
+		const logger = inject("logger");
 		const {userId} = c.req.valid("param");
 		await usersRepository.assertUserExists(userId);
 		await usersRepository.deleteUsers([userId])
-		// fastify.log.info(`User ${userId} delete by ${req.user.id}-${req.user.name}`);
+		logger.info(`User ${userId} delete by ${c.get("user").id}-${c.get("user").name}`);
 		return c.json(result(null));
 	}
 );

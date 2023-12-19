@@ -8,19 +8,21 @@ import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { inject } from "src/injection";
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
+import { ContextVariables } from 'src/ContextVariables';
 
 
 const baseGroupUsersParams = z.object({
 	groupId: z.string().refine(...intGt(0)).transform(toInt)
 });
 
-const controller = new Hono();
+const controller = new Hono<{ Variables: ContextVariables }>();
 
 controller.post(
 	"/", 
 	zValidator("param", baseGroupUsersParams),
 	zValidator("json",  z.object({ name: z.string().min(1), })),
 	async (c) => {
+		const logger = inject("logger");
 		const groupsRepository = inject("GroupsRepository");
 		const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
 
@@ -30,7 +32,7 @@ controller.post(
 		await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
 		const group = await groupsRepository.getGroupDetail(groupId);
 
-		// fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, group);
+		logger.info(`Groups updated by ${c.get("user").id}-${c.get("user").name}`, group);
 		return c.json(result(group));
 	}
 );
@@ -40,6 +42,7 @@ controller.delete(
 	zValidator("param", baseGroupUsersParams),
 	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
 	async (c) => {
+		const logger = inject("logger");
 		const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
 
 		const { groupId } = c.req.valid("param");
@@ -52,7 +55,7 @@ controller.delete(
 			count,
 			outOf: ids?.length ?? -1,
 		};
-		// fastify.log.info(`Groups users batch disconnect by ${req.user.id}-${req.user.name}`, data);
+		logger.info(`Groups users batch disconnect by ${c.get("user").id}-${c.get("user").name}`, data);
 		return c.json(result(data));
 	}
 )

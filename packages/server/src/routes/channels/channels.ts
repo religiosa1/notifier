@@ -12,8 +12,9 @@ import { inject } from "src/injection";
 import channelGroups from "./channelGroups";
 import { channelIdRoute } from './models';
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
+import type { ContextVariables } from 'src/ContextVariables';
 
-const controller = new Hono();
+const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 controller.route("/:channelId/groups", channelGroups);
 
@@ -63,10 +64,11 @@ controller.get('/search', zValidator("query", z.object({
 409: resultFailureSchema,
 */
 controller.post("/", zValidator("json",  ChannelModel.channelCreateSchema), async (c) => {
+	const logger = inject("logger");
 	const channelsRepository = inject("ChannelsRepository");
 	const body = c.req.valid("json");
 	const channel = await channelsRepository.insertChannel(body.name);
-	// fastify.log.info(`Channel created by ${req.user.id}-${req.user.name}`, channel);
+	logger.info(`Channel created by ${c.get("user").id}-${c.get("user").name}`, channel);
 	return c.json(result(channel));
 });
 
@@ -88,13 +90,14 @@ controller.put(
 	zValidator("param", channelIdRoute), 
 	zValidator("json", ChannelModel.channelUpdateSchema),
 	async (c) => {
+		const logger = inject("logger");
 		const channelsRepository = inject("ChannelsRepository");
 		const { channelId: id } = c.req.valid("param");
 		const { name } = c.req.valid("json");
 
 		const channel = await channelsRepository.updateChannel(id, name);
 
-		// fastify.log.info(`Channel update by ${req.user.id}-${req.user.name}`, channel);
+		logger.info(`Channel update by ${c.get("user").id}-${c.get("user").name}`, channel);
 		return c.json(result(channel));
 	}
 );
@@ -103,16 +106,18 @@ controller.delete(
 	"/:channelId", 
 	zValidator("param", channelIdRoute), 
 	async (c) => {
+		const logger = inject("logger");
 		const channelsRepository = inject("ChannelsRepository");
 		const { channelId: id } = c.req.valid("param");
 		await channelsRepository.assertChannelExist(id);
 		await channelsRepository.deleteChannels([id]);
-		// fastify.log.info(`Channel delete by ${req.user.id}-${req.user.name}`, id);
+		logger.info(`Channel delete by ${c.get("user").id}-${c.get("user").name}`, id);
 		return c.json(result(null));
 	}
 );
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async(c) => {
+	const logger = inject("logger");
 	const channelsRepository = inject("ChannelsRepository");
 	const query = c.req.valid("query");
 	const ids = parseIds(query.id);
@@ -121,7 +126,7 @@ controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), as
 		count,
 		outOf: ids.length,
 	};
-	// fastify.log.info(`Channel batch delete by ${req.user.id}-${req.user.name}`, data);
+	logger.info(`Channel batch delete by ${c.get("user").id}-${c.get("user").name}`, data);
 	return c.json(result(data));
 });
 

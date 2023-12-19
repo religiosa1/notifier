@@ -7,19 +7,21 @@ import { result } from "@shared/models/Result";
 import { inject } from "src/injection";
 import { userIdParamsSchema } from './models';
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
+import { ContextVariables } from 'src/ContextVariables';
 
-const controller = new Hono();
+const controller = new Hono<{ Variables: ContextVariables }>();
 
 controller.post(
 	'/',
 	zValidator("param", userIdParamsSchema),
 	zValidator("json", z.object({ name: GroupModel.groupNameSchema })),
 	async (c) => {
+		const logger = inject("logger");
 		const userToGroupRelationsRepository = inject("UserToGroupRelationsRepository");
-		const { userId: id } = c.req.valid("param");
+		const { userId } = c.req.valid("param");
 		const { name } = c.req.valid("json");
-		await userToGroupRelationsRepository.connectGroupToUser(id, name);
-		// fastify.log.info(`Group added to user ${req.params.userId} edit by ${req.user.id}-${req.user.name}`, req.body);
+		await userToGroupRelationsRepository.connectGroupToUser(userId, name);
+		logger.info(`Group added to user ${userId} edit by ${c.get("user").id}-${c.get("user").name}`, name);
 		return c.json(result(null));
 	}
 );
