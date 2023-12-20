@@ -11,6 +11,7 @@ export function result<T>(data: T, error = false): Result<T> {
   }
   return {
     success: true as const,
-    data
+    data,
+    ts: Date.now(),
   };
 }

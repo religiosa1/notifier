@@ -1,7 +1,7 @@
 import { AppListenService } from "src/services/AppListenService";
 import { SettingsService } from "src/services/SettingsService";
-import pino, { BaseLogger } from "pino";
-import { IBot } from "src/Bot/Models";
+import pino, { type BaseLogger } from "pino";
+import type { IBot } from "src/Bot/Models";
 import { DatabaseConnectionManager } from "src/db/DatabaseConnectionManager";
 import { GroupsRepository } from "src/repositories/GroupsRepository";
 import { UserToGroupRelationsRepository } from "src/repositories/UserToGroupRelationsRepository";

@@ -1,4 +1,4 @@
-import { intGt, toInt } from "src/helpers/zodHelpers";
+import { intGt, toInt } from "../helpers/zodHelpers";
 import z from "zod";
 
 export const pageinationQuerySchema = z.object({

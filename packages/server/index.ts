@@ -17,6 +17,7 @@ import { inject, register } from "src/injection";
 import { checkSettings } from "src/middleware/checkSettings";
 import settings from "src/routes/settings";
 import { responseHandler } from "src/middleware/responseHandler";
+import { ResultError } from "@shared/models/Result";
 
 const url = process.env.URL || "";
 const port = Number(process.env.PORT) || 8085;
@@ -30,9 +31,16 @@ const logger = inject("logger");
 
 const app = new Hono();
 
+app.onError((err) => {
+	const resultError = ResultError.from(err);
+	return  new Response(resultError.toJson(), {
+		status: resultError.statusCode,
+		headers: { "Content-Type": "application/json" }
+	});
+});
 app.use("*", responseHandler);
 app.use("*", checkSettings);
-app.route("/settings", settings);
+app.route("/", settings);
 app.route("/users", usersController);
 app.route("/groups", groupsController);
 app.route("/channels", channelsController);
@@ -40,11 +48,6 @@ app.route("/user-confirmation-request", authRequestController);
 app.route("/notify", notifyController);
 app.route("/login", loginController);
 
-// app.setErrorHandler(function (error, _, reply) {
-// 	this.log.error(error);
-// 	const err = error instanceof ResultError ? error : ResultError.from(error);
-// 	reply.status(err.statusCode).send(err.toJson());
-// })
 
 app.post("/bot*", async (c) => {
 		const bot = inject("Bot");
@@ -57,6 +60,8 @@ app.post("/bot*", async (c) => {
 		bot.processUpdate(data as Update)
 	},
 );
+
+
 
 settingsService.subscribe(async (settings) => {
 	const { botToken } = settings || {};
@@ -84,7 +89,7 @@ settingsService.subscribe(async (settings) => {
 const start = async () => {
 	await settingsService.loadConfig();
 	serve({ fetch: app.fetch , port }, (info) => {
-		console.log(`App is listening on ${info.family}://${info.address}:${info.port}/`)
+		console.log(`App is listening on http://${info.address}:${info.port}/`)
 	}).on("close", () => {
 		console.log("App is closed");
 	});

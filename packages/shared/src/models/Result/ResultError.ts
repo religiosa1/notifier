@@ -7,6 +7,7 @@ export const resultFailureSchema = z.object({
   statusCode: z.number().int().gte(400),
   message: z.string().optional(),
   details: z.unknown().optional(),
+  ts: z.number().int(),
 });
 
 export type ResultFaliure = z.infer<typeof resultFailureSchema>;
@@ -14,11 +15,12 @@ export type ResultFaliure = z.infer<typeof resultFailureSchema>;
 interface ResultErrorOptions {
   cause?: unknown;
 }
-export class ResultError extends Error implements ResultFaliure {
-  success = false as const;
+export class ResultError extends Error {
+  override name = "ResultError";
   error: string = StatusCodes[500];
   statusCode = 500;
   details?: unknown;
+  ts = Date.now();
 
   constructor(statusCode?: number, message?: string, { cause }: ResultErrorOptions = {}) {
     super(message);
@@ -34,24 +36,28 @@ export class ResultError extends Error implements ResultFaliure {
     }
   }
 
-  toJson(){
-    return JSON.stringify({ ...this, message: this.message });
+  toJson(): string{
+    return JSON.stringify({ 
+      success: false, 
+      statusCode: this.statusCode,
+      error: this.error,
+      message: this.message,
+      details: this.details,
+      ts: this.ts,
+    } satisfies ResultFaliure);
   }
 
   static from(err: unknown): ResultError{
     const e = new ResultError();
-    if (err instanceof Error) {
+    if (err instanceof ResultError) {
+      Object.assign(e, err);
+    } else if (err instanceof Error) {
       e.error = err.name;
       e.message = err.message;
       e.details = "cause" in err ? err.cause : undefined;
       if ("statusCode" in err && typeof err.statusCode === "number") {
         e.statusCode = err.statusCode;
       }
-    } else if (typeof err === "string") {
-      e.message = err;
-    } else if (typeof err === "number" && Number.isInteger(err)) {
-      e.statusCode = err;
-      e.error =  getStatusPhrase(err, StatusCodes[500]);
     } else if (err && typeof err === "object") {
       if ("statusCode" in err && typeof err.statusCode === "number" && Number.isInteger(err.statusCode)) {
         e.statusCode = err.statusCode;
@@ -64,6 +70,8 @@ export class ResultError extends Error implements ResultFaliure {
         e.message = err.message;
       }
       e.details = err;
+    } else if (typeof err === "string") {
+      e.message = err;
     }
     return e;
   }
