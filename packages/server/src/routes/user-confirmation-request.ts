@@ -6,7 +6,8 @@ import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagin
 import type * as UserModel from "@shared/models/User";
 
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { authorizeJWT } from "src/middleware/authorizeJWT";
 import type { Counted } from "@shared/models/Counted";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
@@ -17,7 +18,7 @@ controller.use("*", authorizeJWT);
 
 
 controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
-	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
+	const userConfirmationRequestsRepository = di.inject("UserConfirmationRequestsRepository");
 	const query = c.req.valid("query");
 	const { skip, take } = { ...paginationDefaults, ...query };
 	const [ data, count ] = await userConfirmationRequestsRepository.listConfirmationRequests({ skip, take });
@@ -29,8 +30,8 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 })
 
 controller.put("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
-	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
-	const logger = inject("logger");
+	const userConfirmationRequestsRepository = di.inject("UserConfirmationRequestsRepository");
+	const logger = di.inject("logger");
 
 	const query = c.req.valid("query");
 	const ids = parseIds(query.id);
@@ -45,8 +46,8 @@ controller.put("/", zValidator("query", z.object({ id: batchIdsSchema })), async
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
-	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
-	const logger = inject("logger");
+	const userConfirmationRequestsRepository = di.inject("UserConfirmationRequestsRepository");
+	const logger = di.inject("logger");
 
 	const query = c.req.valid("query");
 	const ids = parseIds(query.id);

@@ -7,7 +7,8 @@ import type { Counted } from '@shared/models/Counted';
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import channelGroups from "./channelGroups";
 import { channelIdRoute } from './models';
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
@@ -18,7 +19,7 @@ controller.use("*", authorizeJWT);
 controller.route("/:channelId/groups", channelGroups);
 
 controller.get('/', zValidator("query", pageinationQuerySchema), async (c) => {
-	const channelsRepository = inject("ChannelsRepository");
+	const channelsRepository = di.inject("ChannelsRepository");
 	const query = c.req.valid("query");
 	const { skip, take } = { ...paginationDefaults, ...query };
 	const [ data, count ] = await channelsRepository.listChannels({ skip , take });
@@ -41,7 +42,7 @@ controller.get('/search', zValidator("query", z.object({
 		).optional()
 		.transform((val) => parseInt(val ?? '', 10) || undefined)
 })), async(c) => {
-	const channelsRepository = inject("ChannelsRepository");
+	const channelsRepository = di.inject("ChannelsRepository");
 	const { group, name = "" } =  c.req.valid("query");
 
 	const channels = group
@@ -52,8 +53,8 @@ controller.get('/search', zValidator("query", z.object({
 });
 
 controller.post("/", zValidator("json",  ChannelModel.channelCreateSchema), async (c) => {
-	const logger = inject("logger");
-	const channelsRepository = inject("ChannelsRepository");
+	const logger = di.inject("logger");
+	const channelsRepository = di.inject("ChannelsRepository");
 	const body = c.req.valid("json");
 	const channel = await channelsRepository.insertChannel(body.name);
 	logger.info(`Channel created by ${c.get("user").id}-${c.get("user").name}`, channel);
@@ -61,7 +62,7 @@ controller.post("/", zValidator("json",  ChannelModel.channelCreateSchema), asyn
 });
 
 controller.get("/:channelId", zValidator("param", channelIdRoute), async (c) => {
-	const channelsRepository = inject("ChannelsRepository");
+	const channelsRepository = di.inject("ChannelsRepository");
 	const {channelId} = c.req.valid("param");
 	const channel = await channelsRepository.getChannelDetail(channelId);
 	return c.json(channel satisfies ChannelModel.ChannelDetail);
@@ -72,8 +73,8 @@ controller.put(
 	zValidator("param", channelIdRoute), 
 	zValidator("json", ChannelModel.channelUpdateSchema),
 	async (c) => {
-		const logger = inject("logger");
-		const channelsRepository = inject("ChannelsRepository");
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
 		const { channelId: id } = c.req.valid("param");
 		const { name } = c.req.valid("json");
 
@@ -88,8 +89,8 @@ controller.delete(
 	"/:channelId", 
 	zValidator("param", channelIdRoute), 
 	async (c) => {
-		const logger = inject("logger");
-		const channelsRepository = inject("ChannelsRepository");
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
 		const { channelId: id } = c.req.valid("param");
 		await channelsRepository.assertChannelExist(id);
 		await channelsRepository.deleteChannels([id]);
@@ -99,8 +100,8 @@ controller.delete(
 );
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async(c) => {
-	const logger = inject("logger");
-	const channelsRepository = inject("ChannelsRepository");
+	const logger = di.inject("logger");
+	const channelsRepository = di.inject("ChannelsRepository");
 	const query = c.req.valid("query");
 	const ids = parseIds(query.id);
 	const count = await channelsRepository.deleteChannels(ids);

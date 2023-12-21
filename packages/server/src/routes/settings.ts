@@ -4,7 +4,8 @@ import { zValidator } from '@hono/zod-validator'
 
 import { ResultError } from "@shared/models/Result";
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
 import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
@@ -14,7 +15,7 @@ controller.get(
 	"/",
 	authorizeJWT,
 	async (c) => {
-		const settingsService = inject("SettingsService");
+		const settingsService = di.inject("SettingsService");
 		const config = settingsService.getConfig();
 		if (!config) {
 			throw new ConfigUnavailableError();
@@ -28,7 +29,7 @@ controller.put(
 	authorizeJWT, 
 	zValidator("json", serverConfigSchema), 
 	async (c) => {
-		const settingsService = inject("SettingsService");
+		const settingsService = di.inject("SettingsService");
 		const body = c.req.valid("json");
 
 		await settingsService.setConfig(body);
@@ -39,7 +40,7 @@ controller.put(
 // TODO do we even need this route?..
 // NO AUTH FOR THE INITIAL SETUP
 controller.put("/setup", zValidator("json", serverConfigSchema), async (c) => {
-	const settingsService = inject("SettingsService");
+	const settingsService = di.inject("SettingsService");
 	const config = settingsService.getConfig();
 	const body = c.req.valid("json");
 	if (config) {
@@ -55,7 +56,7 @@ controller.put("/setup", zValidator("json", serverConfigSchema), async (c) => {
 controller.post("/test-database-configuration", zValidator("json", z.object({
 	databaseUrl: z.string()
 })), async (c) => {
-	const settingsService = inject("SettingsService");
+	const settingsService = di.inject("SettingsService");
 	const body = c.req.valid("json");
 	const isDbOk: boolean = await settingsService.testConfigsDatabaseConnection(body.databaseUrl);
 	return c.json(isDbOk);

@@ -5,7 +5,8 @@ import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConf
 import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
 import { watchFile } from 'node:fs';
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { getRootDir } from "src/util/getRootDir";
 import { DatabaseConfigurator } from "src/db/DatabaseConnectionTester";
 import { ResultError } from "@shared/models/Result";
@@ -33,7 +34,7 @@ export class SettingsService {
 		private readonly databaseConfigurator = new DatabaseConfigurator(),
 	) {
 		const watchHandler = () => {
-			const log = inject("logger");
+			const log = di.inject("logger");
 			log.warn("Settings file was changed");
 			this.loadConfig().catch((e) => {
 				log.warn("Unable to load settings file", e);

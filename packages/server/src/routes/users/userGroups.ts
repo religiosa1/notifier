@@ -4,7 +4,8 @@ import { zValidator } from '@hono/zod-validator';
 
 import type { ContextVariables } from 'src/ContextVariables';
 import * as GroupModel from "@shared/models/Group";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { userIdParamsSchema } from './models';
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
 
@@ -15,8 +16,8 @@ controller.post(
 	zValidator("param", userIdParamsSchema),
 	zValidator("json", z.object({ name: GroupModel.groupNameSchema })),
 	async (c) => {
-		const logger = inject("logger");
-		const userToGroupRelationsRepository = inject("UserToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { name } = c.req.valid("json");
 		await userToGroupRelationsRepository.connectGroupToUser(userId, name);
@@ -31,7 +32,7 @@ controller.delete(
 		groupId: z.string().refine(...intGt(0)).transform(toInt) 
 	})),
 	async (c) => {
-		const userToGroupRelationsRepository = inject("UserToGroupRelationsRepository");
+		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
 		const { userId, groupId } = c.req.valid("param");
 		await userToGroupRelationsRepository.deleteGroupFromUser(userId, groupId);
 		return c.json(null);
@@ -42,7 +43,7 @@ controller.delete(
 	"/",
 	zValidator("param", userIdParamsSchema),
 	async (c) => {
-		const userToGroupRelationsRepository = inject("UserToGroupRelationsRepository");
+		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
 		const { userId } = c.req.valid("param");
 		await userToGroupRelationsRepository.deleteAllGroupsFromUser(userId);
 		return c.json(null);

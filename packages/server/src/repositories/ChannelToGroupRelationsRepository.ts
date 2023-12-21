@@ -1,10 +1,11 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { assert } from "src/util/assert";
 
 export class ChannelToGroupRelationsRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	//============================================================================
 	// CONNECT

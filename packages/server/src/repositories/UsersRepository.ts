@@ -4,7 +4,8 @@ import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, i
 import { hashPassword } from "src/services/hash";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { assert } from "src/util/assert";
 
 const userNotFound = (id: string | number) => () => new NotFoundError(`user with id '${id}' doesn't exist`);
@@ -14,7 +15,7 @@ const userNotFound = (id: string | number) => () => new NotFoundError(`user with
  */
 
 export class UsersRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	//============================================================================
 

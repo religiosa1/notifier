@@ -1,10 +1,7 @@
 import * as ApiKeyService from "src/services/ApiKey";
 import { BotCommand } from "./BotCommand";
-import { inject } from "src/injection";
+import { di } from "src/injection";
 
-const usersRepository = inject("UsersRepository");
-const channelsRepository = inject("ChannelsRepository");
-const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
 
 /** Available bot commands */
 export const botCommands: BotCommand[] = [
@@ -12,6 +9,7 @@ export const botCommands: BotCommand[] = [
 		"start",
 		"",
 		async ({ logger, reply, userId, msg }) => {
+			const usersRepository = di.inject("UsersRepository");
 			// FIXME this command doesn't even require the authorization status check, only that we have a request
 			if (!isNaN(userId)) {
 				await reply("You've already started using the bot.");
@@ -21,10 +19,10 @@ export const botCommands: BotCommand[] = [
 				throw new Error("There's no 'chat' information in the message, unable to process");
 			}
 			logger.info({ event: "start command", chat: msg.chat }),
-			await usersRepository.insertUser({
-				name: msg.chat.username,
-				telegramId: msg.chat.id,
-			});
+				await usersRepository.insertUser({
+					name: msg.chat.username,
+					telegramId: msg.chat.id,
+				});
 			await reply(
 				"Thank you, you'll be able to use the service, once an admin will approve your join request."
 			);
@@ -38,6 +36,7 @@ export const botCommands: BotCommand[] = [
 		"list_channels",
 		"List all notification channels available to you",
 		async ({ reply, userId }) => {
+			const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 			// TODO pagination and "more items" command
 			const [channels] = await userToChannelRelationsRepository.listAllAvailableChannelsForUser(userId);
 			console.log("channels", channels);
@@ -52,6 +51,7 @@ export const botCommands: BotCommand[] = [
 		"list_subscriptions",
 		"List your current subscriptions",
 		async ({ reply, userId }) => {
+			const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 			// TODO pagination and "more items" command
 			const [channels] = await userToChannelRelationsRepository.listUserChannels(userId);
 			await reply(listMessage(
@@ -66,6 +66,8 @@ export const botCommands: BotCommand[] = [
 		"join_channel",
 		"Join a notification channel (subscribe)",
 		async ({ reply, userId }, [channel]) => {
+			const channelsRepository = di.inject("ChannelsRepository");
+			const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 			const channelId = await channelsRepository.getChannelId(channel!);
 			if (channelId == null) {
 				await reply("No such channel");
@@ -80,6 +82,8 @@ export const botCommands: BotCommand[] = [
 		"leave_channel",
 		"Leave a notification channel",
 		async ({ reply, userId }, [channel]) => {
+			const channelsRepository = di.inject("ChannelsRepository");
+			const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 			const channelId = await channelsRepository.getChannelId(channel!);
 			if (channelId == null) {
 				await reply("No such channel");

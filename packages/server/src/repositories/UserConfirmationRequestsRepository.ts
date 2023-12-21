@@ -2,10 +2,11 @@ import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import type { UserWithGroups } from "@shared/models/User";
 import { eq, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 export class UserConfirmationRequestsRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	//============================================================================
 	// LIST

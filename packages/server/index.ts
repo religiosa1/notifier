@@ -4,8 +4,9 @@ import "./src/polyfill";
 import { Hono } from "hono";
 import { serve } from '@hono/node-server'
 
+import { di } from "src/injection";
+
 import { ResultError } from "@shared/models/Result";
-import { inject } from "src/injection";
 import { checkSettings } from "src/middleware/checkSettings";
 import { responseHandler } from "src/middleware/responseHandler";
 
@@ -19,7 +20,7 @@ import loginController from "src/routes/login";
 import botController from "src/routes/bot";
 
 const port = Number(process.env.PORT) || 8085;
-const settingsService = inject("SettingsService");
+const settingsService = di.inject("SettingsService");
 
 const app = new Hono();
 
@@ -44,7 +45,7 @@ app.route("/bot", botController);
 settingsService.loadConfig().then(() => {
 	serve({ fetch: app.fetch , port }, (info) => {		
 		console.log(`App is listening on http://${info.address}:${info.port}/`);
-		const appListenService = inject("AppListenService");
+		const appListenService = di.inject("AppListenService");
 		appListenService.listen();
 	}).on("close", () => {
 		console.log("App is closed");

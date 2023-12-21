@@ -6,7 +6,8 @@ import bcrypt from "bcrypt";
 import { ResultError } from "@shared/models/Result";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { sign } from 'hono/jwt'
 
 const controller = new Hono();
@@ -18,8 +19,8 @@ controller.post(
 		password: z.string().max(32),
 	})),
 	async (c) => {
-		const usersRepository = inject("UsersRepository");
-		const settingsService = inject("SettingsService");
+		const usersRepository = di.inject("UsersRepository");
+		const settingsService = di.inject("SettingsService");
 		const {jwtSecret} = settingsService.getConfig() ?? {};
 		if (!jwtSecret) {
 			throw new Error("JWT secret hasn't been initialized");

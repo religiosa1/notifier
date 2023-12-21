@@ -2,11 +2,12 @@ import { esc } from "src/util/esc";
 import type { Bot } from "./Bot";
 import type { IBot } from "./Models";
 import type { BaseLogger } from "pino";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 /** Basic mock of Bot class for testing purposes */
 export class BotMock implements IBot {
-	constructor(token: string, private readonly logger: BaseLogger = inject("logger")) {
+	constructor(token: string, private readonly logger: BaseLogger = di.inject("logger")) {
 		if (!token) {
 			throw new Error("Bot token isn't present in the env variables");
 		}

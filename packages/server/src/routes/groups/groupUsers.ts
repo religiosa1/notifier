@@ -6,7 +6,8 @@ import * as GroupModel from "@shared/models/Group";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import type { ContextVariables } from 'src/ContextVariables';
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { intGt, toInt } from '@shared/helpers/zodHelpers';
 
 const baseGroupUsersParams = z.object({
@@ -20,9 +21,9 @@ controller.post(
 	zValidator("param", baseGroupUsersParams),
 	zValidator("json",  z.object({ name: z.string().min(1), })),
 	async (c) => {
-		const logger = inject("logger");
-		const groupsRepository = inject("GroupsRepository");
-		const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const groupsRepository = di.inject("GroupsRepository");
+		const usersToGroupRelationRepository = di.inject("UserToGroupRelationsRepository");
 
 		const { groupId } = c.req.valid("param");
 		const { name } = c.req.valid("json");
@@ -40,8 +41,8 @@ controller.delete(
 	zValidator("param", baseGroupUsersParams),
 	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
 	async (c) => {
-		const logger = inject("logger");
-		const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const usersToGroupRelationRepository = di.inject("UserToGroupRelationsRepository");
 
 		const { groupId } = c.req.valid("param");
 		const idsQuery = c.req.valid("query").id

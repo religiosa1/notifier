@@ -2,12 +2,13 @@ import bcrypt from "bcrypt";
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { ResultError } from "@shared/models/Result";
 import { parseApiKey } from "src/services/ApiKey";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { createMiddleware } from "hono/factory";
 import { getCookie } from "hono/cookie";
 
 export const authorizeKey = createMiddleware(async (c, next) => {
-	const apiKeysRepository = inject("ApiKeysRepository");
+	const apiKeysRepository = di.inject("ApiKeysRepository");
 	const key = c.req.raw.headers.get("x-api-key") || getCookie(c, "X-API-KEY");		
 	if (!key) {
 		throw new ResultError(401, "The API key wasn't supplied in the cookies or headers");

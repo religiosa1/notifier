@@ -1,6 +1,7 @@
 import { Bot } from "src/Bot";
 import type { IBot } from "src/Bot/Models";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 export class BotService {
 	#instanceData?: { bot: IBot, botToken: string };
@@ -12,9 +13,9 @@ export class BotService {
 	}
 
 	constructor(
-		settingsService = inject("SettingsService"),
-		logger = inject("logger"),
-		appListenService = inject("AppListenService"),
+		settingsService = di.inject("SettingsService"),
+		logger = di.inject("logger"),
+		appListenService = di.inject("AppListenService"),
 	) {
 		settingsService.subscribe(async (settings) => {
 			const { botToken, publicUrl } = settings || {};

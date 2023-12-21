@@ -3,13 +3,14 @@ import type { Channel, ChannelDetail } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
 import { getTableColumns, sql, eq, ilike, isNull, and, inArray } from "drizzle-orm";
 import { schema } from "src/db";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { assert } from "src/util/assert";
 
 const channelNotFound = (id: number) => () => new ResultError(404, `channel with id = '${id}' cannot be dound`);
 
 export class ChannelsRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	//============================================================================
 

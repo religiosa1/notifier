@@ -7,7 +7,8 @@ import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagin
 import type { Counted } from "@shared/models/Counted";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 import  userChannelsController  from "./userChannels";
 import  userGroupsController  from "./userGroups";
@@ -24,7 +25,7 @@ controller.route("/channels", userChannelsController);
 controller.route("/groups", userGroupsController);
 controller.route("/api-keys", userKeysController);
 
-const usersRepository = inject("UsersRepository");
+const usersRepository = di.inject("UsersRepository");
 
 controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 	const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
@@ -37,7 +38,7 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 });
 
 controller.post("/", zValidator("json", UserModel.userCreateSchema), async (c) => {
-	const logger = inject("logger");
+	const logger = di.inject("logger");
 	const body = c.req.valid("json");
 	const user = await usersRepository.insertUser(body);
 	logger.info(`User create by ${c.get("user").id}-${c.get("user").name}`,body);
@@ -45,7 +46,7 @@ controller.post("/", zValidator("json", UserModel.userCreateSchema), async (c) =
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
-	const logger = inject("logger");
+	const logger = di.inject("logger");
 	const ids = parseIds(c.req.valid("query").id);
 	const count = await usersRepository.deleteUsers(ids);
 	const data = {
@@ -71,7 +72,7 @@ controller.put(
 	zValidator("param", userIdParamsSchema),
 	zValidator("json",  UserModel.userUpdateSchema),
 	async (c) => {
-		const logger = inject("logger");
+		const logger = di.inject("logger");
 		const { userId } = c.req.valid("param");
 		const body = c.req.valid("json");
 		const user = await usersRepository.updateUser(userId, body);
@@ -85,7 +86,7 @@ controller.delete(
 	"/:userId",
 	zValidator("param", userIdParamsSchema),
 	async (c) => {
-		const logger = inject("logger");
+		const logger = di.inject("logger");
 		const {userId} = c.req.valid("param");
 		await usersRepository.assertUserExists(userId);
 		await usersRepository.deleteUsers([userId])

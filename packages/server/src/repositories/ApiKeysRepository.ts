@@ -2,10 +2,11 @@ import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { ResultError } from "@shared/models/Result";
 import { and, eq, sql } from "drizzle-orm";
 import { schema } from "src/db";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 export class ApiKeysRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	async insertKey(userId: number, prefix: string, hashedKey: string): Promise<void> {
 		const db = this.dbm.connection;

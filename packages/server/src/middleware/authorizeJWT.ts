@@ -1,13 +1,14 @@
 import { createMiddleware } from "hono/factory";
 import { verify } from 'hono/jwt'
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { getCookie } from 'hono/cookie'
 import { ResultError } from "@shared/models/Result";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
 
 export const authorizeJWT = createMiddleware(async (c, next) => {
-	const settingsService = inject("SettingsService");	
+	const settingsService = di.inject("SettingsService");	
 	const {jwtSecret} = settingsService.getConfig() ?? {};
 	if (!jwtSecret) {
 		throw new ConfigUnavailableError()

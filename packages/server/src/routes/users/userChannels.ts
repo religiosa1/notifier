@@ -8,7 +8,8 @@ import type { ContextVariables } from 'src/ContextVariables';
 import type * as ChannelModel from '@shared/models/Channel';
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 import { pageinationQuerySchema, paginationDefaults } from "@shared/models/Pagination";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { userIdParamsSchema } from './models';
 
 const controller = new Hono<{ Variables: ContextVariables}>();
@@ -18,7 +19,7 @@ controller.get(
 	zValidator("param", userIdParamsSchema),
 	zValidator("query", pageinationQuerySchema),
 	async (c) => {
-		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 		const [data, count] = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
@@ -31,7 +32,7 @@ controller.get(
 	zValidator("param", userIdParamsSchema),
 	zValidator("query", pageinationQuerySchema),
 	async (c) => {
-		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 		const data = await userToChannelRelationsRepository.listAvailableUnsubscribedChannelsForUser(userId, { skip, take });
@@ -44,8 +45,8 @@ controller.post(
 	zValidator("param", userIdParamsSchema),
 	zValidator("json", z.object({ id: z.number({ coerce: true }).int().gt(0) })),
 	async (c) => {
-		const logger = inject("logger");
-		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const logger = di.inject("logger");
+		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { id: channelId } = c.req.valid("json");
 		await userToChannelRelationsRepository.connectUserChannel(userId, channelId);
@@ -59,7 +60,7 @@ controller.delete(
 	zValidator("param", userIdParamsSchema),
 	zValidator("query",  z.object({ id: batchIdsSchema })),
 	async (c) => {
-		const userToChannelRelationsRepository = inject("UserToChannelRelationsRepository");
+		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const ids = parseIds(c.req.valid("query").id);
 

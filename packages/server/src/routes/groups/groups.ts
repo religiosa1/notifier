@@ -9,7 +9,8 @@ import { ResultError } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 import groupUsers  from "./groupUsers";
 import groupChannels from "./groupChannels";
@@ -24,7 +25,7 @@ controller.route("/channels", groupChannels);
 controller.use("*", authorizeJWT);
 
 controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
-	const groupsRepository = inject("GroupsRepository");
+	const groupsRepository = di.inject("GroupsRepository");
 	const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 	const [ data, count ] = await groupsRepository.listGroups({ skip, take });
 
@@ -35,8 +36,8 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 });
 
 controller.post('/', zValidator("json", GroupModel.groupCreateSchema), async(c) => {
-	const logger = inject("logger");
-	const groupsRepository = inject("GroupsRepository");
+	const logger = di.inject("logger");
+	const groupsRepository = di.inject("GroupsRepository");
 	const { name } = c.req.valid("json");
 	const { id } = await groupsRepository.insertGroup(name);
 	const group = await groupsRepository.getGroupPreview(id);
@@ -45,8 +46,8 @@ controller.post('/', zValidator("json", GroupModel.groupCreateSchema), async(c) 
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
-	const logger = inject("logger");
-	const groupsRepository = inject("GroupsRepository");
+	const logger = di.inject("logger");
+	const groupsRepository = di.inject("GroupsRepository");
 	const ids = parseIds(c.req.valid("query").id);
 	const count = await groupsRepository.deleteGroups(ids);
 
@@ -66,7 +67,7 @@ controller.get(
 		user: z.string().refine(...intGt(0)).transform(toInt).optional(),
 	})),
 	async (c) => {
-		const groupsRepository = inject("GroupsRepository");
+		const groupsRepository = di.inject("GroupsRepository");
 		const { name, channel, user } = c.req.valid("query");
 
 		const groups = await groupsRepository.searchAvailableGroups({
@@ -80,7 +81,7 @@ controller.get(
 );
 
 controller.get("/:groupId", zValidator("param", groupIdParamSchema), async(c) => {
-	const groupsRepository = inject("GroupsRepository");
+	const groupsRepository = di.inject("GroupsRepository");
 
 	const {groupId: id} = c.req.valid("param");
 	const group = await groupsRepository.getGroupDetail(id);
@@ -92,8 +93,8 @@ controller.put(
 	zValidator("param", groupIdParamSchema), 
 	zValidator("json", GroupModel.groupUpdateSchema),
 	async(c) => {
-		const logger = inject("logger");
-		const groupsRepository = inject("GroupsRepository");
+		const logger = di.inject("logger");
+		const groupsRepository = di.inject("GroupsRepository");
 		const {groupId: id} = c.req.valid("param");
 		const { name } = c.req.valid("json");
 		const group = await groupsRepository.updateGroup(id, name);
@@ -107,8 +108,8 @@ controller.delete(
 	"/:groupId", 
 	zValidator("param", groupIdParamSchema), 
 	async(c) => {
-		const logger = inject("logger");
-		const groupsRepository = inject("GroupsRepository");
+		const logger = di.inject("logger");
+		const groupsRepository = di.inject("GroupsRepository");
 		const {groupId: id} = c.req.valid("param");
 		const count = await groupsRepository.deleteGroups([ id ]);
 		if (!count) {

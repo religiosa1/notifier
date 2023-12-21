@@ -4,7 +4,8 @@ import { zValidator } from '@hono/zod-validator';
 
 import type { ContextVariables } from 'src/ContextVariables';
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { groupNameSchema } from "@shared/models/Group";
 import { batchIdsSchema, parseIds } from "@shared/models/batchIds";
 import { channelIdRoute } from './models';
@@ -17,8 +18,8 @@ controller.post(
 	zValidator("param", channelIdRoute),
 	zValidator("json", z.object({ name: groupNameSchema })),
 	async (c) => {
-		const logger = inject("logger");
-		const channelToGroupRelationsRepository = inject("ChannelToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
 		const { name } = c.req.valid("json");
 		const { channelId } = c.req.valid("param");
 		await channelToGroupRelationsRepository.connectOrCreateGroupToChannel(channelId, name);
@@ -32,9 +33,9 @@ controller.delete(
 	zValidator("param", channelIdRoute),
 	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
 	async (c) => {
-		const logger = inject("logger");
-		const channelsRepository = inject("ChannelsRepository");
-		const channelToGroupRelationsRepository = inject("ChannelToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
 
 		const { channelId } = c.req.valid("param");
 		const ids = parseIds(c.req.valid("query")?.id || "");

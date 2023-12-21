@@ -2,13 +2,14 @@ import type { Group, GroupDetail } from "@shared/models/Group";
 import { and, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { assert } from "src/util/assert";
 
 const groupNotFound = (id: string | number) => () => new NotFoundError(`group with id '${id}' doesn't exist`);
 
 export class GroupsRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	//============================================================================
 

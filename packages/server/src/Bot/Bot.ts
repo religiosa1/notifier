@@ -7,7 +7,8 @@ import { esc } from "src/util/esc";
 import { asyncPool } from "src/util/asyncPool";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 export type { Update };
 
 export class Bot implements IBot {
@@ -16,7 +17,7 @@ export class Bot implements IBot {
 
 	constructor(
 		token: string,
-		private readonly logger: BaseLogger = inject("logger"),
+		private readonly logger: BaseLogger = di.inject("logger"),
 	) {
 		if (!token) {
 			throw new Error("Bot token isn't supplied! (is it defined in env variables?)");

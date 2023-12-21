@@ -2,7 +2,8 @@ import type { Message } from "node-telegram-bot-api";
 import type TelegramBot from "node-telegram-bot-api";
 import type { BaseLogger } from "pino";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 type Shift<T extends any[]> = ((...args: T) => any) extends (arg: any, ...rest: infer R) => any ? R : never;
 
@@ -20,7 +21,7 @@ export class BotCommandContextFactory {
 	constructor(
 		public bot: TelegramBot,
 		public logger: BaseLogger,
-		private readonly usersRepository = inject("UsersRepository"),
+		private readonly usersRepository = di.inject("UsersRepository"),
 	) {}
 
 	async createContext(msg: Message, omitAuth = false): Promise<BotCommandContext> {

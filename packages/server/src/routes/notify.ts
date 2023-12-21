@@ -4,7 +4,8 @@ import { zValidator } from '@hono/zod-validator'
 
 import { channelNameSchema } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { authorizeAnyMethod } from 'src/middleware/authorizeAnyMethod';
 
 const controller = new Hono();
@@ -20,8 +21,8 @@ controller.post("/",
 		message: z.string(),
 	})),
 	async (c) => {
-		const channelsRepository = inject("ChannelsRepository");
-		const bot = inject("Bot").instance;
+		const channelsRepository = di.inject("ChannelsRepository");
+		const bot = di.inject("Bot").instance;
 		if (!bot) {
 			throw new ResultError(503, "Bot isn't initialized");
 		}

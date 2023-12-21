@@ -6,7 +6,8 @@ import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import type { ContextVariables } from 'src/ContextVariables';
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { channelNameSchema } from "@shared/models/Channel";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { groupIdParamSchema } from './models';
 
 const controller = new Hono<{ Variables: ContextVariables }>();
@@ -16,8 +17,8 @@ controller.post(
 	zValidator("param", groupIdParamSchema), 
 	zValidator("json", z.object({ name: channelNameSchema })),
 	async (c) => {
-		const logger = inject("logger");
-		const channelToGroupRelationsRepository = inject("ChannelToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
 		const { groupId } = c.req.valid("param");
 		const { name } = c.req.valid("json");
 
@@ -33,8 +34,8 @@ controller.delete(
 	zValidator("param", groupIdParamSchema),
 	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
 	async (c) => {
-		const logger = inject("logger");
-		const channelToGroupRelationsRepository = inject("ChannelToGroupRelationsRepository");
+		const logger = di.inject("logger");
+		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
 		const { groupId } = c.req.valid("param");
 		const ids = parseIds(c.req.valid("query").id || "");
 		// orphaned user-to-channel relations handled by a db trigger
