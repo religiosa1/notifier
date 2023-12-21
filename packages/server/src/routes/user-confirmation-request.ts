@@ -1,24 +1,24 @@
-import { Hono } from 'hono'
+import { Hono } from "hono";
 import z from "zod";
-import { zValidator } from '@hono/zod-validator'
+import { zValidator } from "@hono/zod-validator";
 
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import type * as UserModel from "@shared/models/User";
 
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { inject } from "src/injection";
-import { authorizeJWT } from 'src/middleware/authorizeJWT';
-import type { Counted } from '@shared/models/Counted';
-import type { BatchOperationStats } from '@shared/models/BatchOperationStats';
-import type { ContextVariables } from 'src/ContextVariables';
+import { authorizeJWT } from "src/middleware/authorizeJWT";
+import type { Counted } from "@shared/models/Counted";
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import type { ContextVariables } from "src/ContextVariables";
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 
 
 controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
-	const userConfirmationRequestsRepository = inject('UserConfirmationRequestsRepository');
-	const query = c.req.valid('query');
+	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
+	const query = c.req.valid("query");
 	const { skip, take } = { ...paginationDefaults, ...query };
 	const [ data, count ] = await userConfirmationRequestsRepository.listConfirmationRequests({ skip, take });
 
@@ -29,10 +29,10 @@ controller.get("/", zValidator("query", pageinationQuerySchema), async (c) => {
 })
 
 controller.put("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
-	const userConfirmationRequestsRepository = inject('UserConfirmationRequestsRepository');
-	const logger = inject('logger');
+	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
+	const logger = inject("logger");
 
-	const query = c.req.valid('query');
+	const query = c.req.valid("query");
 	const ids = parseIds(query.id);
 	const count = await userConfirmationRequestsRepository.acceptConfirmationRequests(ids);
 
@@ -45,10 +45,10 @@ controller.put("/", zValidator("query", z.object({ id: batchIdsSchema })), async
 });
 
 controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async (c) => {
-	const userConfirmationRequestsRepository = inject('UserConfirmationRequestsRepository');
-	const logger = inject('logger');
+	const userConfirmationRequestsRepository = inject("UserConfirmationRequestsRepository");
+	const logger = inject("logger");
 
-	const query = c.req.valid('query');
+	const query = c.req.valid("query");
 	const ids = parseIds(query.id);
 
 	const count = await userConfirmationRequestsRepository.declineConfirmationRequests(ids);

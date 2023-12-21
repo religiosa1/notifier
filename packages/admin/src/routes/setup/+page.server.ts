@@ -29,7 +29,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		try {
 			const data = getFormData(formData, setupFormSchema);
-			await fetch(serverUrl("/settings"), {
+			await fetch(serverUrl("/settings/setup"), {
 				method: "PUT",
 				body: JSON.stringify(data),
 			}).then(unwrapResult<ServerConfig>);
@@ -44,7 +44,7 @@ export const actions: Actions = {
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();
 		const databaseUrl = formData.get("databaseUrl");
-		var isDbOk = await fetch(serverUrl("/test-database-configuration"), {
+		var isDbOk = await fetch(serverUrl("/settings/test-database-configuration"), {
 			method: "POST",
 			body: JSON.stringify({ databaseUrl }),
 		}).then(unwrapResult<ServerConfig>);

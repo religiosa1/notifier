@@ -11,7 +11,7 @@ import { authorizeJWT } from 'src/middleware/authorizeJWT';
 const controller = new Hono();
 
 controller.get(
-	"/settings",
+	"/",
 	authorizeJWT,
 	async (c) => {
 		const settingsService = inject("SettingsService");
@@ -24,7 +24,7 @@ controller.get(
 );
 
 controller.put(
-	"/settings", 
+	"/", 
 	authorizeJWT, 
 	zValidator("json", serverConfigSchema), 
 	async (c) => {
@@ -36,6 +36,7 @@ controller.put(
 	}
 );
 
+// TODO do we even need this route?..
 // NO AUTH FOR THE INITIAL SETUP
 controller.put("/setup", zValidator("json", serverConfigSchema), async (c) => {
 	const settingsService = inject("SettingsService");

@@ -1,7 +1,6 @@
 import { AppListenService } from "src/services/AppListenService";
 import { SettingsService } from "src/services/SettingsService";
 import pino, { type BaseLogger } from "pino";
-import type { IBot } from "src/Bot/Models";
 import { DatabaseConnectionManager } from "src/db/DatabaseConnectionManager";
 import { GroupsRepository } from "src/repositories/GroupsRepository";
 import { UserToGroupRelationsRepository } from "src/repositories/UserToGroupRelationsRepository";
@@ -11,12 +10,13 @@ import { ChannelsRepository } from "src/repositories/ChannelsRepository";
 import { ChannelToGroupRelationsRepository } from "src/repositories/ChannelToGroupRelationsRepository";
 import { UserConfirmationRequestsRepository } from "src/repositories/UserConfirmationRequestsRepository";
 import { UserToChannelRelationsRepository } from "src/repositories/UserToChannelRelationsRepository";
+import { BotService } from "./services/BotService";
 
 export const container = {
 	SettingsService: undefined as unknown as SettingsService,
 	AppListenService: new AppListenService(),
 	logger: pino({ level: 'info' }) as BaseLogger,
-	Bot: undefined as IBot | undefined,
+	Bot: undefined as unknown as BotService,
 	db: undefined as unknown as DatabaseConnectionManager,
 	GroupsRepository: undefined as unknown as GroupsRepository,
 	UsersRepository: undefined as unknown as UsersRepository,
@@ -39,6 +39,7 @@ container.ApiKeysRepository = new ApiKeysRepository();
 container.ChannelsRepository = new ChannelsRepository();
 container.ChannelToGroupRelationsRepository = new ChannelToGroupRelationsRepository();
 container.UserToChannelRelationsRepository = new UserToChannelRelationsRepository();
+container.Bot = new BotService();
 
 export function inject<TItem extends keyof Container>(key: TItem): Container[TItem] {
 	if (!(key in container)) {

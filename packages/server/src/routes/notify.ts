@@ -21,7 +21,7 @@ controller.post("/",
 	})),
 	async (c) => {
 		const channelsRepository = inject("ChannelsRepository");
-		const bot = inject("Bot");
+		const bot = inject("Bot").instance;
 		if (!bot) {
 			throw new ResultError(503, "Bot isn't initialized");
 		}

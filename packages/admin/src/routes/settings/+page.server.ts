@@ -40,7 +40,7 @@ export const actions: Actions = {
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();
 		const databaseUrl = formData.get("databaseUrl");
-		var isDbOk = await fetch(serverUrl("/test-database-configuration"), {
+		var isDbOk = await fetch(serverUrl("/settings/test-database-configuration"), {
 			method: "POST",
 			body: JSON.stringify({ databaseUrl }),
 		}).then(unwrapResult<ServerConfig>);
