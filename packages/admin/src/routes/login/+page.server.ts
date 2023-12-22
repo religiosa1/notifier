@@ -28,9 +28,8 @@ export const actions: Actions = {
       console.error("Login error", e);
       return handleActionFailure(e, { name });
     }
-
     if (!hasField(serverData, "token", "string")) {
-      throw fail(500, { error: "Bad server response, missing `token` field." });
+      return fail(500, { error: "Bad server response, missing `token` field." });
     }
     cookies.set("Authorization", `Bearer ${serverData.token}`);
     throw redirect(303, url.searchParams.get("referer") || "/");

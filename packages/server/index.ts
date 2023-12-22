@@ -9,6 +9,7 @@ import { di } from "src/injection";
 import { ResultError } from "@shared/models/Result";
 import { checkSettings } from "src/middleware/checkSettings";
 import { responseHandler } from "src/middleware/responseHandler";
+import { logger } from "src/middleware/logger";
 
 import settings from "src/routes/settings";
 import usersController from "src/routes/users";
@@ -23,14 +24,15 @@ const port = Number(process.env.PORT) || 8085;
 const settingsService = di.inject("SettingsService");
 
 const app = new Hono();
-
 app.onError((err) => {
+	di.inject("logger").error(err);
 	const resultError = ResultError.from(err);
 	return  new Response(resultError.toJson(), {
 		status: resultError.statusCode,
-		headers: { "Content-Type": "application/json" }
+		headers: { "Content-Type": "application/json; charset=UTF-8" }
 	});
 });
+app.use("*", logger);
 app.use("*", responseHandler);
 app.use("*", checkSettings);
 app.route("/settings", settings);

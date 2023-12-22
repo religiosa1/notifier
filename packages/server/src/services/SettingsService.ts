@@ -1,5 +1,5 @@
 import { join } from "path";
-import { writeFile, readFile, access, constants } from "fs/promises";
+import { writeFile, readFile, access, constants, unlink } from "fs/promises";
 import { stripComments } from "jsonc-parser";
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
 import { Emitter } from "src/util/Emitter";
@@ -67,7 +67,7 @@ export class SettingsService {
 		serverConfigSchema.parse(config);
 		const isDbOk = await this.databaseConfigurator.checkConnectionString(config.databaseUrl);
 		if (!isDbOk) {
-			throw new ResultError(400, "Cannot connect to the DB with the provided 'databaseUrl' string");
+			throw new ResultError(422, "Cannot connect to the DB with the provided 'databaseUrl' string");
 		}
 		try {
 			await this.disposerLock.wait();
@@ -81,6 +81,11 @@ export class SettingsService {
 
 	testConfigsDatabaseConnection(connectionString: string): Promise<boolean> {
 		return this.databaseConfigurator.checkConnectionString(connectionString);
+	}
+
+	async removeConfig(): Promise<void> {
+		await unlink(this.getConfigFileName());
+		this.config = undefined;
 	}
 
 	subscribe(

@@ -21,6 +21,7 @@ export type SettingsFormData = z.infer<typeof settingsFormDataSchema>;
 
 /** ServerSetup request schema */
 export const setupFormSchema = settingsFormDataSchema.extend({
-	password: passwordSchema
+	password: passwordSchema,
+	migrate: z.boolean().optional(),
 });
 export type SetupForm = z.infer<typeof setupFormSchema>;

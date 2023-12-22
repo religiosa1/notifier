@@ -3,7 +3,7 @@ import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import type { Actions, PageServerLoad } from "./$types";
 
 import { generateJwtSecret } from "~/helpers/generateJwtSecret";
-import { fail, redirect } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
 
@@ -39,7 +39,7 @@ export const actions: Actions = {
 
 		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
 
-		throw redirect(303, "/");
+		throw redirect(303, "/login?referer=%2F");
 	},
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();
@@ -49,7 +49,7 @@ export const actions: Actions = {
 			body: JSON.stringify({ databaseUrl }),
 		}).then(unwrapResult<ServerConfig>);
 		if (!isDbOk) {
-			return fail(400, { ...Object.fromEntries(formData), isDatabaseUrlOk: false })
+			return { ...Object.fromEntries(formData), isDatabaseUrlOk: false };
 		}
 		const retobj = {
 			...Object.fromEntries(formData),

@@ -3,7 +3,7 @@ import z from "zod";
 import { zValidator } from '@hono/zod-validator'
 
 import { ResultError } from "@shared/models/Result";
-import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
+import { serverConfigSchema, type ServerConfig, setupFormSchema } from "@shared/models/ServerConfig";
 import { di } from "src/injection";
 
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
@@ -37,21 +37,37 @@ controller.put(
 	}
 );
 
-// TODO do we even need this route?..
 // NO AUTH FOR THE INITIAL SETUP
-controller.put("/setup", zValidator("json", serverConfigSchema), async (c) => {
-	const settingsService = di.inject("SettingsService");
-	const config = settingsService.getConfig();
-	const body = c.req.valid("json");
-	if (config) {
-		throw new ResultError(410, "Server has already been configured.");
+controller.put(
+	"/setup", 
+	zValidator("json", setupFormSchema), 
+	async (c) => {
+		const settingsService = di.inject("SettingsService");
+		const config = settingsService.getConfig();
+		const dbMigrator = di.inject("DatabaseMigrator");
+
+		const body = c.req.valid("json");
+		if (config) {
+			throw new ResultError(410, "Server has already been configured.");
+		}
+
+		const { migrate, password, ...configData } = body;
+
+		await settingsService.setConfig(configData);
+		if (migrate) {
+			try {
+				await dbMigrator.migrate();
+				await dbMigrator.seed(password ?? "");
+			} catch (e) {
+				// if we failed to migrate DB, then reverting our saved config back
+				await settingsService.removeConfig();
+				throw e;
+			}
+		}
+
+		return c.json(null);
 	}
-	await settingsService.setConfig(body);
-
-	// TODO: database connection, seeding, bot connection etc.
-
-	return c.json(null);
-});
+);
 
 controller.post("/test-database-configuration", zValidator("json", z.object({
 	databaseUrl: z.string()

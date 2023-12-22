@@ -51,6 +51,11 @@ export class ResultError extends Error {
     const e = new ResultError();
     if (err instanceof ResultError) {
       Object.assign(e, err);
+      // need to do that separately, as it comes from the proto
+      e.message = err.message;
+      if ("cause" in err) {
+        e.details = err.cause;
+      } 
     } else if (err instanceof Error) {
       e.error = err.name;
       e.message = err.message;

@@ -3,18 +3,19 @@ import z from "zod";
 // TODO: Correct type?
 type ZodObjectType = any;
 
+type FormDataTransformers<TSchema extends z.AnyZodObject> = {
+	[k in keyof TSchema['shape']]?: (
+		value: FormDataEntryValue[],
+		key: TSchema['shape'],
+		schema: TSchema,
+		formData: FormData,
+	) => unknown
+}
+
 export function getFormData<T extends z.AnyZodObject>(
 	formData: FormData,
 	schema: T,
-	transformers?: Partial<Record<
-		keyof T['shape'],
-		(
-			value: FormDataEntryValue[],
-			key: T['shape'],
-			schema: T,
-			formData: FormData,
-		) => unknown
-	>>
+	transformers?: FormDataTransformers<T>
 ): z.infer<T> {
 	const formDataData: Record<string, FormDataEntryValue[]>= Object.fromEntries(
 			Array.from(formData.keys(), (key) => {
@@ -89,6 +90,8 @@ function coerceSimple(typeName: z.ZodFirstPartyTypeKind, value: unknown) {
 		case z.ZodFirstPartyTypeKind.ZodNativeEnum:
 		case z.ZodFirstPartyTypeKind.ZodNumber:
 			return Number(value);
+		case z.ZodFirstPartyTypeKind.ZodBoolean:
+			return value === "on";
 		default:
 			return value;
 	}

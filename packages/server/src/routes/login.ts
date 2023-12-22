@@ -38,7 +38,7 @@ controller.post(
 			throw new ResultError(403, "You don't have required permissions");
 		}
 		const payload = tokenPayloadSchema.omit({ iat: true, exp: true }).parse(user);
-		const token = sign(payload, jwtSecret, "HS256");
+		const token = await sign(payload, jwtSecret, "HS256");
 
 		return c.json({ token, user });
 	}
