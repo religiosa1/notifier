@@ -1,11 +1,14 @@
-import { fail, type ActionFailure, error } from "@sveltejs/kit";
+import { fail, type ActionFailure, error, isRedirect, type NumericRange } from "@sveltejs/kit";
 import { ZodError, type ZodIssue } from "zod";
 import type { Result, ResultFailure } from '~/models/Result';
 import { isResultErrorLike } from '~/models/Result';
-import { hasField } from "./hasField";
 
 export function handleLoadError(err: unknown): never {
-  throw error(getStatusCode(err), isServerErrorLike(err) ? err.toJson() : JSON.stringify(err));
+  let statusCode = getStatusCode(err);
+  if (!Number.isInteger(statusCode) || statusCode < 400 || statusCode >= 600) {
+    statusCode = 500;
+  }
+  error(statusCode as NumericRange<400, 599>, isServerErrorLike(err) ? err.toJson() : JSON.stringify(err));
 }
 
 // TODO return a tuple from all unwraps and fail the action
@@ -82,8 +85,7 @@ export function handleActionFailure<T extends Record<string, unknown>>(
   const statusCode = getStatusCode(e);
 
   let errorData: { error: string, errorDetails: string };
-  // redirect check
-  if (hasField(e, "status", "number") && e.status >= 300 && e.status < 400 && hasField(e, "location", "string")) {
+  if (isRedirect(e)) {
     throw e;
   }
   if (isServerErrorLike(e)) {

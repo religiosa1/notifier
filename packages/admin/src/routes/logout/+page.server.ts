@@ -4,7 +4,7 @@ import type { Actions } from "./$types";
 
 export const actions: Actions = {
   async default({ cookies }) {
-    cookies.delete("Authorization");
-    throw redirect(303, base + "/login");
+    cookies.delete("Authorization", { path: "/" });
+    redirect(303, base + "/login");
   }
 };

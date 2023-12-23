@@ -10,7 +10,7 @@ import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/mode
 export const load: PageServerLoad = async ({ fetch }) => {
 	const serverSettings = await fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => undefined);
 	if (serverSettings) {
-		throw redirect(303, "/settings");
+		redirect(303, "/settings");
 	}
 
 	const settings: Partial<SetupForm> = {
@@ -39,7 +39,7 @@ export const actions: Actions = {
 
 		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
 
-		throw redirect(303, "/login?referer=%2F");
+		redirect(303, "/login?referer=%2F");
 	},
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();

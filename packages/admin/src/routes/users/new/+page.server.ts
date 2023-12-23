@@ -51,6 +51,6 @@ export const actions: Actions = {
 				createdUser: serverData,
 			} as const;
 		}
-		throw redirect(303, base + uri`/users/${serverData.id}`);
+		redirect(303, base + uri`/users/${serverData.id}`);
 	},
 };

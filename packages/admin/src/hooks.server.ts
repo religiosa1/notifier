@@ -22,10 +22,10 @@ export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
 		// Special status code for uninitialized server
 		if (r.status === 550) {
 			// TODO reset global_hasValidServerSettings if this happened
-			throw redirect(303, base + uri`/setup`);
+			redirect(303, base + uri`/setup`);
 		}
 		if (r.status === 403 || r.status === 401) {
-			throw redirect(303, base + uri`/login?referer=${event.url.pathname}`);
+			redirect(303, base + uri`/login?referer=${event.url.pathname}`);
 		}
 		return r;
 	});

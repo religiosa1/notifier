@@ -17,7 +17,7 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 		}
 		const settingsResponse = await fetch(serverUrl('/settings'));
 		if (settingsResponse.status === 550) {
-			throw redirect(303, base + `/setup`);
+			redirect(303, base + `/setup`);
 		} else if (settingsResponse.ok || settingsResponse.status === 401) {
 			// 401 means that the user wasn't unauthorized, but this error can only be thrown
 			// if server has been initialized with a config
@@ -29,7 +29,7 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 		if (url.pathname === "/login") {
 			return {};
 		} else {
-			throw redirect(303, base + uri`/login?referer=${url.pathname}`);
+			redirect(303, base + uri`/login?referer=${url.pathname}`);
 		}
 	}
 	const tokenPayload = decodeJWT(auth);
