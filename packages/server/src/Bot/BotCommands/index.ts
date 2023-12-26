@@ -1,1 +1,0 @@
-export { botCommands } from "./botCommands";

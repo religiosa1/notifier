@@ -2,9 +2,8 @@ import * as ApiKeyService from "src/services/ApiKey";
 import { BotCommand } from "./BotCommand";
 import { di } from "src/injection";
 
-
 /** Available bot commands */
-export const botCommands: BotCommand[] = [
+export const botCommands: readonly BotCommand[] = Object.freeze([
 	new BotCommand(
 		"start",
 		"",
@@ -140,7 +139,7 @@ export const botCommands: BotCommand[] = [
 		[],
 		{ noAuth: true }
 	),
-];
+]);
 
 function listMessage(prefix: string, items: string[], elseMsg: string): string {
 	if (!items.length) {

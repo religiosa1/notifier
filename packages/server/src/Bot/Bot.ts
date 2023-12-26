@@ -6,7 +6,7 @@ import { di } from "src/injection";
 import { asyncPool } from "src/util/asyncPool";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
-import { botCommands } from "./BotCommands";
+import { botCommands } from "./BotCommands/botCommands";
 
 export type { Update };
 
@@ -24,7 +24,8 @@ export class Bot implements IBot {
 		this.bot = new TelegramBot(token);
 		this.#commandContextFactory = new BotCommandContextFactory(this.bot, logger);
 
-		botCommands.forEach(command => {
+		logger.info("Available bot commands %s", botCommands);
+		for (const command of botCommands) {
 			this.bot.onText(
 				command.pattern,
 				async (msg, match) => {
@@ -44,9 +45,8 @@ export class Bot implements IBot {
 					}
 				},
 			);
-		});
+		};
 		logger.info(`Telegram bot initialized with token ${token}`);
-		logger.info("Available bot commands", botCommands);
 	}
 
 	async [Symbol.asyncDispose]() {
