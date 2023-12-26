@@ -12,6 +12,7 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 	const auth = cookies.get("Authorization");
 
 	if (!global_hasValidServerSettings) {
+		console.log("NO SETTINGS AVAILABLE", url.pathname === "/setup", url.pathname);
 		if (url.pathname === "/setup") {
 			return;
 		}

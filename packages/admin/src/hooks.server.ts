@@ -18,7 +18,7 @@ export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
 		// Special status code for uninitialized server
 		if (r.status === 550) {
 			// TODO reset global_hasValidServerSettings if this happened
-			redirect(303, base + uri`/setup`);
+			redirect(303, base + '/setup');
 		}
 		if (event.url.pathname !== "/login" && r.status === 403 || r.status === 401) {
 			event.cookies.delete("Authorization", { path: "/"});
