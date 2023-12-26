@@ -32,8 +32,11 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 			redirect(303, base + uri`/login?referer=${url.pathname}`);
 		}
 	}
-	const tokenPayload = decodeJWT(auth);
-	return {
-		user: tokenPayload,
-	};
+	try {
+		const tokenPayload = decodeJWT(auth);
+		return { user: tokenPayload };
+	} catch {
+		cookies.delete("Authorization", { path: "/" });
+		redirect(303, base + uri`/login?referer=${url.pathname}`);
+	}
 }

@@ -8,7 +8,9 @@ import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
 import { di } from "src/injection";
 
-import { sign } from 'hono/jwt'
+import { sign } from 'hono/jwt';
+
+const EXPIRATION_DURATION_S = 3 * 24 * 60 * 60;
 
 const controller = new Hono();
 
@@ -38,7 +40,12 @@ controller.post(
 			throw new ResultError(403, "You don't have required permissions");
 		}
 		const payload = tokenPayloadSchema.omit({ iat: true, exp: true }).parse(user);
-		const token = await sign(payload, jwtSecret, "HS256");
+		const iat = Date.now() / 1000;
+		const token = await sign({
+			...payload,
+			iat,
+			exp: iat + EXPIRATION_DURATION_S,
+		}, jwtSecret, "HS256");
 
 		return c.json({ token, user });
 	}

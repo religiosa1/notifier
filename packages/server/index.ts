@@ -49,7 +49,5 @@ settingsService.loadConfig().then(() => {
 		console.log(`App is listening on http://${info.address}:${info.port}/`);
 		const appListenService = di.inject("AppListenService");
 		appListenService.listen();
-	}).on("close", () => {
-		console.log("App is closed");
 	});
 });

@@ -5,6 +5,9 @@ import { isResultErrorLike } from '~/models/Result';
 
 export function handleLoadError(err: unknown): never {
   let statusCode = getStatusCode(err);
+  if (isRedirect(err)) {
+    throw err;
+  }
   if (!Number.isInteger(statusCode) || statusCode < 400 || statusCode >= 600) {
     statusCode = 500;
   }
