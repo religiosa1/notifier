@@ -13,7 +13,7 @@ export class AppListenService {
 		const defer = Promise.withResolvers<void>();
 		this.listen = (info: ListenInfo) => {
 			logger.info(`App is listening on http://${info.address}:${info.port}/`);
-			defer.resolve;
+			defer.resolve();
 		};
 		this.#prms = defer.promise;
 	}
