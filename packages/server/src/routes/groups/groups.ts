@@ -97,9 +97,8 @@ controller.get(
 	zValidator("param", groupIdParamSchema, paramErrorHook), 
 	async(c) => {
 		const groupsRepository = di.inject("GroupsRepository");
-
 		const {groupId: id} = c.req.valid("param");
-		const group = await groupsRepository.getGroupDetail(id);
+		const group = await groupsRepository.getGroupDetail(parseInt(id));
 		return c.json(group satisfies GroupModel.GroupDetail);
 	}
 );

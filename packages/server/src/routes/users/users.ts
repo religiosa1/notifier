@@ -70,6 +70,19 @@ controller.delete(
 );
 
 controller.get(
+	"/search",
+	zValidator("query",  z.object({
+		name: z.string().optional(),
+		group: z.string().refine(...intGt(0)).transform(toInt).optional(),
+	}), validationErrorHook),
+	async (c) => {
+		const { name, group } = c.req.valid("query");
+		const users = await usersRepository.searchUsers({ name, groupId: group });
+		return c.json(users satisfies UserModel.User[]);
+	} 
+);
+
+controller.get(
 	"/:userId",
 	zValidator("param", userIdParamsSchema, paramErrorHook),
 	async (c) => {
@@ -105,19 +118,6 @@ controller.delete(
 		logger.info(`User ${userId} delete by ${c.get("user").id}-${c.get("user").name}`);
 		return c.json(null);
 	}
-);
-
-controller.get(
-	"/search",
-	zValidator("query",  z.object({
-		name: z.string().optional(),
-		group: z.string().refine(...intGt(0)).transform(toInt).optional(),
-	}), validationErrorHook),
-	async (c) => {
-		const { name, group } = c.req.valid("query");
-		const users = await usersRepository.searchUsers({ name, groupId: group });
-		return c.json(users satisfies UserModel.User[]);
-	} 
 );
 
 export default controller;
