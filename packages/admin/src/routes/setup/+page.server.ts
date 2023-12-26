@@ -8,7 +8,9 @@ import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
 
 export const load: PageServerLoad = async ({ fetch }) => {
-	const serverSettings = await fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => undefined);
+	const serverSettings = await fetch(serverUrl("/settings"))
+		.then(unwrapResult<ServerConfig>)
+		.catch(() => undefined); // FIXME
 	if (serverSettings) {
 		redirect(303, "/settings");
 	}

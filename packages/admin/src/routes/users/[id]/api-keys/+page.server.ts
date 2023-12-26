@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
-import { handleLoadError, unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
+import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
 import type { UserDetail } from "@shared/models/User";
 import type { Counted } from "@shared/models/Counted";
@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ fetch, url, params}) => {
 			.then(unwrapResult) as Promise<UserDetail>,
 		fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/api-keys`)))
 			.then(unwrapResult) as Promise<Counted<ApiKeyPreview[]>>,
-	]).catch(handleLoadError);
+	]);
 
 	return {
 		user,
@@ -37,10 +37,10 @@ export const actions: Actions = {
 			return fail(422, { error: "Prefix field must be present" });
 		}
 		try {
-			const resposnse = (await fetch(serverUrl(uri`/users/${userId}/api-keys/${prefix}`), {
+			const resposnse = await fetch(serverUrl(uri`/users/${userId}/api-keys/${prefix}`), {
 				method: "DELETE",
 				body: JSON.stringify({}),
-			}).then(unwrapResult)) as UserDetail;
+			}).then(unwrapResult<UserDetail>);
 			return resposnse;
 		} catch (err) {
 			return handleActionFailure(err);
@@ -49,10 +49,10 @@ export const actions: Actions = {
 	deleteAll: async ({ params, fetch}) => {
 		const userId = params.id;
 		try {
-			const resposnse = (await fetch(serverUrl(uri`/users/${userId}/api-keys`), {
+			const resposnse = await fetch(serverUrl(uri`/users/${userId}/api-keys`), {
 				method: "DELETE",
 				body: JSON.stringify({}),
-			}).then(unwrapResult)) as UserDetail;
+			}).then(unwrapResult<UserDetail>);
 			return resposnse;
 		} catch (err) {
 			return handleActionFailure(err);
@@ -61,13 +61,12 @@ export const actions: Actions = {
 	add: async ({ params, fetch }) => {
 		const userId = params.id;
 		try {
-			const resposnse = (await fetch(serverUrl(uri`/users/${userId}/api-keys`), {
+			const resposnse = await fetch(serverUrl(uri`/users/${userId}/api-keys`), {
 				method: "POST",
 				body: JSON.stringify({}),
-			}).then(unwrapResult)) as UserDetail;
+			}).then(unwrapResult<UserDetail>);
 			return resposnse;
 		} catch (err) {
-			console.error("Adding an API-key error", err);
 			return handleActionFailure(err);
 		}
 	}

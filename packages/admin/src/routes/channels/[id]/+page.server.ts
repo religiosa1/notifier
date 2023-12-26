@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
-import { handleLoadError, unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
+import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import type { ChannelDetail } from "@shared/models/Channel";
 import { uri } from "~/helpers/uri";
 import { batchDelete } from '~/actions/batchDelete';
@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 	const [channel, groups] = await Promise.all([
 		fetch(serverUrl(uri`/channels/${params.id}`)).then(unwrapResult<ChannelDetail>),
 		fetch(serverUrl('/groups/search')).then(unwrapResult<Group[]>),
-	]).catch(handleLoadError);
+	]);
 
 	return {
 		channel,

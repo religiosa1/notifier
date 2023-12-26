@@ -1,10 +1,27 @@
-<script>
+<script lang="ts">
 	import { page } from '$app/stores';
 	import Panel from '~/components/Panel.svelte';
+	import { isResultErrorLike } from '~/models/Result';
+
+	$: details = extractDetaild($page.error?.message);
+
+	function extractDetaild(error: unknown) {
+		if (typeof error !== "string") {
+			return;
+		}
+		try {
+			const details = JSON.parse(error);
+			if (details.body && typeof details.body === "object" && isResultErrorLike(details.body)) {
+				return details.body;
+			}
+		} catch {
+			return;
+		}
+	}
 </script>
 
-<h1>{$page.status}: {$page.error?.message}</h1>
+<h1>{$page.status}: {details?.error ?? $page.error?.message}</h1>
 
 <Panel style="error">
-	<pre>{JSON.stringify($page.error, undefined, 2)}</pre>
+	<pre>{JSON.stringify(details ?? $page.error, undefined, 2)}</pre>
 </Panel>

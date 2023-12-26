@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { unwrapResult, handleActionFailure, unwrapValidationError, handleLoadError } from "~/helpers/unwrapResult";
+import { unwrapResult, handleActionFailure, unwrapValidationError } from "~/helpers/unwrapResult";
 import { uri } from "~/helpers/uri";
 import { passwordSchema, userCreateSchema, type UserDetail } from "@shared/models/User";
 import { redirect } from "@sveltejs/kit";
@@ -10,8 +10,7 @@ import { serverUrl } from "~/helpers/serverUrl";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	const groups = await fetch(serverUrl(uri`/groups/search`))
-		.then(unwrapResult<Group[]>)
-		.catch(handleLoadError);
+		.then(unwrapResult<Group[]>);
 
 	return {
 		groups,

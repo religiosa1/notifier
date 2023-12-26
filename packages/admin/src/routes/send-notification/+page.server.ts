@@ -1,12 +1,11 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { unwrapResult, handleActionFailure, handleLoadError } from "~/helpers/unwrapResult";
+import { unwrapResult, handleActionFailure } from "~/helpers/unwrapResult";
 import { channelNameSchema, type Channel } from "@shared/models/Channel";
 import { serverUrl } from "~/helpers/serverUrl";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	const channels = await fetch(serverUrl("/channels/search"))
-		.then(unwrapResult<Channel[]>)
-		.catch(handleLoadError);
+		.then(unwrapResult<Channel[]>);
 
 	return {
 		channels,

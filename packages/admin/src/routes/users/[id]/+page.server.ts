@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { fail } from "@sveltejs/kit";
 import { passwordSchema, userUpdateSchema, type UserDetail } from "@shared/models/User";
-import { handleActionFailure, handleLoadError, unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
+import { handleActionFailure, unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import { uri } from "~/helpers/uri";
 import { getFormData } from "~/helpers/getFormData";
 import { serverUrl } from "~/helpers/serverUrl";
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 	const [user, groups] = await Promise.all([
 		 fetch(serverUrl(uri`/users/${params.id}`)).then(unwrapResult<UserDetail>),
 		 fetch(serverUrl(uri`/groups/search?user=${params.id}`)).then(unwrapResult<Group[]>),
-	]).catch(handleLoadError);
+	]);
 
 	return {
 		user,
