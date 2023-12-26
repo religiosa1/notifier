@@ -1,19 +1,22 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { applyAction, enhance } from '$app/forms';
 	import type { PageData, ActionData } from "./$types";
-	import ErrorPanel from "~/components/ErrorPanel.svelte";
+	import FormResultPanel from '~/components/FormResultPanel.svelte';
 	import PasswordInput from "~/components/PasswordInput.svelte";
 	import SettingsForm from "~/components/SettingsForm.svelte";
+	import Spinner from '~/components/Spinner.svelte';
 
 	export let data: PageData;
-	export let form: ActionData;
+	export let form: ActionData;	
 
-	let migrate = true;
-
-	let settings = {
+	$: settings = {
 		...data?.settings,
 		...(form ?? {}),
 	};
+
+	let submitingAction: "testDb" | "default" | undefined;
+
+	let migrate = true
 </script>
 
 <h2>Setup</h2>
@@ -34,10 +37,17 @@
 	<code>config.json</code> in the root folder of the server.
 </p>
 
-<ErrorPanel action={settings} />
-
-<form method="POST" action="?/save" use:enhance>
-	<SettingsForm data={settings} />
+<FormResultPanel {form} />
+<form method="POST" action="?/save" use:enhance={
+	({action}) => {
+		submitingAction = action.search.includes("testDbConfiguration") ? "testDb" : "default";
+		return ({ result }) => {
+			submitingAction = undefined;
+			applyAction(result);
+		}
+	}
+}>
+	<SettingsForm testingDb={submitingAction === "testDb"} data={settings} />
 	<div class="input-group">
 		<label class="form-input" for={undefined}>
 			<span class="form-label">
@@ -46,8 +56,8 @@
 			</span>
 			<small>
 				If this option is checked, the required database structure will be created
-				and it will be populated with the necessary data. Uncheck it only if you
-				know what you're doing.
+				and it will be populated with the necessary data. <br />
+				Uncheck it only if you have previous notifier DB initialized and you know what you're doing.
 			</small>
 		</label>
 	</div>
@@ -63,12 +73,16 @@
 				value="1234567"
 			/>
 			<small>
-				Your admin account password. It's 12342567 by default, you can change it now or later.
+				Your admin account password that will be used during the migration. <br />
+				It's 12342567 by default, you can change it now or later.
 			</small>
 		</label>
 	</div>
 
 	<div class="input-group">
-		<button class="button">Save</button>
+		<button disabled={!!submitingAction} class="button">Save</button>
+		{#if submitingAction === "default"}
+			<Spinner />
+		{/if}
 	</div>
 </form>

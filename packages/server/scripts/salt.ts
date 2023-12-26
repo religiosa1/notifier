@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /** Script for manually generating passwords for API keys */
 import readline from "readline";
-import { hash } from "src/Authorization/hash";
+import { hashPassword } from "src/services/hash";
 import { Writable } from "stream";
 
 class MutableStdout extends Writable {
@@ -29,7 +29,7 @@ const rl = readline.createInterface({
 
 rl.question('Enter the password: ', (pwd) => {
 	mtstdout.muted = false;
-	hash(pwd).then((salted) => {
+	hashPassword(pwd).then((salted) => {
 		rl.write(salted)
 		rl.close();
 	});

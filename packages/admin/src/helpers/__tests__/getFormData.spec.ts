@@ -10,13 +10,32 @@ describe("getFormData", () => {
   const schema = z.object({
     foo: z.string(),
     bar: z.number(),
-  })
+  });
   // TODO what about files in formData?..
   it("parses supplied formData by the schema, autocoercing numbers", () => {
     const result = getFormData(formData, schema);
     expect(result).toEqual({
       foo: "qwerty",
       bar: 123,
+    });
+  });
+
+  it("parses booleans from checkboxes", () => {
+    const schema = z.object({
+      testTruthy: z.boolean({ coerce: true }),
+      testTruthyOptional: z.boolean({ coerce: true }).optional(),
+      testFalsy: z.boolean({ coerce: true }),
+      testFalsyOptional: z.boolean({ coerce: true }).optional(),
+    });
+    const formData = new FormData();
+    formData.set("testTruthy", "on");
+    formData.set("testTruthyOptional", "on");
+    const result = getFormData(formData, schema);
+    expect(result).toEqual({
+      testTruthy: true,
+      testTruthyOptional: true,
+      testFalsy: false,
+      testFalsyOptional: undefined,
     });
   });
 

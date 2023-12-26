@@ -1,16 +1,13 @@
 #!/usr/bin/env tsx
-import { drizzle } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
-import postgres from "postgres";
+import "../src/polyfill";
 
-import { databaseUrl } from "../config.json";
+import { DatabaseMigrator } from "src/db/DatabaseMigrator";
+import { ConsoleLogger } from "src/services/ConsoleLogger";
+import { SettingsService } from "src/services/SettingsService";
 
-const sql = postgres(databaseUrl, { max: 1 })
-const db = drizzle(sql);
+const dataBaseMigrator = new DatabaseMigrator(
+	new SettingsService(),
+	new ConsoleLogger(),
+)
 
-async function main() {
-	await migrate(db, { migrationsFolder: "drizzle" });
-}
-main()
-	.then(() => { process.exit() })
-	.catch(() => { process.exit(1) })
+dataBaseMigrator.migrate();

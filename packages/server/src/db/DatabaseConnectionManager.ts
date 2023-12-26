@@ -1,11 +1,12 @@
-import { PreparedQuery } from 'drizzle-orm/pg-core';
-import { drizzle, PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import { DatabaseNotReady } from 'src/error/DatabaseNotReady';
-import { inject } from 'src/injection';
-import { Emitter } from 'src/util/Emitter';
+import { PreparedQuery } from "drizzle-orm/pg-core";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { DatabaseNotReady } from "src/error/DatabaseNotReady";
+import { di } from "src/injection";
+
+import { Emitter } from "src/util/Emitter";
 import * as schema from "./schema";
-import { assert } from 'src/util/assert';
+import { assert } from "src/util/assert";
 
 export class DatabaseConnectionManager {
 	private dispose: () => void;
@@ -26,7 +27,7 @@ export class DatabaseConnectionManager {
 	}
 
 	constructor() {
-		const settingsService = inject("SettingsService")
+		const settingsService = di.inject("SettingsService")
 		this.dispose = settingsService.subscribe(async (config) => {
 			if (this.#connection || this.#postgresConnection) {
 				await this.#postgresConnection?.end({ timeout: 20 });
@@ -37,7 +38,7 @@ export class DatabaseConnectionManager {
 				this.#postgresConnection = postgres(databaseUrl);
 				this.connection = databaseUrl ? drizzle(this.#postgresConnection, { schema }) : undefined;
 			} catch(e) {
-				const logger = inject("logger");
+				const logger = di.inject("logger");
 				logger.error("Unable to connect to DB", e);
 				this.connection = undefined;
 				this.#postgresConnection = undefined;

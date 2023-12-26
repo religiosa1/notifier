@@ -1,91 +1,84 @@
-import fp from "fastify-plugin";
+import { Hono } from 'hono'
 import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { ResultError, result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { serverConfigSchema } from "@shared/models/ServerConfig";
-import { inject } from "src/injection";
+import { zValidator } from '@hono/zod-validator'
+import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
+
+import { ResultError } from "@shared/models/Result";
+import { serverConfigSchema, type ServerConfig, setupFormSchema } from "@shared/models/ServerConfig";
+import { di } from "src/injection";
+
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
 
-export default fp(async function (fastify) {
-	const settingsService = inject("SettingsService");
+const controller = new Hono();
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/settings",
-		schema: {
-			response: {
-				200: resultSuccessSchema(serverConfigSchema),
-				403: resultFailureSchema,
-				550: resultFailureSchema,
-			}
-		},
-		async handler(req, reply) {
-			const config = settingsService.getConfig();
-			if (!config) {
-				return reply.send(result(new ConfigUnavailableError()));
-			}
-
-			await this.authorizeJWT(req, reply);
-			return reply.send(result(config));
+controller.get(
+	"/",
+	authorizeJWT,
+	async (c) => {
+		const settingsService = di.inject("SettingsService");
+		const config = settingsService.getConfig();
+		if (!config) {
+			throw new ConfigUnavailableError();
 		}
-	});
+		return c.json(config satisfies ServerConfig);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/settings",
-		schema: {
-			body: serverConfigSchema,
-			response: {
-				200: resultSuccessSchema(z.null()),
-				403: resultFailureSchema,
-				550: resultFailureSchema,
-			}
-		},
-		async handler(req, reply) {
-			const config = settingsService.getConfig();
-			if (config) {
-				await this.authorizeJWT(req, reply);
-			}
-			await settingsService.setConfig(req.body);
-			return reply.send(result(null));
+controller.put(
+	"/", 
+	authorizeJWT, 
+	zValidator("json", serverConfigSchema, validationErrorHook), 
+	async (c) => {
+		const settingsService = di.inject("SettingsService");
+		const body = c.req.valid("json");
+
+		await settingsService.setConfig(body);
+		return c.json(null);
+	}
+);
+
+// NO AUTH FOR THE INITIAL SETUP
+controller.put(
+	"/setup", 
+	zValidator("json", setupFormSchema, validationErrorHook), 
+	async (c) => {
+		const settingsService = di.inject("SettingsService");
+		const config = settingsService.getConfig();
+		const dbMigrator = di.inject("DatabaseMigrator");
+
+		const body = c.req.valid("json");
+		if (config) {
+			throw new ResultError(410, "Server has already been configured.");
 		}
-	});
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: "/test-database-configuration",
-		schema: {
-			body: z.object({ databaseUrl: z.string() }),
-			response: {
-				200: resultSuccessSchema(z.boolean()),
+		const { migrate, password, ...configData } = body;
+
+		await settingsService.setConfig(configData);
+		if (migrate) {
+			try {
+				await dbMigrator.migrate();
+				await dbMigrator.seed(password ?? "");
+			} catch (e) {
+				// if we failed to migrate DB, then reverting our saved config back
+				await settingsService.removeConfig();
+				throw e;
 			}
-		},
-		async handler(req) {
-			const isDbOk = await settingsService.testConfigsDatabaseConnection(req.body.databaseUrl);
-			return result(isDbOk);
 		}
-	});
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/setup",
-		schema: {
-			body: serverConfigSchema,
-			response: {
-				200: resultSuccessSchema(z.null()),
-				410: resultFailureSchema,
-			}
-		},
-		async handler(req, reply) {
-			const config = settingsService.getConfig();
-			if (config) {
-				return reply.send(result(new ResultError(410, "Server has already been configured.")));
-			}
-			await settingsService.setConfig(req.body);
+		return c.json(null);
+	}
+);
 
-			// TODO: database connection, seeding, bot connection etc.
+controller.post(
+	"/test-database-configuration", 
+	zValidator("json", z.object({ databaseUrl: z.string() }), validationErrorHook), 
+	async (c) => {
+		const settingsService = di.inject("SettingsService");
+		const body = c.req.valid("json");
+		const isDbOk: boolean = await settingsService.testConfigsDatabaseConnection(body.databaseUrl);
+		return c.json(isDbOk);
+	}
+);
 
-			return reply.send(result(null));
-		}
-	});
-});
+export default controller;

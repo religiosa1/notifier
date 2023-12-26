@@ -1,91 +1,58 @@
-import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import type { FastifyInstance } from "fastify";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { paginationDefaults, paginationSchema } from "@shared/models/Pagination";
-import { counted } from "@shared/models/Counted";
-import { apiKeyPrefixSchema, apiKeyPreviewSchema } from "@shared/models/ApiKey";
+import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+
+import { pageinationQuerySchema, paginationDefaults } from "@shared/models/Pagination";
+import type { Counted } from "@shared/models/Counted";
+import type { ApiKeyPreview } from "@shared/models/ApiKey";
+import { apiKeyPrefixSchema } from "@shared/models/ApiKey";
 import * as ApiKeyService from "src/services/ApiKey";
+import { userIdParamsSchema } from './models';
 
-export function userKeys<Instace extends FastifyInstance>(fastify: Instace) {
-	const baseUserKeysUrl = "/users/:userId/api-keys";
-	const baseUserKeysParams = z.object({
-		userId: z.number({ coerce: true }).int().gt(0),
-	});
+const controller = new Hono(); 
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: baseUserKeysUrl,
-		schema: {
-			params: baseUserKeysParams,
-			querystring: paginationSchema,
-			response: {
-				200: resultSuccessSchema(counted(z.array(apiKeyPreviewSchema))),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { userId } = req.params;
-			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [data, count] = await ApiKeyService.listKeys(userId, { skip, take });
-			return reply.send(result({ data, count }));
-		}
-	});
+controller.get(
+	"/", 
+	zValidator("param", userIdParamsSchema, paramErrorHook), 
+	zValidator("query", pageinationQuerySchema, validationErrorHook),
+	async(c) => {
+		const { userId } = c.req.valid("param");
+		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
+		const [data, count] = await ApiKeyService.listKeys(userId, { skip, take });
+		return c.json({ data, count } satisfies Counted<ApiKeyPreview[]>);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: baseUserKeysUrl,
-		schema: {
-			params: baseUserKeysParams,
-			response: {
-				200: resultSuccessSchema(z.object({
-					apiKey: z.string(),
-				}))
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req) {
-			const { userId } = req.params;
-			const apiKey = await ApiKeyService.createKey(userId);
-			return result({ apiKey });
-		}
-	});
+controller.post(
+	"/",
+	zValidator("param", userIdParamsSchema, paramErrorHook),
+	async (c) => {
+		const { userId } = c.req.valid("param");
+		const apiKey: string = await ApiKeyService.createKey(userId);
+		return c.json({ apiKey });
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: baseUserKeysUrl + "/:prefix",
-		schema: {
-			params: baseUserKeysParams.extend({
-				prefix: apiKeyPrefixSchema,
-			}),
-			response: {
-				200: resultSuccessSchema(z.null())
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req) {
-			const { prefix, userId } = req.params;
-			await ApiKeyService.deleteKey(userId, prefix);
-			return result(null);
-		}
-	});
+controller.delete(
+	"/:prefix",
+	zValidator("param", userIdParamsSchema.extend({
+		prefix: apiKeyPrefixSchema,
+	}), paramErrorHook),
+	async (c) => {
+		const { prefix, userId } = c.req.valid("param");
+		await ApiKeyService.deleteKey(userId, prefix);
+		return c.json(null);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: baseUserKeysUrl,
-		schema: {
-			params: baseUserKeysParams,
-			response: {
-				200: resultSuccessSchema(z.number().int()),
-				404: resultFailureSchema,
-			},
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req) {
-			const { userId } = req.params;
-			const count = await ApiKeyService.deleteAllKeys(userId);
-			return result(count);
-		}
-	});
-}
+controller.delete(
+	"/", 
+	zValidator("param", userIdParamsSchema, paramErrorHook), 
+	async (c) => {
+		const { userId } = c.req.valid("param");
+		const count: number = await ApiKeyService.deleteAllKeys(userId);
+		return c.json(count);
+	}
+);
+
+export default controller;

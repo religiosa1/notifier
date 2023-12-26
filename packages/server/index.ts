@@ -1,104 +1,53 @@
 import "dotenv/config";
 import "./src/polyfill";
 
-import fastify from "fastify";
-import middie from "@fastify/middie";
-import cookie, { FastifyCookieOptions } from '@fastify/cookie'
-import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import { Hono } from "hono";
+import { serve } from '@hono/node-server'
+
+import { di } from "src/injection";
+
 import { ResultError } from "@shared/models/Result";
-import authorization from "src/Authorization";
-import { Bot, Update } from "src/Bot";
-import usersRoutes from "src/routes/users";
-import groupsRoutes from "src/routes/groups";
-import channelsRoutes from "src/routes/channels";
-import notify from "src/routes/notify";
-import authRequest from "src/routes/user-confirmation-request";
-import { inject, register } from "src/injection";
 import { checkSettings } from "src/middleware/checkSettings";
+import { responseHandler } from "src/middleware/responseHandler";
+import { logger } from "src/middleware/logger";
+
 import settings from "src/routes/settings";
+import usersController from "src/routes/users";
+import groupsController from "src/routes/groups";
+import channelsController from "src/routes/channels";
+import notifyController from "src/routes/notify";
+import authRequestController from "src/routes/user-confirmation-request";
+import loginController from "src/routes/login";
+import botController from "src/routes/bot";
 
-const prefix = process.env.URL || "";
-const url = process.env.URL || "";
-const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT) || 8085;
+const settingsService = di.inject("SettingsService");
 
-if (process.env.NODE_ENV === "production" && !url) {
-	throw new Error("Public URL for the bot wasn't supplied through environment variables");
-}
-
-const settingsService = inject("SettingsService");
-
-const app = fastify({ logger: true });
-register("logger", app.log);
-await app.register(middie);
-
-app.register(cookie, {
-	secret: process.env.JWT_SECRET,
-	hook: false,
-} satisfies FastifyCookieOptions);
-
-app.register(authorization);
-app.setValidatorCompiler(validatorCompiler);
-app.setSerializerCompiler(serializerCompiler);
-
-app.register(settings);
-app.use(checkSettings);
-app.register(usersRoutes, { prefix });
-app.register(groupsRoutes, { prefix });
-app.register(channelsRoutes, { prefix });
-app.register(authRequest, { prefix });
-app.register(notify);
-
-app.setErrorHandler(function (error, _, reply) {
-	this.log.error(error);
-	const err = error instanceof ResultError ? error : ResultError.from(error);
-	reply.status(err.statusCode).send(err.toJson());
-})
-
-app.route({
-	method: 'POST',
-	url: `/bot*`,
-	handler: async (req) => {
-		const bot = inject("Bot");
-		const { botToken } = settingsService.getConfig() ?? {};
-		if (!bot || !botToken || !new URL(req.url).hostname.endsWith(botToken)) {
-			app.log.info("Bot isn't initialized, can't process bot webhook requests");
-			return;
-		}
-		bot.processUpdate(req.body as Update)
-	},
+const app = new Hono();
+app.onError((err) => {
+	di.inject("logger").error(err);
+	const resultError = ResultError.from(err);
+	return  new Response(resultError.toJson(), {
+		status: resultError.statusCode,
+		headers: { "Content-Type": "application/json; charset=UTF-8" }
+	});
 });
+app.use("*", logger);
+app.use("*", responseHandler);
+app.use("*", checkSettings);
+app.route("/settings", settings);
+app.route("/users", usersController);
+app.route("/groups", groupsController);
+app.route("/channels", channelsController);
+app.route("/user-confirmation-request", authRequestController);
+app.route("/notify", notifyController);
+app.route("/login", loginController);
+app.route("/bot", botController);
 
-settingsService.subscribe(async (settings) => {
-	const { botToken } = settings || {};
-	if (!botToken) {
-		register("Bot", undefined);
-		app.log.warn("No bot token is present, bot is NOT initialized");
-		return;
-	}
-
-	app.log.info("Initializing the bot");
-	const bot = new Bot(botToken);
-
-	await bot.init();
-	register("Bot", bot);
-
-	app.log.info("Bot initialized");
-	const appListenService = inject("AppListenService");
-	await appListenService.listening();
-	app.log.info(`Setting webhook on ${url}/bot${botToken}`);
-	const  d = await bot.setWebHook(`${url}/bot${botToken}`);
-	app.log.info("Webhook is set", d);
-	return () => bot.destroy();
-}, [ "botToken" ]);
-
-const start = async () => {
-	await settingsService.loadConfig();
-	try {
-		await app.listen({ host, port });
-	} catch (err) {
-		app.log.error(err);
-		process.exit(1);
-	}
-}
-start();
+settingsService.loadConfig().then(() => {
+	serve({ fetch: app.fetch , port }, (info) => {		
+		console.log(`App is listening on http://${info.address}:${info.port}/`);
+		const appListenService = di.inject("AppListenService");
+		appListenService.listen();
+	});
+});

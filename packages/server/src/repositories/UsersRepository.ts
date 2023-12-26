@@ -1,10 +1,11 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
-import { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
+import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
 import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, isNull } from "drizzle-orm";
-import { hash } from "src/Authorization/hash";
+import { hashPassword } from "src/services/hash";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import { assert } from "src/util/assert";
 
 const userNotFound = (id: string | number) => () => new NotFoundError(`user with id '${id}' doesn't exist`);
@@ -14,7 +15,7 @@ const userNotFound = (id: string | number) => () => new NotFoundError(`user with
  */
 
 export class UsersRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	//============================================================================
 
@@ -128,7 +129,7 @@ export class UsersRepository {
 	/* TODO potentialle split this functionality and orchestrate it through a UserService? */
 	async insertUser(user: UserCreate): Promise<UserDetail>{
 		const db = this.dbm.connection;
-		const password = await hash(user.password);
+		const password = await hashPassword(user.password);
 		const userId = await db.transaction(async (tx) => {
 			const [createdUser] = await db.insert(schema.users).values({
 				...user,
@@ -172,7 +173,7 @@ export class UsersRepository {
 
 	async updateUser(id: number, user: UserUpdate): Promise<UserDetail> {
 		const db = this.dbm.connection;
-		const password = user.password ? await hash(user.password) : undefined;
+		const password = user.password ? await hashPassword(user.password) : undefined;
 		const updatedUserId = await db.transaction(async (tx) => {
 			const [updatedUser] = await tx.update(schema.users)
 				.set({ ...user, password, updatedAt: sql`CURRENT_TIMESTAMP`})

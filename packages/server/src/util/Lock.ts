@@ -1,4 +1,7 @@
-type Unlock = () => void;
+interface Unlock {
+	release(): void;
+	[Symbol.dispose](): void;
+} 
 export class Lock {
 	private acquisitions = 0;
 	private acqPrms: { promise: Promise<void>, resolve: () => void } | undefined
@@ -6,7 +9,8 @@ export class Lock {
 	lock(): Unlock {
 		this.acquisitions++;
 		this.acqPrms ??= Promise.withResolvers();
-		return () => this.unlock()
+		const release = () => this.unlock(); 
+		return { release, [Symbol.dispose]: release };
 	}
 
 	async wait(): Promise<void> {

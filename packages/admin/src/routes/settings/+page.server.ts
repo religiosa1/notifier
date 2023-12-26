@@ -7,7 +7,10 @@ import { generateJwtSecret } from "~/helpers/generateJwtSecret";
 import { fail } from "@sveltejs/kit";
 
 export const load: PageServerLoad = async ({ fetch }) => {
-	const serverSettings = await fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => undefined);
+	const serverSettings = await fetch(serverUrl("/settings"))
+		.then(unwrapResult<ServerConfig>)
+		.catch(() => undefined); // FIXME
+
 	const settings: Partial<SettingsFormData> = {
 		apiUrl: "http://127.0.0.1:8085/",
 		jwtSecret: generateJwtSecret(),
@@ -40,7 +43,7 @@ export const actions: Actions = {
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();
 		const databaseUrl = formData.get("databaseUrl");
-		var isDbOk = await fetch(serverUrl("/test-database-configuration"), {
+		var isDbOk = await fetch(serverUrl("/settings/test-database-configuration"), {
 			method: "POST",
 			body: JSON.stringify({ databaseUrl }),
 		}).then(unwrapResult<ServerConfig>);

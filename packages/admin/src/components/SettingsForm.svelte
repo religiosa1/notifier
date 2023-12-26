@@ -1,8 +1,9 @@
 
 <script lang="ts">
 	import type { SettingsFormData } from "@shared/models";
+	import Spinner from "./Spinner.svelte";
 	export let data: Partial<SettingsFormData & { isDatabaseUrlOk?: boolean }> | undefined = undefined;
-
+	export let testingDb = false;
 	async function generateJWTSecret() {
 		const key = await crypto.subtle.generateKey(
 			{ name: 'HMAC', hash: { name: 'SHA-256' } },
@@ -26,6 +27,7 @@
 		<span class="form-label">Bot token</span>
 		<input
 			name="botToken"
+			required
 			placeholder="1234567890:AAFwr0hRwcnB_NqNnFiNJZFWS0AG9fyVBi8"
 			value={data?.botToken ?? ""}
 		/>
@@ -60,14 +62,17 @@
 		<input
 			name="databaseUrl"
 			type="url"
-			placeholder="postgres://postgres:1234567@127.0.0.1:5432/notifier"
-			value={data?.databaseUrl ?? ""}
+			placeholder="postgres://postgres:1234567@127.0.0.1:5432/postgres"
+			value={data?.databaseUrl ?? "postgres://postgres:1234567@127.0.0.1:5432/postgres"}
 			required
 		/>
 		<p>
 			<button type="submit" class="secondary" formnovalidate formaction="?/testDbConfiguration">
 				Test provided DB configuration
 			</button>
+			{#if testingDb}
+				<Spinner />
+			{/if}
 			{#if data?.isDatabaseUrlOk === true}
 				<output>Database URL is ok</output>
 			{:else if data?.isDatabaseUrlOk === false}

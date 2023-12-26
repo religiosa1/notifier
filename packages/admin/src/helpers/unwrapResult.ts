@@ -1,13 +1,7 @@
-import { fail, type ActionFailure, error } from "@sveltejs/kit";
+import { fail, type ActionFailure, error, isRedirect, type NumericRange } from "@sveltejs/kit";
 import { ZodError, type ZodIssue } from "zod";
 import type { Result, ResultFailure } from '~/models/Result';
 import { isResultErrorLike } from '~/models/Result';
-
-export function handleLoadError(err: unknown): never {
-  throw error(getStatusCode(err), isServerErrorLike(err) ? err.toJson() : JSON.stringify(err));
-}
-
-// TODO return a tuple from all unwraps and fail the action
 
 export class ServerError extends Error {
   name = "Server request error" as const;
@@ -28,7 +22,8 @@ export class ServerError extends Error {
 export function unwrapResult<T>(r: Response): Promise<T> {
   return r.json().then((data: Result<T>) => {
     if (isResultErrorLike(data)) {
-      throw new ServerError(data);
+      const err = {...data, message: data.error ?? data.message};
+      error(data.statusCode as NumericRange<400,599>, err);
     }
     if (!r.ok) {
       throw new Error(`General http error: ${r.status}`);
@@ -81,7 +76,9 @@ export function handleActionFailure<T extends Record<string, unknown>>(
   const statusCode = getStatusCode(e);
 
   let errorData: { error: string, errorDetails: string };
-
+  if (isRedirect(e)) {
+    throw e;
+  }
   if (isServerErrorLike(e)) {
     errorData = {
       ...(additionalData as T),

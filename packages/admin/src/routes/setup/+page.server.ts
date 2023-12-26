@@ -3,14 +3,16 @@ import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import type { Actions, PageServerLoad } from "./$types";
 
 import { generateJwtSecret } from "~/helpers/generateJwtSecret";
-import { fail, redirect } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
 
 export const load: PageServerLoad = async ({ fetch }) => {
-	const serverSettings = await fetch(serverUrl("/settings")).then(unwrapResult<ServerConfig>).catch(() => undefined);
+	const serverSettings = await fetch(serverUrl("/settings"))
+		.then(unwrapResult<ServerConfig>)
+		.catch(() => undefined); // FIXME
 	if (serverSettings) {
-		throw redirect(303, "/settings");
+		redirect(303, "/settings");
 	}
 
 	const settings: Partial<SetupForm> = {
@@ -29,7 +31,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		try {
 			const data = getFormData(formData, setupFormSchema);
-			await fetch(serverUrl("/settings"), {
+			await fetch(serverUrl("/settings/setup"), {
 				method: "PUT",
 				body: JSON.stringify(data),
 			}).then(unwrapResult<ServerConfig>);
@@ -39,17 +41,17 @@ export const actions: Actions = {
 
 		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
 
-		throw redirect(303, "/");
+		redirect(303, "/login?referer=%2F");
 	},
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();
 		const databaseUrl = formData.get("databaseUrl");
-		var isDbOk = await fetch(serverUrl("/test-database-configuration"), {
+		var isDbOk = await fetch(serverUrl("/settings/test-database-configuration"), {
 			method: "POST",
 			body: JSON.stringify({ databaseUrl }),
 		}).then(unwrapResult<ServerConfig>);
 		if (!isDbOk) {
-			return fail(400, { ...Object.fromEntries(formData), isDatabaseUrlOk: false })
+			return { ...Object.fromEntries(formData), isDatabaseUrlOk: false };
 		}
 		const retobj = {
 			...Object.fromEntries(formData),

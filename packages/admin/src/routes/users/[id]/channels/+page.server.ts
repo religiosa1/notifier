@@ -13,11 +13,11 @@ export const load: PageServerLoad = async ({ fetch, url, params}) => {
   const pagination = getPaginationParams(url);
   const [ user, availableChannels, channels ] = await Promise.all([
     fetch(serverUrl(uri`/users/${params.id}`))
-      .then(unwrapResult) as Promise<UserDetail>,
+      .then(unwrapResult<UserDetail>),
     fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/available-channels`)))
-      .then(unwrapResult) as Promise<Channel[]>,
+      .then(unwrapResult<Channel[]>),
     fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/channels`)))
-      .then(unwrapResult) as Promise<Counted<Channel[]>>,
+      .then(unwrapResult<Counted<Channel[]>>),
   ]);
 
   return {

@@ -1,71 +1,63 @@
+import { Hono } from 'hono';
 import z from "zod";
-import type { FastifyInstance } from "fastify";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+
 import * as GroupModel from "@shared/models/Group";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import type { ContextVariables } from 'src/ContextVariables';
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
 
-export function groupUsers<Instace extends FastifyInstance>(fastify: Instace) {
-	const groupsRepository = inject("GroupsRepository");
-	const usersToGroupRelationRepository = inject("UserToGroupRelationsRepository");
+import { intGt, toInt } from '@shared/helpers/zodHelpers';
 
-	const baseGroupUsersUrl = "/groups/:groupId/users";
-	const baseGroupUsersParams = z.object({
-		groupId: z.number({ coerce: true }).int().gt(0),
-	});
+const baseGroupUsersParams = z.object({
+	groupId: z.string().refine(...intGt(0)).transform(toInt)
+});
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: baseGroupUsersUrl,
-		schema: {
-			params: baseGroupUsersParams,
-			body: z.object({
-				name: z.string().min(1),
-			}),
-			response: {
-				200: resultSuccessSchema(GroupModel.groupDetailSchema),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { groupId } = req.params;
-			const { name } = req.body;
+const controller = new Hono<{ Variables: ContextVariables }>();
 
-			await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
-			const group = await groupsRepository.getGroupDetail(groupId);
+controller.post(
+	"/", 
+	zValidator("param", baseGroupUsersParams, paramErrorHook),
+	zValidator("json",  z.object({ name: z.string().min(1), }), validationErrorHook),
+	async (c) => {
+		const logger = di.inject("logger");
+		const groupsRepository = di.inject("GroupsRepository");
+		const usersToGroupRelationRepository = di.inject("UserToGroupRelationsRepository");
 
-			fastify.log.info(`Groups updated by ${req.user.id}-${req.user.name}`, group);
-			return reply.send(result(group));
-		}
-	});
+		const { groupId } = c.req.valid("param");
+		const { name } = c.req.valid("json");
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: baseGroupUsersUrl,
-		schema: {
-			querystring: z.object({ id: z.optional(batchIdsSchema) }),
-			params: baseGroupUsersParams,
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const groupId = req.params.groupId;
-			const ids = req.query.id !== undefined ? parseIds(req.query.id) : undefined;
+		await usersToGroupRelationRepository.connectUserToGroup(groupId, name);
+		const group = await groupsRepository.getGroupDetail(groupId);
 
-			const count = await usersToGroupRelationRepository.deleteUserFromGroup(groupId, ids);
+		logger.info(`Groups updated by ${c.get("user").id}-${c.get("user").name}`, group);
+		return c.json(group satisfies GroupModel.GroupDetail);
+	}
+);
 
-			const data = {
-				count,
-				outOf: ids?.length ?? -1,
-			};
-			fastify.log.info(`Groups users batch disconnect by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
-}
+controller.delete(
+	"/", 
+	zValidator("param", baseGroupUsersParams, paramErrorHook),
+	zValidator("query", z.object({ id: z.optional(batchIdsSchema) }), validationErrorHook),
+	async (c) => {
+		const logger = di.inject("logger");
+		const usersToGroupRelationRepository = di.inject("UserToGroupRelationsRepository");
+
+		const { groupId } = c.req.valid("param");
+		const idsQuery = c.req.valid("query").id
+		const ids = idsQuery !== undefined ? parseIds(idsQuery) : undefined;
+
+		const count = await usersToGroupRelationRepository.deleteUserFromGroup(groupId, ids);
+
+		const data = {
+			count,
+			outOf: ids?.length ?? -1,
+		};
+		logger.info(`Groups users batch disconnect by ${c.get("user").id}-${c.get("user").name}`, data);
+		return c.json(data satisfies BatchOperationStats);
+	}
+)
+
+export default controller;

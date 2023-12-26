@@ -1,10 +1,9 @@
 import { randomBytes } from "crypto";
 import { base32, base64 } from "rfc4648";
 import { apiKeySchema } from "@shared/models/ApiKey";
-import { hash } from "src/Authorization/hash";
-import { inject } from "src/injection";
+import { hashPassword } from "src/services/hash";
+import { di } from "src/injection";
 
-const apiKeysRepository = inject("ApiKeysRepository");
 
 function generateApiKey(): string {
 	const key = base64.stringify(randomBytes(30))
@@ -21,9 +20,10 @@ export function parseApiKey(apiKey: string): [prefix: string, key: string] {
 
 /** Create key for a user, and save it in th db for the user */
 export async function createKey(userId: number): Promise<string> {
+	const apiKeysRepository = di.inject("ApiKeysRepository");
 	const apiKey = generateApiKey();
 	const [prefix, key] = parseApiKey(apiKey);
-	const hashedKey = await hash(key);
+	const hashedKey = await hashPassword(key);
 	await apiKeysRepository.insertKey(userId, prefix, hashedKey);
 	return apiKey;
 }
@@ -41,6 +41,7 @@ export async function listKeys(
 	}>,
 	total: number,
 ]> {
+	const apiKeysRepository = di.inject("ApiKeysRepository");
 	return apiKeysRepository.listKeys(userId, { skip, take });
 }
 
@@ -48,9 +49,11 @@ export async function deleteKey(
 	userId: number,
 	prefix: string
 ): Promise<void> {
+	const apiKeysRepository = di.inject("ApiKeysRepository");
 	await apiKeysRepository.deleteKey(userId, prefix);
 }
 
 export async function deleteAllKeys(userId: number): Promise<number> {
+	const apiKeysRepository = di.inject("ApiKeysRepository");
 	return apiKeysRepository.deleteAllKeysForUser(userId);
 }

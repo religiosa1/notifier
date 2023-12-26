@@ -1,69 +1,55 @@
+import { Hono } from 'hono';
 import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import type { ContextVariables } from 'src/ContextVariables';
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import type { FastifyInstance } from "fastify";
 import { channelNameSchema } from "@shared/models/Channel";
-import { inject } from "src/injection";
+import { di } from "src/injection";
 
-export function groupChannels<Instace extends FastifyInstance>(fastify: Instace) {
-	const channelToGroupRelationsRepository = inject("ChannelToGroupRelationsRepository");
+import { groupIdParamSchema } from './models';
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: "/groups/:groupId/channels",
-		schema: {
-			params: z.object({
-				groupId: z.number({ coerce: true }).int().gt(0),
-			}),
-			body: z.object({
-				name: channelNameSchema,
-			}),
-			response: {
-				200: resultSuccessSchema(z.null()),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { groupId } = req.params;
-			const { name } = req.body;
+const controller = new Hono<{ Variables: ContextVariables }>();
 
-			await channelToGroupRelationsRepository.connectOrCreateChannelToGroup(groupId, name);
+controller.post(
+	"/", 
+	zValidator("param", groupIdParamSchema, paramErrorHook), 
+	zValidator("json", z.object({ name: channelNameSchema }), validationErrorHook),
+	async (c) => {
+		const logger = di.inject("logger");
+		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
+		const { groupId } = c.req.valid("param");
+		const { name } = c.req.valid("json");
 
-			fastify.log.info(`Group channel connected by ${req.user.id}-${req.user.name}`, groupId, name);
-			return reply.send(result(null));
-		}
-	});
+		await channelToGroupRelationsRepository.connectOrCreateChannelToGroup(groupId, name);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/groups/:groupId/channels",
-		schema: {
-			querystring: z.object({ id: z.optional(batchIdsSchema) }),
-			params: z.object({
-				groupId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-				404: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { groupId } = req.params;
-			const ids = parseIds(req.query.id || "");
-			// orphaned user-to-channel relations handled by a db trigger
-			const count = ids?.length
-				? await channelToGroupRelationsRepository.deleteChannelsFromGroupByIds(groupId, ids)
-				: await channelToGroupRelationsRepository.deleteAllChannelsFromGroup(groupId);
-			const data = {
-				count,
-				outOf: ids.length,
-			};
-			fastify.log.info(`Group channels batch disconnect by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
-}
+		logger.info(`Group channel connected by ${c.get("user").id}-${c.get("user").name}`, groupId, name);
+		return c.json(null);
+	}
+);
+
+controller.delete(
+	"/",
+	zValidator("param", groupIdParamSchema, paramErrorHook),
+	zValidator("query", z.object({ id: z.optional(batchIdsSchema) }), validationErrorHook),
+	async (c) => {
+		const logger = di.inject("logger");
+		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
+		const { groupId } = c.req.valid("param");
+		const ids = parseIds(c.req.valid("query").id || "");
+		// orphaned user-to-channel relations handled by a db trigger
+		const count = ids?.length
+			? await channelToGroupRelationsRepository.deleteChannelsFromGroupByIds(groupId, ids)
+			: await channelToGroupRelationsRepository.deleteAllChannelsFromGroup(groupId);
+		const data = {
+			count,
+			outOf: ids.length,
+		};
+		logger.info(`Group channels batch disconnect by ${c.get("user").id}-${c.get("user").name}`, data);
+		return c.json(data satisfies BatchOperationStats);
+	}
+);
+
+export default controller;

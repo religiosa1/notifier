@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
-import { handleActionFailure, handleLoadError, unwrapResult } from '~/helpers/unwrapResult';
+import { handleActionFailure, unwrapResult } from '~/helpers/unwrapResult';
 import { paginate, getPaginationParams } from '~/helpers/pagination';
 import type { Channel } from "@shared/models/Channel";
 import type { Counted } from "@shared/models/Counted";
@@ -9,8 +9,7 @@ import { serverUrl } from '~/helpers/serverUrl';
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const pagination = getPaginationParams(url);
 	const channels = await fetch(serverUrl(paginate(pagination, '/channels')))
-		.then(unwrapResult<Counted<Array<Channel & { usersCount: number; groupsCount: number }>>>)
-		.catch(handleLoadError);
+		.then(unwrapResult<Counted<Array<Channel & { usersCount: number; groupsCount: number }>>>);
 
 	return {
 		channels: channels.data,

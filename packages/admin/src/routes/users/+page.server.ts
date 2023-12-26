@@ -9,7 +9,7 @@ import { serverUrl } from '~/helpers/serverUrl';
 export const load: PageServerLoad = async ({ fetch, url }) => {
   const pagination = getPaginationParams(url);
   const users = await fetch(serverUrl(paginate(pagination, '/users')))
-    .then(unwrapResult) as Counted<UserWithGroups[]>;
+    .then(unwrapResult<Counted<UserWithGroups[]>>);
 
   return {
     users: users.data,

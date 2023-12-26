@@ -53,7 +53,7 @@
     </tr>
   </thead>
   <tbody>
-    {#each items as item, index (item.id)}
+    {#each items ?? [] as item, index (item.id)}
       <tr transition:fly={{delay: 0, duration: 320, x: 50, y: 0, opacity: 0.7, easing: quintOut}}>
         <slot name="body" {item} />
         <td class="text-center">

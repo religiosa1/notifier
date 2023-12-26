@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { serverUrl } from "~/helpers/serverUrl";
-import { handleActionFailure, handleLoadError, unwrapResult } from "~/helpers/unwrapResult";
+import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
 import { paginate, getPaginationParams } from "~/helpers/pagination";
 import type { Group } from "@shared/models/Group";
 import type { Counted } from "@shared/models/Counted";
@@ -9,8 +9,7 @@ import { batchDelete } from "~/actions/batchDelete";
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const pagination = getPaginationParams(url);
 	const groups = await fetch(serverUrl(paginate(pagination, "/groups")))
-		.then(unwrapResult<Counted<Array<Group & { channelsCount: number; usersCount: number }>>>)
-		.catch(handleLoadError);
+		.then(unwrapResult<Counted<Array<Group & { channelsCount: number; usersCount: number }>>>);
 
 	return {
 		groups: groups.data,

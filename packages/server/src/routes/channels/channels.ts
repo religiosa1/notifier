@@ -1,172 +1,137 @@
-import fp from "fastify-plugin";
+import { Hono } from 'hono';
 import z from "zod";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { result, resultFailureSchema, resultSuccessSchema } from "@shared/models/Result";
+import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+
 import * as ChannelModel from "@shared/models/Channel";
-import { counted } from "@shared/models/Counted";
-import { paginationSchema, paginationDefaults } from "@shared/models/Pagination";
-import { batchOperationStatsSchema } from "@shared/models/BatchOperationStats";
+import type { Counted } from '@shared/models/Counted';
+import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
+import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 import channelGroups from "./channelGroups";
+import { channelIdRoute } from './models';
+import { authorizeJWT } from 'src/middleware/authorizeJWT';
+import type { ContextVariables } from 'src/ContextVariables';
 
-export default fp(async function (fastify) {
-	const channelsRepository = inject("ChannelsRepository");
+const controller = new Hono<{ Variables: ContextVariables }>();
+controller.use("*", authorizeJWT);
+controller.route("/:channelId/groups", channelGroups);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/channels",
-		schema: {
-			querystring: paginationSchema,
-			response: {
-				200: resultSuccessSchema(counted(z.array(ChannelModel.channelSchema.extend({
-					usersCount: z.number(),
-					groupsCount: z.number(),
-				})))),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { skip, take } = { ...paginationDefaults, ...req.query };
-			const [ data, count ] = await channelsRepository.listChannels({ skip , take });
+controller.get(
+	'/', 
+	zValidator("query", pageinationQuerySchema, validationErrorHook), 
+	async (c) => {
+		const channelsRepository = di.inject("ChannelsRepository");
+		const query = c.req.valid("query");
+		const { skip, take } = { ...paginationDefaults, ...query };
+		const [ data, count ] = await channelsRepository.listChannels({ skip , take });
 
-			return reply.send(result({
-				data,
-				count,
-			}));
-		}
-	});
+		return c.json({
+			data,
+			count,
+		} satisfies Counted<Array<ChannelModel.Channel & { usersCount: number; groupsCount: number}>>);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/channels/search",
-		schema: {
-			querystring: z.object({
-				name: z.string().optional(),
-				group: z.number({ coerce: true }).int().gt(0).optional(),
-			}),
-			response: {
-				200: resultSuccessSchema(z.array(ChannelModel.channelSchema)),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const { group, name = "" } = req.query;
+controller.get(
+	'/search', 
+	zValidator("query", z.object({
+		name: z.string().optional(),
+		group: z.string()
+			.refine(
+				value => {
+					const parsedValue = parseInt(value, 10);
+					return !isNaN(parsedValue) && parsedValue > 0;
+				}, 
+				{ message: "Must be an integer greater than 0" }
+			).optional()
+			.transform((val) => parseInt(val ?? '', 10) || undefined)
+	}), validationErrorHook), 
+	async(c) => {
+		const channelsRepository = di.inject("ChannelsRepository");
+		const { group, name = "" } =  c.req.valid("query");
 
-			const channels = group
-				? await channelsRepository.searchChannelsForGroup({ name, groupId: group })
-				: await channelsRepository.searchChannels({ name });
+		const channels = group
+			? await channelsRepository.searchChannelsForGroup({ name, groupId: group })
+			: await channelsRepository.searchChannels({ name });
 
-			return reply.send(result(channels));
-		}
-	});
+		return c.json(channels satisfies ChannelModel.Channel[]);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "POST",
-		url: "/channels",
-		schema: {
-			body: ChannelModel.channelCreateSchema,
-			response: {
-				200: resultSuccessSchema(ChannelModel.channelSchema),
-				409: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const channel = await channelsRepository.insertChannel(req.body.name);
-			fastify.log.info(`Channel created by ${req.user.id}-${req.user.name}`, channel);
-			return reply.send(result(channel));
-		}
-	});
+controller.post(
+	"/", 
+	zValidator("json",  ChannelModel.channelCreateSchema, validationErrorHook), 
+	async (c) => {
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const body = c.req.valid("json");
+		const channel = await channelsRepository.insertChannel(body.name);
+		logger.info(`Channel created by ${c.get("user").id}-${c.get("user").name}`, channel);
+		return c.json(channel satisfies ChannelModel.Channel);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "GET",
-		url: "/channels/:channelId",
-		schema: {
-			params: z.object({
-				channelId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(ChannelModel.channelDetailSchema),
-				404: resultFailureSchema
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const {channelId} = req.params;
-			const channel = await channelsRepository.getChannelDetail(channelId);
-			return reply.send(result(channel));
-		}
-	});
+controller.get(
+	"/:channelId", 
+	zValidator("param", channelIdRoute, paramErrorHook), 
+	async (c) => {
+		const channelsRepository = di.inject("ChannelsRepository");
+		const {channelId} = c.req.valid("param");
+		const channel = await channelsRepository.getChannelDetail(channelId);
+		return c.json(channel satisfies ChannelModel.ChannelDetail);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "PUT",
-		url: "/channels/:channelId",
-		schema: {
-			params: z.object({
-				channelId: z.number({ coerce: true }).int().gt(0),
-			}),
-			body: ChannelModel.channelUpdateSchema,
-			response: {
-				200: resultSuccessSchema(ChannelModel.channelSchema),
-				404: resultFailureSchema,
-				409: resultFailureSchema,
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.channelId;
-			const { name } = req.body;
+controller.put(
+	"/:channelId", 
+	zValidator("param", channelIdRoute, paramErrorHook), 
+	zValidator("json", ChannelModel.channelUpdateSchema, validationErrorHook),
+	async (c) => {
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const { channelId: id } = c.req.valid("param");
+		const { name } = c.req.valid("json");
 
-			const channel = await channelsRepository.updateChannel(id, name);
+		const channel = await channelsRepository.updateChannel(id, name);
 
-			fastify.log.info(`Channel update by ${req.user.id}-${req.user.name}`, channel);
-			return reply.send(result(channel));
-		}
-	});
+		logger.info(`Channel update by ${c.get("user").id}-${c.get("user").name}`, channel);
+		return c.json(channel satisfies ChannelModel.Channel);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/channels/:channelId",
-		schema: {
-			params: z.object({
-				channelId: z.number({ coerce: true }).int().gt(0),
-			}),
-			response: {
-				200: resultSuccessSchema(z.null()),
-				404: resultFailureSchema
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const id = req.params.channelId;
-			await channelsRepository.assertChannelExist(id);
-			await channelsRepository.deleteChannels([id]);
-			fastify.log.info(`Channel delete by ${req.user.id}-${req.user.name}`, id);
-			return reply.send(result(null));
-		}
-	});
+controller.delete(
+	"/:channelId", 
+	zValidator("param", channelIdRoute, paramErrorHook), 
+	async (c) => {
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const { channelId: id } = c.req.valid("param");
+		await channelsRepository.assertChannelExist(id);
+		await channelsRepository.deleteChannels([id]);
+		logger.info(`Channel delete by ${c.get("user").id}-${c.get("user").name}`, id);
+		return c.json(null);
+	}
+);
 
-	fastify.withTypeProvider<ZodTypeProvider>().route({
-		method: "DELETE",
-		url: "/channels",
-		schema: {
-			querystring: z.object({ id: batchIdsSchema }),
-			response: {
-				200: resultSuccessSchema(batchOperationStatsSchema),
-			}
-		},
-		onRequest: fastify.authorizeJWT,
-		async handler(req, reply) {
-			const ids = parseIds(req.query.id);
-			const count = await channelsRepository.deleteChannels(ids);
-			const data = {
-				count,
-				outOf: ids.length,
-			};
-			fastify.log.info(`Channel batch delete by ${req.user.id}-${req.user.name}`, data);
-			return reply.send(result(data));
-		}
-	});
-	channelGroups(fastify);
-});
+controller.delete(
+	"/", 
+	zValidator("query", z.object({ id: batchIdsSchema }), validationErrorHook), 
+	async(c) => {
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const query = c.req.valid("query");
+		const ids = parseIds(query.id);
+		const count = await channelsRepository.deleteChannels(ids);
+		const data = {
+			count,
+			outOf: ids.length,
+		};
+		logger.info(`Channel batch delete by ${c.get("user").id}-${c.get("user").name}`, data);
+		return c.json(data satisfies BatchOperationStats);
+	}
+);
+
+export default controller;

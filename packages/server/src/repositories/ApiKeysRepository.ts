@@ -2,10 +2,11 @@ import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { ResultError } from "@shared/models/Result";
 import { and, eq, sql } from "drizzle-orm";
 import { schema } from "src/db";
-import { inject } from "src/injection";
+import { di } from "src/injection";
+
 
 export class ApiKeysRepository {
-	private readonly dbm = inject("db");
+	private readonly dbm = di.inject("db");
 
 	async insertKey(userId: number, prefix: string, hashedKey: string): Promise<void> {
 		const db = this.dbm.connection;
@@ -34,6 +35,24 @@ export class ApiKeysRepository {
 		authorizationStatus: AuthorizationEnum
 	} | undefined> {
 		const [data] = await this.queryGetKeyHashAndAuthStatus.value.execute({ prefix });
+		return data;
+	}
+
+	private readonly queryGetUserForKey = this.dbm.prepare(
+		(db) => db.select({ 
+			id: schema.users.id,
+			name: schema.users.name,
+		}).from(schema.users)
+			.innerJoin(schema.apiKeys, eq(schema.apiKeys.userId, schema.users.id))
+			.where(eq(schema.apiKeys.prefix, sql.placeholder("prefix")))
+			.limit(1)
+			.prepare("query_get_user_for_key")
+	);
+	async getUserForKey(prefix: string): Promise<{
+		name: string | null;
+		id: number;
+	} | undefined> {
+		const [data] = await this.queryGetUserForKey.value.execute({ prefix });
 		return data;
 	}
 

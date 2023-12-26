@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
-export async function hash(value: string, saltRounds?: number): Promise<string>;
-export async function hash(
+
+export async function hashPassword(value: string, saltRounds?: number): Promise<string>;
+export async function hashPassword(
 	value: string | null | undefined,
 	saltRounds?: number
 ): Promise<string | null | undefined>;
@@ -11,7 +12,7 @@ export async function hash(
  * @param saltRounds
  * @returns undefined if value is undefined, null if value is falsy, hashed and salted value otherwise
  */
-export async function hash(
+export async function hashPassword(
 	value: string | null | undefined,
 	saltRounds = 10
 ): Promise<string | null | undefined> {
