@@ -36,10 +36,12 @@ controller.post("/",
 			throw new ResultError(404, "Can't find anyone to send the data to in the provided channels");
 		}
 
+		console.log("SENDING MESSAGE...")
 		await bot.broadcastMessage(
 			chats,
 			{ text: body.message }
 		);
+		console.log("MESSAGE SENT")
 		return c.json(null);
 	}
 );

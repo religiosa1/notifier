@@ -15,9 +15,10 @@ if (!password) {
 	process.exit(1);
 }
 
+const consoleLogger = new ConsoleLogger();
 const dataBaseMigrator = new DatabaseMigrator(
-	new SettingsService(),
-	new ConsoleLogger(),
-)
+	new SettingsService(consoleLogger),
+	consoleLogger
+);
 
 dataBaseMigrator.seed(password);

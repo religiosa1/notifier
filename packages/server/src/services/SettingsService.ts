@@ -29,15 +29,15 @@ export class SettingsService {
 	}
 
 	constructor(
+		private readonly logger = di.inject("logger"),
 		private readonly initialConfigName = "config.json",
 		private readonly storagePath: string = getRootDir(),
 		private readonly databaseConfigurator = new DatabaseConfigurator(),
 	) {
 		const watchHandler = () => {
-			const log = di.inject("logger");
-			log.warn("Settings file was changed");
+			this.logger.warn("Settings file was changed");
 			this.loadConfig().catch((e) => {
-				log.warn("Unable to load settings file", e);
+				this.logger.warn("Unable to load settings file", e);
 				this.config = undefined;
 			});
 		};
@@ -93,15 +93,21 @@ export class SettingsService {
 		fields?: Array<keyof ServerConfig>
 	): () => void {
 		let disposer: Disposer | void;
-		return this.emitter.on("change", async (config, oldConfig) => {
-			if (typeof disposer === "function") {
-				using _lock = this.disposerLock.lock();
-				// we're waiting for an old disposer to finish prior to launching the new handler
-				await disposer();
+		const handler = async (config?: ServerConfig, oldConfig?: ServerConfig):  Promise<Disposer | void> => {
+			try {			
+				if (typeof disposer === "function") {
+					using _lock = this.disposerLock.lock();
+					// we're waiting for an old disposer to finish prior to launching the new handler
+					await disposer();
+				}
+				const shouldCall = fields?.some((field) => config?.[field] !== oldConfig?.[field]) ?? true;
+				disposer = shouldCall ? await cb(config, oldConfig) : undefined;
+			} catch (e) {
+				this.logger.error("Error in settings onChange listener", e);
 			}
-			const shouldCall = fields?.some((field) => config?.[field] !== oldConfig?.[field]) ?? true;
-			disposer = shouldCall ? await cb(config, oldConfig) : undefined;
-		});
+		}
+		handler(this.#config); // Run immmediate
+		return this.emitter.on("change", handler);
 	}
 
 	unsubscribeAll(): void {

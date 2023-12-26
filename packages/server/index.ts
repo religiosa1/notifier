@@ -45,9 +45,10 @@ app.route("/login", loginController);
 app.route("/bot", botController);
 
 settingsService.loadConfig().then(() => {
-	serve({ fetch: app.fetch , port }, (info) => {		
-		console.log(`App is listening on http://${info.address}:${info.port}/`);
-		const appListenService = di.inject("AppListenService");
-		appListenService.listen();
+	const appListenService = di.inject("AppListenService");
+	serve({ fetch: app.fetch , port }, (info) => {
+		appListenService.listen(info);
+		// warming up the bot immediately, so it can initialize everything before requests
+		di.inject("Bot");
 	});
 });

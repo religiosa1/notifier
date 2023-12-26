@@ -1,10 +1,20 @@
+import { di } from "src/injection";
+
+interface ListenInfo {
+	address: string;
+	port: number;
+}
+
 export class AppListenService {
-	listen: () => void;
+	listen: (info: ListenInfo) => void;
 	#prms: Promise<void>;
 
-	constructor() {
+	constructor(logger = di.inject("logger")) {
 		const defer = Promise.withResolvers<void>();
-		this.listen = defer.resolve;
+		this.listen = (info: ListenInfo) => {
+			logger.info(`App is listening on http://${info.address}:${info.port}/`);
+			defer.resolve;
+		};
 		this.#prms = defer.promise;
 	}
 
