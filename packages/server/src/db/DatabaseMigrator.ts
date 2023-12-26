@@ -52,7 +52,7 @@ export class DatabaseMigrator {
 			.values({
 				id: 1,
 				telegramId: 1234567, // TODO move to setup
-				name: 'admin',
+				name: "admin",
 				password: await hashPassword(adminPassword),
 				authorizationStatus: AuthorizationEnum.accepted,
 				role: UserRoleEnum.admin,

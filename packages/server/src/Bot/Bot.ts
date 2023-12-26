@@ -4,7 +4,6 @@ import type { IBot, SendMessageProps } from "src/Bot/Models";
 import type { BaseLogger } from "pino";
 import { di } from "src/injection";
 import { asyncPool } from "src/util/asyncPool";
-import { esc } from "src/util/esc";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
 import { botCommands } from "./BotCommands";
@@ -46,7 +45,8 @@ export class Bot implements IBot {
 				},
 			);
 		});
-		logger.info(esc`Telegram bot initialized with token ${token}`, botCommands)
+		logger.info(`Telegram bot initialized with token ${token}`);
+		logger.info("Available bot commands", botCommands);
 	}
 
 	async [Symbol.asyncDispose]() {
