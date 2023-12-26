@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import type { ContextVariables } from 'src/ContextVariables';
 import * as GroupModel from "@shared/models/Group";
@@ -13,8 +14,8 @@ const controller = new Hono<{ Variables: ContextVariables }>();
 
 controller.post(
 	'/',
-	zValidator("param", userIdParamsSchema),
-	zValidator("json", z.object({ name: GroupModel.groupNameSchema })),
+	zValidator("param", userIdParamsSchema, paramErrorHook),
+	zValidator("json", z.object({ name: GroupModel.groupNameSchema }), validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
@@ -30,7 +31,7 @@ controller.delete(
 	"/:groupId",
 	zValidator("param", userIdParamsSchema.extend({ 
 		groupId: z.string().refine(...intGt(0)).transform(toInt) 
-	})),
+	}), paramErrorHook),
 	async (c) => {
 		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
 		const { userId, groupId } = c.req.valid("param");
@@ -41,7 +42,7 @@ controller.delete(
 
 controller.delete(
 	"/",
-	zValidator("param", userIdParamsSchema),
+	zValidator("param", userIdParamsSchema, paramErrorHook),
 	async (c) => {
 		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
 		const { userId } = c.req.valid("param");

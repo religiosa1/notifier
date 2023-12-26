@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import * as GroupModel from "@shared/models/Group";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
@@ -18,8 +19,8 @@ const controller = new Hono<{ Variables: ContextVariables }>();
 
 controller.post(
 	"/", 
-	zValidator("param", baseGroupUsersParams),
-	zValidator("json",  z.object({ name: z.string().min(1), })),
+	zValidator("param", baseGroupUsersParams, paramErrorHook),
+	zValidator("json",  z.object({ name: z.string().min(1), }), validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const groupsRepository = di.inject("GroupsRepository");
@@ -38,8 +39,8 @@ controller.post(
 
 controller.delete(
 	"/", 
-	zValidator("param", baseGroupUsersParams),
-	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
+	zValidator("param", baseGroupUsersParams, paramErrorHook),
+	zValidator("query", z.object({ id: z.optional(batchIdsSchema) }), validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const usersToGroupRelationRepository = di.inject("UserToGroupRelationsRepository");

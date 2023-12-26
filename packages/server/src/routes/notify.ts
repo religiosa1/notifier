@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
+import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import { channelNameSchema } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
@@ -19,7 +20,7 @@ controller.post("/",
 			z.array(channelNameSchema),
 		]),
 		message: z.string(),
-	})),
+	}), validationErrorHook),
 	async (c) => {
 		const channelsRepository = di.inject("ChannelsRepository");
 		const bot = di.inject("Bot").instance;

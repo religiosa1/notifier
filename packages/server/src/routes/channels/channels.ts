@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import * as ChannelModel from "@shared/models/Channel";
 import type { Counted } from '@shared/models/Counted';
@@ -18,60 +19,76 @@ const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 controller.route("/:channelId/groups", channelGroups);
 
-controller.get('/', zValidator("query", pageinationQuerySchema), async (c) => {
-	const channelsRepository = di.inject("ChannelsRepository");
-	const query = c.req.valid("query");
-	const { skip, take } = { ...paginationDefaults, ...query };
-	const [ data, count ] = await channelsRepository.listChannels({ skip , take });
+controller.get(
+	'/', 
+	zValidator("query", pageinationQuerySchema, validationErrorHook), 
+	async (c) => {
+		const channelsRepository = di.inject("ChannelsRepository");
+		const query = c.req.valid("query");
+		const { skip, take } = { ...paginationDefaults, ...query };
+		const [ data, count ] = await channelsRepository.listChannels({ skip , take });
 
-	return c.json({
-		data,
-		count,
-	} satisfies Counted<Array<ChannelModel.Channel & { usersCount: number; groupsCount: number}>>);
-});
+		return c.json({
+			data,
+			count,
+		} satisfies Counted<Array<ChannelModel.Channel & { usersCount: number; groupsCount: number}>>);
+	}
+);
 
-controller.get('/search', zValidator("query", z.object({
-	name: z.string().optional(),
-	group: z.string()
-		.refine(
-			value => {
-				const parsedValue = parseInt(value, 10);
-				return !isNaN(parsedValue) && parsedValue > 0;
-			}, 
-			{ message: "Must be an integer greater than 0" }
-		).optional()
-		.transform((val) => parseInt(val ?? '', 10) || undefined)
-})), async(c) => {
-	const channelsRepository = di.inject("ChannelsRepository");
-	const { group, name = "" } =  c.req.valid("query");
+controller.get(
+	'/search', 
+	zValidator("query", z.object({
+		name: z.string().optional(),
+		group: z.string()
+			.refine(
+				value => {
+					const parsedValue = parseInt(value, 10);
+					return !isNaN(parsedValue) && parsedValue > 0;
+				}, 
+				{ message: "Must be an integer greater than 0" }
+			).optional()
+			.transform((val) => parseInt(val ?? '', 10) || undefined)
+	}), validationErrorHook), 
+	async(c) => {
+		const channelsRepository = di.inject("ChannelsRepository");
+		const { group, name = "" } =  c.req.valid("query");
 
-	const channels = group
-		? await channelsRepository.searchChannelsForGroup({ name, groupId: group })
-		: await channelsRepository.searchChannels({ name });
+		const channels = group
+			? await channelsRepository.searchChannelsForGroup({ name, groupId: group })
+			: await channelsRepository.searchChannels({ name });
 
-	return c.json(channels satisfies ChannelModel.Channel[]);
-});
+		return c.json(channels satisfies ChannelModel.Channel[]);
+	}
+);
 
-controller.post("/", zValidator("json",  ChannelModel.channelCreateSchema), async (c) => {
-	const logger = di.inject("logger");
-	const channelsRepository = di.inject("ChannelsRepository");
-	const body = c.req.valid("json");
-	const channel = await channelsRepository.insertChannel(body.name);
-	logger.info(`Channel created by ${c.get("user").id}-${c.get("user").name}`, channel);
-	return c.json(channel satisfies ChannelModel.Channel);
-});
+controller.post(
+	"/", 
+	zValidator("json",  ChannelModel.channelCreateSchema, validationErrorHook), 
+	async (c) => {
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const body = c.req.valid("json");
+		const channel = await channelsRepository.insertChannel(body.name);
+		logger.info(`Channel created by ${c.get("user").id}-${c.get("user").name}`, channel);
+		return c.json(channel satisfies ChannelModel.Channel);
+	}
+);
 
-controller.get("/:channelId", zValidator("param", channelIdRoute), async (c) => {
-	const channelsRepository = di.inject("ChannelsRepository");
-	const {channelId} = c.req.valid("param");
-	const channel = await channelsRepository.getChannelDetail(channelId);
-	return c.json(channel satisfies ChannelModel.ChannelDetail);
-});
+controller.get(
+	"/:channelId", 
+	zValidator("param", channelIdRoute, paramErrorHook), 
+	async (c) => {
+		const channelsRepository = di.inject("ChannelsRepository");
+		const {channelId} = c.req.valid("param");
+		const channel = await channelsRepository.getChannelDetail(channelId);
+		return c.json(channel satisfies ChannelModel.ChannelDetail);
+	}
+);
 
 controller.put(
 	"/:channelId", 
-	zValidator("param", channelIdRoute), 
-	zValidator("json", ChannelModel.channelUpdateSchema),
+	zValidator("param", channelIdRoute, paramErrorHook), 
+	zValidator("json", ChannelModel.channelUpdateSchema, validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const channelsRepository = di.inject("ChannelsRepository");
@@ -87,7 +104,7 @@ controller.put(
 
 controller.delete(
 	"/:channelId", 
-	zValidator("param", channelIdRoute), 
+	zValidator("param", channelIdRoute, paramErrorHook), 
 	async (c) => {
 		const logger = di.inject("logger");
 		const channelsRepository = di.inject("ChannelsRepository");
@@ -99,18 +116,22 @@ controller.delete(
 	}
 );
 
-controller.delete("/", zValidator("query", z.object({ id: batchIdsSchema })), async(c) => {
-	const logger = di.inject("logger");
-	const channelsRepository = di.inject("ChannelsRepository");
-	const query = c.req.valid("query");
-	const ids = parseIds(query.id);
-	const count = await channelsRepository.deleteChannels(ids);
-	const data = {
-		count,
-		outOf: ids.length,
-	};
-	logger.info(`Channel batch delete by ${c.get("user").id}-${c.get("user").name}`, data);
-	return c.json(data satisfies BatchOperationStats);
-});
+controller.delete(
+	"/", 
+	zValidator("query", z.object({ id: batchIdsSchema }), validationErrorHook), 
+	async(c) => {
+		const logger = di.inject("logger");
+		const channelsRepository = di.inject("ChannelsRepository");
+		const query = c.req.valid("query");
+		const ids = parseIds(query.id);
+		const count = await channelsRepository.deleteChannels(ids);
+		const data = {
+			count,
+			outOf: ids.length,
+		};
+		logger.info(`Channel batch delete by ${c.get("user").id}-${c.get("user").name}`, data);
+		return c.json(data satisfies BatchOperationStats);
+	}
+);
 
 export default controller;

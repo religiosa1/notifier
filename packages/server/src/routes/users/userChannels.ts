@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import type { Counted } from "@shared/models/Counted";
@@ -16,8 +17,8 @@ const controller = new Hono<{ Variables: ContextVariables}>();
 
 controller.get(
 	"/",
-	zValidator("param", userIdParamsSchema),
-	zValidator("query", pageinationQuerySchema),
+	zValidator("param", userIdParamsSchema, paramErrorHook),
+	zValidator("query", pageinationQuerySchema, validationErrorHook),
 	async (c) => {
 		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
@@ -29,8 +30,8 @@ controller.get(
 
 controller.get(
 	"/available-channels",
-	zValidator("param", userIdParamsSchema),
-	zValidator("query", pageinationQuerySchema),
+	zValidator("param", userIdParamsSchema, paramErrorHook),
+	zValidator("query", pageinationQuerySchema, validationErrorHook),
 	async (c) => {
 		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
@@ -42,8 +43,8 @@ controller.get(
 
 controller.post(
 	"/",
-	zValidator("param", userIdParamsSchema),
-	zValidator("json", z.object({ id: z.number({ coerce: true }).int().gt(0) })),
+	zValidator("param", userIdParamsSchema, paramErrorHook),
+	zValidator("json", z.object({ id: z.number({ coerce: true }).int().gt(0) }), validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
@@ -57,8 +58,8 @@ controller.post(
 
 controller.delete(
 	"/",
-	zValidator("param", userIdParamsSchema),
-	zValidator("query",  z.object({ id: batchIdsSchema })),
+	zValidator("param", userIdParamsSchema, paramErrorHook),
+	zValidator("query",  z.object({ id: batchIdsSchema }), validationErrorHook),
 	async (c) => {
 		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");

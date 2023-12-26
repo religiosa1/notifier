@@ -1,9 +1,9 @@
-import { intGt, toInt } from "../helpers/zodHelpers";
+import { intGe, toInt } from "../helpers/zodHelpers";
 import z from "zod";
 
 export const pageinationQuerySchema = z.object({
-  skip: z.string().default("0").refine(...intGt(0)).transform(toInt),
-  take: z.string().default("20").refine(...intGt(1)).transform(toInt)
+  skip: z.string().default("0").refine(...intGe(0)).transform(toInt),
+  take: z.string().default("20").refine(...intGe(1)).transform(toInt)
 });
 
 export const paginationSchema = z.object({

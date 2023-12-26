@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
+import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import bcrypt from "bcrypt";
 import { ResultError } from "@shared/models/Result";
@@ -19,7 +20,7 @@ controller.post(
 	zValidator("json", z.object({
 		name: z.string().max(32),
 		password: z.string().max(32),
-	})),
+	}), validationErrorHook),
 	async (c) => {
 		const usersRepository = di.inject("UsersRepository");
 		const settingsService = di.inject("SettingsService");

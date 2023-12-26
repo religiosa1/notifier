@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import z from "zod";
 import { zValidator } from '@hono/zod-validator';
+import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import type { ContextVariables } from 'src/ContextVariables';
@@ -14,8 +15,8 @@ const controller = new Hono<{ Variables: ContextVariables }>();
 
 controller.post(
 	"/", 
-	zValidator("param", groupIdParamSchema), 
-	zValidator("json", z.object({ name: channelNameSchema })),
+	zValidator("param", groupIdParamSchema, paramErrorHook), 
+	zValidator("json", z.object({ name: channelNameSchema }), validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");
@@ -31,8 +32,8 @@ controller.post(
 
 controller.delete(
 	"/",
-	zValidator("param", groupIdParamSchema),
-	zValidator("query", z.object({ id: z.optional(batchIdsSchema) })),
+	zValidator("param", groupIdParamSchema, paramErrorHook),
+	zValidator("query", z.object({ id: z.optional(batchIdsSchema) }), validationErrorHook),
 	async (c) => {
 		const logger = di.inject("logger");
 		const channelToGroupRelationsRepository = di.inject("ChannelToGroupRelationsRepository");

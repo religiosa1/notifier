@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import z from "zod";
 import { zValidator } from '@hono/zod-validator'
+import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
 
 import { ResultError } from "@shared/models/Result";
 import { serverConfigSchema, type ServerConfig, setupFormSchema } from "@shared/models/ServerConfig";
@@ -27,7 +28,7 @@ controller.get(
 controller.put(
 	"/", 
 	authorizeJWT, 
-	zValidator("json", serverConfigSchema), 
+	zValidator("json", serverConfigSchema, validationErrorHook), 
 	async (c) => {
 		const settingsService = di.inject("SettingsService");
 		const body = c.req.valid("json");
@@ -40,7 +41,7 @@ controller.put(
 // NO AUTH FOR THE INITIAL SETUP
 controller.put(
 	"/setup", 
-	zValidator("json", setupFormSchema), 
+	zValidator("json", setupFormSchema, validationErrorHook), 
 	async (c) => {
 		const settingsService = di.inject("SettingsService");
 		const config = settingsService.getConfig();
@@ -69,13 +70,15 @@ controller.put(
 	}
 );
 
-controller.post("/test-database-configuration", zValidator("json", z.object({
-	databaseUrl: z.string()
-})), async (c) => {
-	const settingsService = di.inject("SettingsService");
-	const body = c.req.valid("json");
-	const isDbOk: boolean = await settingsService.testConfigsDatabaseConnection(body.databaseUrl);
-	return c.json(isDbOk);
-});
+controller.post(
+	"/test-database-configuration", 
+	zValidator("json", z.object({ databaseUrl: z.string() }), validationErrorHook), 
+	async (c) => {
+		const settingsService = di.inject("SettingsService");
+		const body = c.req.valid("json");
+		const isDbOk: boolean = await settingsService.testConfigsDatabaseConnection(body.databaseUrl);
+		return c.json(isDbOk);
+	}
+);
 
 export default controller;
