@@ -6,21 +6,21 @@
 
 	export let data: LayoutData;
 
-onNavigate((navigation) => {
-	if (
-		!document.startViewTransition
-		|| matchMedia("(prefers-reduced-motion: reduce)").matches
-	) {
-		return;
-	}
+	onNavigate((navigation) => {
+		if (
+			!document.startViewTransition
+			|| matchMedia("(prefers-reduced-motion: reduce)").matches
+		) {
+			return;
+		}
 
-	return new Promise((resolve) => {
-		document.startViewTransition(async () => {
-			resolve();
-			await navigation.complete;
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
 		});
 	});
-});
 </script>
 
 <div class="main-grid">

@@ -21,7 +21,7 @@
 </script>
 
 <h1>{$page.status}: {details?.error ?? $page.error?.message}</h1>
-
+<p>{$page.url}</p>
 <Panel style="error">
 	<pre>{JSON.stringify(details ?? $page.error, undefined, 2)}</pre>
 </Panel>

@@ -1,9 +1,9 @@
 import { decodeJWT } from "~/helpers/decodeJWT";
 import type { LayoutServerLoad } from "./$types";
 import { redirect } from "@sveltejs/kit";
-import { base } from "$app/paths";
 import { uri } from "~/helpers/uri";
 import { serverUrl } from "~/helpers/serverUrl";
+import { base } from "$app/paths";
 
 // TODO also drop the status in fetch hooks, move it to service
 let global_hasValidServerSettings = false;
@@ -12,8 +12,7 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 	const auth = cookies.get("Authorization");
 
 	if (!global_hasValidServerSettings) {
-		console.log("NO SETTINGS AVAILABLE", url.pathname === "/setup", url.pathname);
-		if (url.pathname === "/setup") {
+		if (url.pathname === base + "/setup") {
 			return;
 		}
 		const settingsResponse = await fetch(serverUrl('/settings'));
@@ -27,7 +26,7 @@ export const load: LayoutServerLoad = async ({ cookies, url, fetch }) => {
 	}
 
 	if (!auth) {
-		if (url.pathname === "/login") {
+		if (url.pathname === base + "/login") {
 			return {};
 		} else {
 			redirect(303, base + uri`/login?referer=${url.pathname}`);

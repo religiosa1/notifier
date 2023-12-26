@@ -13,7 +13,7 @@ const config = {
 			"@shared/*": "../shared/src/*",
 		},
 		adapter: adapter()
-	}
+	},
 };
 
 export default config;

@@ -6,13 +6,14 @@ import { generateJwtSecret } from "~/helpers/generateJwtSecret";
 import { redirect } from "@sveltejs/kit";
 import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
+import { base } from "$app/paths";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	const serverSettings = await fetch(serverUrl("/settings"))
 		.then(unwrapResult<ServerConfig>)
 		.catch(() => undefined); // FIXME
 	if (serverSettings) {
-		redirect(303, "/settings");
+		redirect(303, base + "/settings");
 	}
 
 	const settings: Partial<SetupForm> = {
@@ -41,7 +42,7 @@ export const actions: Actions = {
 
 		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
 
-		redirect(303, "/login?referer=%2F");
+		redirect(303, base + "/login?referer=%2F");
 	},
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();

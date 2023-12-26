@@ -1,9 +1,9 @@
-import { base } from "$app/paths";
 import type { HandleFetch } from "@sveltejs/kit";
 import { redirect } from "@sveltejs/kit";
 import { server_base } from "./constants";
 import { uri } from "./helpers/uri";
 import { serverUrl } from "~/helpers/serverUrl";
+import { base } from "$app/paths";
 
 export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
 	if (request.url.startsWith(server_base)) {
@@ -20,9 +20,9 @@ export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
 			// TODO reset global_hasValidServerSettings if this happened
 			redirect(303, base + '/setup');
 		}
-		if (event.url.pathname !== "/login" && r.status === 403 || r.status === 401) {
+		if (event.url.pathname, base + "/login" && r.status === 403 || r.status === 401) {
 			event.cookies.delete("Authorization", { path: "/"});
-			redirect(303, base + uri`/login?referer=${event.url.pathname}`);
+			redirect(303, base +  uri`/login?referer=${event.url.pathname}`);
 		}
 		return r;
 	});
