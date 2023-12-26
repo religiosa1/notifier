@@ -8,9 +8,6 @@ services:
       POSTGRES_PASSWORD: 1234567
     ports:
       - 5432:5432
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+  # admin
+  # backend
+  # nginx

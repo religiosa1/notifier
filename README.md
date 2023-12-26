@@ -1,54 +1,51 @@
 # Telegram Notifier Service
 
-[Telegram](https://telegram.org/) notification service monorepo.
+[Telegram](https://telegram.org/) notification service.
 
-Allows:
+It provides REST-api for your apps to send messages to your users, that 
+subscribed your bot. Intended usage is notifying a group of users of some stuff
+that happened in pipelines, but you can use it any way you want.
+
+It allows:
 - sending broadcast messages to your users through a REST-API
 - manage your users, user groups and notification channels through a web-admin
-- aloows you and your users to manage their subscription through a telegram bot
+- allows you and your users to manage their subscription through a telegram bot
 
 ## Packages:
 
-- server: backend for providing REST API for communication with the bot, storing
-  user and groups data and the telegram bot itself.
+- server: backend for providing REST API for sending the messages, storing
+  users and groups data and exposing the telegram bot webhook.
 - admin: Web-interface for the server to accept/remove users and notification
   groups. CRUD for notification groups, etc.
 
 
-## Deployment TODO
-Server requires a working instance of PostgreSQL with a created database.
-TODO currently we store the connection string in the file `config.json`
-under the field `databaseUrl`. This should be fixed, but at the moment, just fill
-this field with the required connection string to your database.
-To run migrations manually launch:
-```sh
-npm run db:migrate # to create the required database structure
-NOTIFIER_ADMIN_PWD=1234567 npm run db:seed # to populate the database with the initial data
-```
+## Deployment
+
+Deployment options are described in the [docs](./docs/).
 
 ## Short workflow description TODO
 
 A user who wants to receive notifications goes to the bot account in Telegram
-and executes `/start` command.
+and executes `/start` command there.
 
 This command will create a request for activation in the admin panel and
 optionally sends a notification to the admin.
 
-Once the user request is accepted, they will be notified by the bot that they
+Once the user request is accepted, they will be notified by the bot that, they
 can start using the API.
 
-### Telegram bot commands, available for approved users:
-- Ask for a new API key from the bot via `/new_key` command.
-- Review the list of available API keys via `/list_keys` command.
-- Revoke the existing API key via `/remove_key` command.
-- Request a list of available notification channels via `/list_channels` command
-  (notifications accessible to the user controlled by admin with groups mechanism).
-- Get a list of subscribed notifications via `/list_subscriptions` command.
+### Telegram bot commands, available for an approved user:
 - Join a notification channel via `/join_channel` command.
 - Leave a channel via `/leave_channel` command.
+- Get a list of subscribed notifications via `/list_subscriptions` command.
+- Request a list of available notification channels via `/list_channels` command
+  (notifications accessible to the user controlled by admin with groups mechanism).
+- Ask for a new API key from the bot via `/new_key` command.
+- Review the their list of available API keys via `/list_keys` command.
+- Revoke the existing API key via `/remove_key` command.
 
 ### The admin panel allows an admin to:
-- Directly send a message to one or many notification channels.
+- Directly send a message to one or many notification channels (omitting the REST mechancis)
 - Review, approve, and reject authorization requests.
 - Revoke user's API keys or user's authorization.
 - Manage notification channels.
@@ -56,7 +53,9 @@ can start using the API.
 
 ## REST-API for public usage:
 
-Each approved user can have zero or multiple API keys. If this token is included in `X-API-KEY` header or cookie, then the user can perform a notification request to the public API:
+Each approved user can have zero or multiple API keys. If this token is 
+included in `X-API-KEY` header or cookie, then the user can perform 
+a notification request to the public API:
 
 - **URL:** `/notify`
 - **Method:** `POST`
@@ -67,17 +66,26 @@ Each approved user can have zero or multiple API keys. If this token is included
 ```http
 POST /notify
 Content-Type: application/json
-x-api-key: USERS_API_KEY
+x-api-key: THE_KEY_GOES_HERE
 
 {
     "channels": ["default"],
-    "body": "This is the message of notification."
+    "message": "This is the message of notification."
 }
 ```
 #### Response:
 ```json
-{ "success": true }
+{ 
+  "success": true,
+  "data": null,
+  "ts": 1703633909925 
+}
 ```
+
+### Additional API methods
+All of the methods, that admin's site uses can also be exposed with JWT authenthication
+if you need to do some stuff programmatically. See [server routes](./packages/server/src/routes/) 
+to check all of the available methods.
 
 ## License
 all of these packages are MIT licensed.
