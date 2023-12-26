@@ -24,7 +24,10 @@ export class Bot implements IBot {
 		this.bot = new TelegramBot(token);
 		this.#commandContextFactory = new BotCommandContextFactory(this.bot, logger);
 
-		logger.info("Available bot commands %s", botCommands);
+		this.bot.on("text", (message) => {
+			logger.debug("Bot command recieved: %o", message);
+		});
+
 		for (const command of botCommands) {
 			this.bot.onText(
 				command.pattern,
