@@ -1,6 +1,7 @@
 import { Bot } from "src/Bot";
 import type { IBot } from "src/Bot/Models";
 import { di } from "src/injection";
+import { urlJoin } from "@shared/helpers/urlJoin";
 
 export class BotService {
 	#instanceData?: { bot: IBot, botToken: string };
@@ -24,18 +25,26 @@ export class BotService {
 				logger.warn("Bot token or publicUrl is missing in the settings, bot is NOT initialized");
 				return;
 			}
-		
-			const bot = new Bot(botToken);
-			await bot.init();			
-			this.#instanceData = { bot, botToken };
-			logger.info("Bot initialized.");
 
-			logger.info("Waiting for app to start listening to initialize webhook...");
-			await appListenService.listening();
-			logger.info(`Setting webhook on ${publicUrl}/bot${botToken}`);
-			const  d = await bot.setWebHook(`${publicUrl}/bot${botToken}`);
-			logger.info("Webhook is set", d);
-			return () => bot.destroy();
+			const bot = new Bot(botToken);
+			try {
+				await bot.init();
+				logger.info("Bot initialized.");
+
+				logger.info("Waiting for app to start listening to initialize webhook...");
+				await appListenService.listening();
+				
+				const webHookAddress = urlJoin(publicUrl, "bot", botToken);
+
+				logger.info("Setting webhook on %s", webHookAddress);
+				const  d = await bot.setWebHook(webHookAddress);
+				logger.info("Webhook is set", d);
+				this.#instanceData = { bot, botToken };
+				return () => bot.destroy();
+			} catch(e) {
+				bot.destroy();
+				return;
+			}
 		}, [ "botToken", "publicUrl" ]);
 	}
 }

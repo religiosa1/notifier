@@ -103,7 +103,7 @@ export class SettingsService {
 				const shouldCall = fields?.some((field) => config?.[field] !== oldConfig?.[field]) ?? true;
 				disposer = shouldCall ? await cb(config, oldConfig) : undefined;
 			} catch (e) {
-				this.logger.error("Error in settings onChange listener", e);
+				this.logger.error("Error in settings onChange listener: %O", e);
 			}
 		}
 		handler(this.#config); // Run immmediate

@@ -12,12 +12,13 @@ controller.post("*", async (c) => {
 		if (!bot) {
 			throw new ResultError(503, "Bot isn't ready to process incoming requests");
 		}
-		if (token && !new URL(c.req.url).hostname.endsWith(token)) {
+		if (token && !new URL(c.req.url).pathname.endsWith(token)) {
 			logger.info("Someone tried to call the bot webhook on a nonexisting url", c.req);
-			return;
+			return c.text('');
 		}
 		const data: Update = await c.req.json();
 		bot.processUpdate(data);
+		return c.text('');
 	},
 );
 
