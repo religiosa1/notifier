@@ -1,7 +1,7 @@
-import { Hono } from 'hono'
+import { Hono } from "hono"
 import z from "zod";
-import { zValidator } from '@hono/zod-validator'
-import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator"
+import { validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import bcrypt from "bcrypt";
 import { ResultError } from "@shared/models/Result";
@@ -9,7 +9,7 @@ import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { tokenPayloadSchema } from "@shared/models/TokenPayload";
 import { di } from "src/injection";
 
-import { sign } from 'hono/jwt';
+import { sign } from "hono/jwt";
 
 const EXPIRATION_DURATION_S = 3 * 24 * 60 * 60;
 

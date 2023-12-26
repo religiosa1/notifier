@@ -1,15 +1,15 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import z from "zod";
-import { zValidator } from '@hono/zod-validator';
-import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator";
+import { paramErrorHook, validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
-import type { ContextVariables } from 'src/ContextVariables';
+import type { ContextVariables } from "src/ContextVariables";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { channelNameSchema } from "@shared/models/Channel";
 import { di } from "src/injection";
 
-import { groupIdParamSchema } from './models';
+import { groupIdParamSchema } from "./models";
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 

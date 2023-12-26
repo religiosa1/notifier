@@ -7,21 +7,21 @@ import {
 	pgEnum,
 	unique,
 	serial
-} from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm'
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm"
 
 // FIXME @shared imports in drizzle
 import { AuthorizationEnum, authorizationEnumSchema } from "../../../shared/src/models/AuthorizationEnum"
 import { UserRoleEnum, userRoleEnumSchema } from "../../../shared/src/models/UserRoleEnum";
 
-const authorizationEnum = pgEnum('authorization_enum', authorizationEnumSchema.options);
-const userRoleEnum = pgEnum('user_role_enum', userRoleEnumSchema.options);
+const authorizationEnum = pgEnum("authorization_enum", authorizationEnumSchema.options);
+const userRoleEnum = pgEnum("user_role_enum", userRoleEnumSchema.options);
 
 export const users = pgTable("users", {
 	id: serial("id").primaryKey(),
   telegramId: integer("telegram_id").notNull().unique(),
-  name: text('name'),
-  /** only admin users can have password, so if the password exists it's an admin  */
+  name: text("name"),
+  /** only admin users can have password, so if the password exists it"s an admin  */
   password: text("password"),
   authorizationStatus: authorizationEnum("authorization_status").notNull().default(AuthorizationEnum.pending),
   role: userRoleEnum("role").notNull().default(UserRoleEnum.regular),

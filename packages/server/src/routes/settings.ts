@@ -1,14 +1,14 @@
-import { Hono } from 'hono'
+import { Hono } from "hono"
 import z from "zod";
-import { zValidator } from '@hono/zod-validator'
-import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator"
+import { validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import { ResultError } from "@shared/models/Result";
 import { serverConfigSchema, type ServerConfig, setupFormSchema } from "@shared/models/ServerConfig";
 import { di } from "src/injection";
 
 import { ConfigUnavailableError } from "src/error/ConfigUnavailableError";
-import { authorizeJWT } from 'src/middleware/authorizeJWT';
+import { authorizeJWT } from "src/middleware/authorizeJWT";
 
 const controller = new Hono();
 

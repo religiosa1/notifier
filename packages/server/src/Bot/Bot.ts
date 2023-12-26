@@ -2,12 +2,12 @@ import TelegramBot from "node-telegram-bot-api";
 import type { Update, Message } from "node-telegram-bot-api";
 import type { IBot, SendMessageProps } from "src/Bot/Models";
 import type { BaseLogger } from "pino";
-import { botCommands } from "./BotCommands";
-import { esc } from "src/util/esc";
+import { di } from "src/injection";
 import { asyncPool } from "src/util/asyncPool";
+import { esc } from "src/util/esc";
 import { BotCommandContextFactory } from "src/Bot/BotCommands/BotCommandContext";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
-import { di } from "src/injection";
+import { botCommands } from "./BotCommands";
 
 export type { Update };
 
@@ -46,7 +46,7 @@ export class Bot implements IBot {
 				},
 			);
 		});
-		logger.info(esc`Telegram bot initialized with token ${token}`)
+		logger.info(esc`Telegram bot initialized with token ${token}`, botCommands)
 	}
 
 	async [Symbol.asyncDispose]() {
@@ -87,7 +87,7 @@ export class Bot implements IBot {
 					throw e;
 				});
 			}
-		}(), 20);
+		}(), 50);
 
 		this.logger.info({ massSend: msgs });
 		return msgs;

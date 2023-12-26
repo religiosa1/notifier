@@ -1,7 +1,7 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import z from "zod";
-import { zValidator } from '@hono/zod-validator';
-import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator";
+import { paramErrorHook, validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import * as UserModel from "@shared/models/User";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
@@ -13,10 +13,10 @@ import { di } from "src/injection";
 import  userChannelsController  from "./userChannels";
 import  userGroupsController  from "./userGroups";
 import  userKeysController  from "./userKeys";
-import { userIdParamsSchema } from './models';
-import { intGt, toInt } from '@shared/helpers/zodHelpers';
-import { authorizeJWT } from 'src/middleware/authorizeJWT';
-import type { ContextVariables } from 'src/ContextVariables';
+import { userIdParamsSchema } from "./models";
+import { intGt, toInt } from "@shared/helpers/zodHelpers";
+import { authorizeJWT } from "src/middleware/authorizeJWT";
+import type { ContextVariables } from "src/ContextVariables";
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);

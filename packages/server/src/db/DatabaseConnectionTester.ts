@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import postgres from "postgres";
 
 export class DatabaseConfigurator {
 	async checkConnectionString(connectionString: string): Promise<boolean> {

@@ -1,26 +1,26 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import z from "zod";
-import { zValidator } from '@hono/zod-validator';
-import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator";
+import { paramErrorHook, validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import * as ChannelModel from "@shared/models/Channel";
-import type { Counted } from '@shared/models/Counted';
+import type { Counted } from "@shared/models/Counted";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { di } from "src/injection";
 
 import channelGroups from "./channelGroups";
-import { channelIdRoute } from './models';
-import { authorizeJWT } from 'src/middleware/authorizeJWT';
-import type { ContextVariables } from 'src/ContextVariables';
+import { channelIdRoute } from "./models";
+import { authorizeJWT } from "src/middleware/authorizeJWT";
+import type { ContextVariables } from "src/ContextVariables";
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 controller.route("/:channelId/groups", channelGroups);
 
 controller.get(
-	'/', 
+	"/", 
 	zValidator("query", pageinationQuerySchema, validationErrorHook), 
 	async (c) => {
 		const channelsRepository = di.inject("ChannelsRepository");
@@ -36,7 +36,7 @@ controller.get(
 );
 
 controller.get(
-	'/search', 
+	"/search", 
 	zValidator("query", z.object({
 		name: z.string().optional(),
 		group: z.string()
@@ -47,7 +47,7 @@ controller.get(
 				}, 
 				{ message: "Must be an integer greater than 0" }
 			).optional()
-			.transform((val) => parseInt(val ?? '', 10) || undefined)
+			.transform((val) => parseInt(val ?? "", 10) || undefined)
 	}), validationErrorHook), 
 	async(c) => {
 		const channelsRepository = di.inject("ChannelsRepository");

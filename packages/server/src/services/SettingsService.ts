@@ -4,7 +4,7 @@ import { stripComments } from "jsonc-parser";
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
 import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
-import { watchFile } from 'node:fs';
+import { watchFile } from "node:fs";
 import { di } from "src/injection";
 
 import { getRootDir } from "src/util/getRootDir";
@@ -97,7 +97,7 @@ export class SettingsService {
 			try {			
 				if (typeof disposer === "function") {
 					using _lock = this.disposerLock.lock();
-					// we're waiting for an old disposer to finish prior to launching the new handler
+					// we"re waiting for an old disposer to finish prior to launching the new handler
 					await disposer();
 				}
 				const shouldCall = fields?.some((field) => config?.[field] !== oldConfig?.[field]) ?? true;

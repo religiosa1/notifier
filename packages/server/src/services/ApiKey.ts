@@ -8,12 +8,12 @@ import { di } from "src/injection";
 function generateApiKey(): string {
 	const key = base64.stringify(randomBytes(30))
 	const prefix = base32.stringify(randomBytes(5));
-	return prefix + '.' + key;
+	return prefix + "." + key;
 }
 
 export function parseApiKey(apiKey: string): [prefix: string, key: string] {
 	const validated = apiKeySchema.parse(apiKey);
-	const [prefix, key] = validated.split('.', 2);
+	const [prefix, key] = validated.split(".", 2);
 	// fields validated by the regex
 	return [prefix!, key!];
 }

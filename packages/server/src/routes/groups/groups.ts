@@ -1,11 +1,11 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import z from "zod";
-import { zValidator } from '@hono/zod-validator';
-import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator";
+import { paramErrorHook, validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
-import type { ContextVariables } from 'src/ContextVariables';
-import type { Counted } from '@shared/models/Counted';
+import type { ContextVariables } from "src/ContextVariables";
+import type { Counted } from "@shared/models/Counted";
 import { ResultError } from "@shared/models/Result";
 import * as GroupModel from "@shared/models/Group";
 import { paginationDefaults, pageinationQuerySchema } from "@shared/models/Pagination";
@@ -14,9 +14,9 @@ import { di } from "src/injection";
 
 import groupUsers  from "./groupUsers";
 import groupChannels from "./groupChannels";
-import { intGt, toInt } from '@shared/helpers/zodHelpers';
-import { groupIdParamSchema } from './models';
-import { authorizeJWT } from 'src/middleware/authorizeJWT';
+import { intGt, toInt } from "@shared/helpers/zodHelpers";
+import { groupIdParamSchema } from "./models";
+import { authorizeJWT } from "src/middleware/authorizeJWT";
 
 const controller = new Hono<{ Variables: ContextVariables }>();
 
@@ -40,7 +40,7 @@ controller.get(
 );
 
 controller.post(
-	'/', 
+	"/", 
 	zValidator("json", GroupModel.groupCreateSchema, validationErrorHook), 
 	async(c) => {
 		const logger = di.inject("logger");

@@ -14,5 +14,5 @@ export function reEscape(stringsOrString: TemplateStringsArray | string, ...exps
 			}
 		}
 	}
-	return str.replace(/[|\\\/{}()[\]^$+*?.]/g, '\\$&');
+	return str.replace(/[|\\\/{}()[\]^$+*?.]/g, "\\$&");
 };

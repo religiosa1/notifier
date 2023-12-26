@@ -1,17 +1,17 @@
-import { Hono } from 'hono'
+import { Hono } from "hono"
 import z from "zod";
-import { zValidator } from '@hono/zod-validator'
-import { validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator"
+import { validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import { channelNameSchema } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
 import { di } from "src/injection";
 
-import { authorizeAnyMethod } from 'src/middleware/authorizeAnyMethod';
+import { authorizeAnyMethod } from "src/middleware/authorizeAnyMethod";
 
 const controller = new Hono();
 
-controller.use('*', authorizeAnyMethod);
+controller.use("*", authorizeAnyMethod);
 
 controller.post("/",
 	zValidator("json", z.object({
@@ -27,7 +27,7 @@ controller.post("/",
 		if (!bot) {
 			throw new ResultError(503, "Bot isn't initialized");
 		}
-		const body = c.req.valid('json');
+		const body = c.req.valid("json");
 		const channels = Array.isArray(body.channels) ? body.channels : [body.channels];
 
 		const chats = await channelsRepository.getUserChatIdsForChannel(channels);
@@ -36,12 +36,10 @@ controller.post("/",
 			throw new ResultError(404, "Can't find anyone to send the data to in the provided channels");
 		}
 
-		console.log("SENDING MESSAGE...")
 		await bot.broadcastMessage(
 			chats,
 			{ text: body.message }
 		);
-		console.log("MESSAGE SENT")
 		return c.json(null);
 	}
 );

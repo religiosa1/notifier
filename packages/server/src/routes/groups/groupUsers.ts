@@ -1,15 +1,15 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import z from "zod";
-import { zValidator } from '@hono/zod-validator';
-import { paramErrorHook, validationErrorHook } from 'src/middleware/validationErrorHandlers';
+import { zValidator } from "@hono/zod-validator";
+import { paramErrorHook, validationErrorHook } from "src/middleware/validationErrorHandlers";
 
 import * as GroupModel from "@shared/models/Group";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
-import type { ContextVariables } from 'src/ContextVariables';
+import type { ContextVariables } from "src/ContextVariables";
 import { parseIds, batchIdsSchema } from "@shared/models/batchIds";
 import { di } from "src/injection";
 
-import { intGt, toInt } from '@shared/helpers/zodHelpers';
+import { intGt, toInt } from "@shared/helpers/zodHelpers";
 
 const baseGroupUsersParams = z.object({
 	groupId: z.string().refine(...intGt(0)).transform(toInt)
