@@ -5,8 +5,7 @@ interface Pagination {
   skip: number;
   take: number;
 }
-/**
- *
+
 /** Get and enforce correctness of urls pagination searchParams.
  *
  * @param url utl to parse

@@ -98,7 +98,7 @@ controller.get(
 	async(c) => {
 		const groupsRepository = di.inject("GroupsRepository");
 		const {groupId: id} = c.req.valid("param");
-		const group = await groupsRepository.getGroupDetail(parseInt(id));
+		const group = await groupsRepository.getGroupDetail(id);
 		return c.json(group satisfies GroupModel.GroupDetail);
 	}
 );
