@@ -169,7 +169,7 @@ export class ChannelsRepository {
 		.prepare("search_channel")
 	);
 	async searchChannels({ name = ""}): Promise<Channel[]> {
-		return this.querySearchChannels.value.execute({ name });
+		return this.querySearchChannels.value.execute({ name: "%" + name + "%" });
 	}
 
 	private readonly querySearchChannelsForGroup = this.dbm.prepare((db) =>
@@ -185,6 +185,6 @@ export class ChannelsRepository {
 			.prepare("channel_search_query_for_group")
 	);
 	async searchChannelsForGroup({ name = "", groupId }: { name: string, groupId: number}): Promise<Channel[]> {
-		return this.querySearchChannelsForGroup.value.execute({ name, groupId });
+		return this.querySearchChannelsForGroup.value.execute({ name: "%" + name + "%", groupId });
 	}
 }
