@@ -23,6 +23,11 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Notifier</title>
+	<meta name="description" content="Telegram notifier admin panel.">
+</svelte:head>
+
 <div class="main-grid">
 	<header class="main-grid__header">
 		<a class="logo-link" href="{base}/">

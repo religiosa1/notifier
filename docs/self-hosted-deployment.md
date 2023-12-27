@@ -96,14 +96,21 @@ This file should contain the following settings (SSL part will be added in the n
 server {
 	server_name fqd-of-your-service.example.com;
 
-	# assuming you ran `git clone` in /var/www
-	root /var/www/notifier/packages/admin/build/client/;
+	gzip on;
+	gzip_types text/plain text/css application/javascript application/json application/xml;
 
 	location / {
+		# assuming you ran `git clone` in /var/www
+		root /var/www/notifier/packages/admin/build/client/;
+		try_files $uri @admin;
+	}
+
+	location @admin {
 		proxy_set_header X-Forwarded-Proto $scheme;
 		proxy_set_header X-Forwarded-Host $host;
-		proxy_pass http://127.0.0.1:3000/;
+		proxy_pass http://127.0.0.1:3000;
 	}
+
 	# Bot's service doesn't need to be exposed to the outside world, if it will be only
 	# communicated with through the admin. But we still need to expose bot's webhook:
 	location /bot {
