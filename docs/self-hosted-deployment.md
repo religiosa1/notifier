@@ -142,6 +142,18 @@ In the root directory of the app (the dir where you cloned the app to) run:
 npm install
 npm run build
 ```
-<!-- TODO give a pm2 ecosystem file to make people's life easier 
-  TODO finalize this section and proofread everything
--->
+
+There's a prepared pm2 ecosystem file, to run both backend and admin, so to start the 
+application you can run 
+
+```sh
+pm2 start ecosystem.config.js --env production
+```
+Please, notice the usage of environment vatiables:
+```
+PROTOCOL_HEADER=X-Forwarded-Proto
+HOST_HEADER=X-Forwarded-Host
+```
+
+They specify the public admin address being forwarded from nginx, so we can setup 
+the CORS correctly.

@@ -2,6 +2,13 @@
 	"name": "@tg-notifier/admin",
 	"version": "0.0.1",
 	"private": true,
+	"type": "module",
+	"author": "Viacheslav Azarov",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/religiosa1/notifier.git"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -13,12 +20,6 @@
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
 		"format": "prettier --plugin-search-dir . --write .",
 		"test": "vitest --run"
-	},
-	"author": "Viacheslav Azarov",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/religiosa1/notifier.git"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
@@ -41,7 +42,6 @@
 		"vite": "^5.0.0",
 		"vitest": "^1.0.0"
 	},
-	"type": "module",
 	"dependencies": {
 		"nanoid": "^5.0.4",
 		"zod": "^3.22.4"

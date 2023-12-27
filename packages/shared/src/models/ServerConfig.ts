@@ -13,14 +13,8 @@ export const serverConfigSchema = z.object({
 });
 export type ServerConfig = z.infer<typeof serverConfigSchema>;
 
-/** ServerConfiguration request schema */
-export const settingsFormDataSchema = serverConfigSchema.extend({
-	apiUrl: z.string().url()
-});
-export type SettingsFormData = z.infer<typeof settingsFormDataSchema>;
-
 /** ServerSetup request schema */
-export const setupFormSchema = settingsFormDataSchema.extend({
+export const setupFormSchema = serverConfigSchema.extend({
 	password: passwordSchema,
 	migrate: z.boolean().optional(),
 });

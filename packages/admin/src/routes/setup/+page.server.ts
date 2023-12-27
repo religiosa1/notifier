@@ -3,28 +3,26 @@ import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import type { Actions, PageServerLoad } from "./$types";
 
 import { generateJwtSecret } from "~/helpers/generateJwtSecret";
-import { redirect } from "@sveltejs/kit";
+import { isHttpError, redirect } from "@sveltejs/kit";
 import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
 import { base } from "$app/paths";
 
 export const load: PageServerLoad = async ({ fetch }) => {
-	const serverSettings = await fetch(serverUrl("/settings"))
+	await fetch(serverUrl("/settings"))
 		.then(unwrapResult<ServerConfig>)
-		.catch(() => undefined); // FIXME
-	if (serverSettings) {
-		redirect(303, base + "/settings");
-	}
+		.catch(err => {
+			if (isHttpError(err) && err.status === 550) {
+				redirect(303, base + "settings");
+			}
+			throw err;
+		});
 
 	const settings: Partial<SetupForm> = {
-		apiUrl: "http://127.0.0.1:8085/",
 		jwtSecret: generateJwtSecret(),
 	};
 
-	return {
-		settings,
-		initialSetup: !!serverSettings
-	}
+	return { settings }
 }
 
 export const actions: Actions = {

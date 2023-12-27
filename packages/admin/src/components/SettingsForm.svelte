@@ -1,8 +1,8 @@
 
 <script lang="ts">
-	import type { SettingsFormData } from "@shared/models";
+	import type { ServerConfig } from "@shared/models";
 	import Spinner from "./Spinner.svelte";
-	export let data: Partial<SettingsFormData & { isDatabaseUrlOk?: boolean }> | undefined = undefined;
+	export let data: Partial<ServerConfig & { isDatabaseUrlOk?: boolean }> | undefined = undefined;
 	export let testingDb = false;
 	async function generateJWTSecret() {
 		const key = await crypto.subtle.generateKey(
@@ -51,7 +51,9 @@
 			required
 		/>
 		<small>
-			This is your admin and API public url -- internet address.
+			This is your <em>backend</em> public url -- internet address.
+			This is where the telegram bot webhook will be placed and where public REST-API 
+			is accessible.
 		</small>
 	</label>
 </div>
@@ -94,19 +96,6 @@
 <details>
 	<summary>Advanced</summary>
 	<div class="details-body">
-		<div class="input-group">
-			<label class="form-input">
-				<span class="form-label">Server API URL</span>
-				<input
-					name="apiUrl"
-					type="url"
-					placeholder="http://127.0.0.1:8085/"
-					required
-					value={data?.apiUrl ?? ""}
-				/>
-				<small>Address of your server, accessible to the Admin site</small>
-			</label>
-		</div>
 		<div class="input-group">
 			<label class="form-input">
 				<span class="form-label">Server JWT secret</span>
