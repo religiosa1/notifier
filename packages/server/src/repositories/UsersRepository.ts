@@ -11,7 +11,7 @@ import { assert } from "src/util/assert";
 const userNotFound = (id: string | number) => () => new NotFoundError(`user with id '${id}' doesn't exist`);
 
 /* All of the statements using transactions can't be prepared at the moment.
- * Blocker:  https://github.com/drizzle-team/drizzle-orm/issues/613
+ * Blocker: https://github.com/drizzle-team/drizzle-orm/issues/613
  */
 
 export class UsersRepository {

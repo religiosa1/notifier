@@ -6,12 +6,12 @@ export class Emitter<TEventMap extends DefaultEventMap = DefaultEventMap> {
 	emit<TEvent extends keyof TEventMap>(event: TEvent, ...args: Parameters<TEventMap[TEvent]>) {
 		const callbacks = this.events.get(event);
 		if (!callbacks) { return }
-    for (const cb of callbacks) {
+		for (const cb of callbacks) {
 			cb.apply(undefined, args);
 		}
 	}
 
-  on<TEvent extends keyof TEventMap>(event: TEvent, cb: TEventMap[TEvent]): UnsubscribeCb {
+	on<TEvent extends keyof TEventMap>(event: TEvent, cb: TEventMap[TEvent]): UnsubscribeCb {
 		if (!this.events.has(event)) {
 			this.events.set(event, new Set());
 		}
@@ -20,7 +20,7 @@ export class Emitter<TEventMap extends DefaultEventMap = DefaultEventMap> {
 		return () => events.delete(cb);
 	}
 
-  once<TEvent extends keyof TEventMap>(event: TEvent, cb: TEventMap[TEvent]): UnsubscribeCb {
+	once<TEvent extends keyof TEventMap>(event: TEvent, cb: TEventMap[TEvent]): UnsubscribeCb {
 		const unsub = this.on(event, ((...args) => {
 			unsub();
 			return cb.apply(undefined, args);

@@ -19,16 +19,16 @@ const userRoleEnum = pgEnum("user_role_enum", userRoleEnumSchema.options);
 
 export const users = pgTable("users", {
 	id: serial("id").primaryKey(),
-  telegramId: integer("telegram_id").notNull().unique(),
-  name: text("name"),
-  /** only admin users can have password, so if the password exists it"s an admin  */
-  password: text("password"),
-  authorizationStatus: authorizationEnum("authorization_status").notNull().default(AuthorizationEnum.pending),
-  role: userRoleEnum("role").notNull().default(UserRoleEnum.regular),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow()
+	telegramId: integer("telegram_id").notNull().unique(),
+	name: text("name"),
+	/** only admin users can have password, so if the password exists it"s an admin	*/
+	password: text("password"),
+	authorizationStatus: authorizationEnum("authorization_status").notNull().default(AuthorizationEnum.pending),
+	role: userRoleEnum("role").notNull().default(UserRoleEnum.regular),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
-export const userRelations = relations(users, ({ many  }) => ({
+export const userRelations = relations(users, ({ many	}) => ({
 	groups: many(usersToGroups),
 	channels: many(usersToChannels),
 	apiKeys: many(apiKeys),
@@ -38,10 +38,10 @@ export const userRelations = relations(users, ({ many  }) => ({
 /* Groups */
 
 export const groups = pgTable("groups", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	id: serial("id").primaryKey(),
+	name: text("name").notNull().unique(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 export const groupsRelations = relations(groups, ({ many }) => ({
 	users: many(usersToGroups),
@@ -69,10 +69,10 @@ export const usersToGroupsRelations = relations(usersToGroups, ({ one }) => ({
 /* Channels */
 
 export const channels = pgTable("channels", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
+	id: serial("id").primaryKey(),
+	name: text("name").notNull().unique(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 export const channelRelations = relations(channels, ({ many }) => ({
 	groups: many(channelsToGroups),
@@ -119,12 +119,12 @@ export const usersToChannelsRelations = relations(usersToChannels, ({ one }) => 
 /* API keys */
 
 export const apiKeys = pgTable("api_keys", {
-  /** Public part, displayed in user interface */
+	/** Public part, displayed in user interface */
 	prefix: text("prefix").primaryKey(),
-  // Actual key part, stored as hash
-  hash: text("hash").notNull(),
+	// Actual key part, stored as hash
+	hash: text("hash").notNull(),
 	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
 	user: one(users),

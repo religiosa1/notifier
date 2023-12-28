@@ -20,7 +20,7 @@ type ContainerInit<T> = {
 class DiContainer<T extends Record<string, {}>> {
 	private readonly container: Partial<T> = {};
 	constructor(private readonly containerInit: ContainerInit<T>) {
-    this.inject = this.inject.bind(this);
+		this.inject = this.inject.bind(this);
 		
 	}
 

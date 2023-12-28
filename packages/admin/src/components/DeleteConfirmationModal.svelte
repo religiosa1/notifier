@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+	import { invalidateAll } from "$app/navigation";
 	import { applyAction, deserialize } from "$app/forms";
 	import type { ActionResult } from "@sveltejs/kit";
 
 	import Modal from "~/components/Modal.svelte";
 
-  export let open: boolean;
-  export let selected: Set<number>;
-  export let action = "?/delete";
+	export let open: boolean;
+	export let selected: Set<number>;
+	export let action = "?/delete";
 
-  async function handleConfirmationClick() {
+	async function handleConfirmationClick() {
 		open = false;
 		const formData = new FormData();
 		selected.forEach((i) => formData.append("id", i.toString()));

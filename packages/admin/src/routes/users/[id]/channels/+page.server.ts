@@ -10,33 +10,33 @@ import { fail } from '@sveltejs/kit';
 import { serverUrl } from '~/helpers/serverUrl';
 
 export const load: PageServerLoad = async ({ fetch, url, params}) => {
-  const pagination = getPaginationParams(url);
-  const [ user, availableChannels, channels ] = await Promise.all([
-    fetch(serverUrl(uri`/users/${params.id}`))
-      .then(unwrapResult<UserDetail>),
-    fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/available-channels`)))
-      .then(unwrapResult<Channel[]>),
-    fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/channels`)))
-      .then(unwrapResult<Counted<Channel[]>>),
-  ]);
+	const pagination = getPaginationParams(url);
+	const [ user, availableChannels, channels ] = await Promise.all([
+		fetch(serverUrl(uri`/users/${params.id}`))
+			.then(unwrapResult<UserDetail>),
+		fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/available-channels`)))
+			.then(unwrapResult<Channel[]>),
+		fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/channels`)))
+			.then(unwrapResult<Counted<Channel[]>>),
+	]);
 
-  return {
-    user,
-    availableChannels,
-    channels: channels.data,
-    pagination: {
-      ...pagination,
-      count: channels.count
-    }
-  }
+	return {
+		user,
+		availableChannels,
+		channels: channels.data,
+		pagination: {
+			...pagination,
+			count: channels.count
+		}
+	}
 };
 
 export const actions: Actions = {
-  delete: batchDelete(({ params }) => ({ route: uri`/users/${params.id}/channels` })),
-  add: async ({ params, fetch, request }) => {
-    const formData = await request.formData();
-    const userId = params.id;
-    const id = formData.get("id");
+	delete: batchDelete(({ params }) => ({ route: uri`/users/${params.id}/channels` })),
+	add: async ({ params, fetch, request }) => {
+		const formData = await request.formData();
+		const userId = params.id;
+		const id = formData.get("id");
 		if (!id || typeof id !== "string") {
 			return fail(422, { error: "id field must be present" });
 		}
@@ -50,5 +50,5 @@ export const actions: Actions = {
 			console.error("Adding an API-key error", err);
 			return handleActionFailure(err);
 		}
-  },
+	},
 }

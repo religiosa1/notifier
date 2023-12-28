@@ -15,52 +15,52 @@
  */
 export function hasField<K extends string>(o: unknown, k: K): o is Record<K, unknown>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "some"
+	o: unknown, k: K, t: "some"
 ): o is Record<K, {}>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "string"
+	o: unknown, k: K, t: "string"
 ): o is Record<K, string>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "boolean"
+	o: unknown, k: K, t: "boolean"
 ): o is Record<K, boolean>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "function"
+	o: unknown, k: K, t: "function"
 ): o is Record<K, (...agrs: unknown[]) => unknown>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "number"
+	o: unknown, k: K, t: "number"
 ): o is Record<K, number>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "object"
+	o: unknown, k: K, t: "object"
 ): o is Record<K, object>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "string"
+	o: unknown, k: K, t: "string"
 ): o is Record<K, string>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "symbol"
+	o: unknown, k: K, t: "symbol"
 ): o is Record<K, symbol>;
 export function hasField<K extends string>(
-  o: unknown, k: K, t: "undefined"
+	o: unknown, k: K, t: "undefined"
 ): o is Record<K, undefined>;
 export function hasField<K extends string, T>(
-  o: unknown, k: K, t: { new (...agrs: unknown[]): T }
+	o: unknown, k: K, t: { new (...agrs: unknown[]): T }
 ): o is Record<K, T>;
 
 export function hasField<
-  K extends string,
-  T extends string | (abstract new (...args: unknown[]) => unknown)
+	K extends string,
+	T extends string | (abstract new (...args: unknown[]) => unknown)
 >(o: unknown, k: K, t?: T): boolean {
-  if (!o || typeof o !== "object" || !(k in o)) {
-    return false;
-  }
-  if (t == null) {
-    return true;
-  }
-  const v = o[k as keyof object] as unknown;
-  if (typeof t == "function") {
-    return v instanceof t;
-  }
-  if (t === "some") {
-    return v != null;
-  }
-  return typeof v === t;
+	if (!o || typeof o !== "object" || !(k in o)) {
+		return false;
+	}
+	if (t == null) {
+		return true;
+	}
+	const v = o[k as keyof object] as unknown;
+	if (typeof t == "function") {
+		return v instanceof t;
+	}
+	if (t === "some") {
+		return v != null;
+	}
+	return typeof v === t;
 }

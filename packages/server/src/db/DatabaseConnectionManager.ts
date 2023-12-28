@@ -22,7 +22,7 @@ export class DatabaseConnectionManager {
 		return conn;
 	}
 	private set connection(c: PostgresJsDatabase<typeof schema> | undefined) {
-		this.#connection  = c;
+		this.#connection = c;
 		this.emitter.emit("change", c);
 	}
 

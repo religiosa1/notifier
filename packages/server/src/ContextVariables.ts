@@ -1,5 +1,5 @@
 export type ContextVariables = {
-  user: {
+	user: {
 		name: string | null;
 		id: number;
 	}

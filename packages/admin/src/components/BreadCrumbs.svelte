@@ -16,7 +16,7 @@
 		? [
 				{ href: base + "/", name: "Home" },
 				{ href: href.startsWith("/") ? base + href : href, name },
-		  ]
+			]
 		: [{ href: base + "/", name: "Home" }];
 </script>
 

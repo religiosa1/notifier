@@ -1,6 +1,6 @@
 import z from "zod";
 import { AuthorizationEnum, authorizationEnumSchema } from "./AuthorizationEnum";
-import {  UserRoleEnum, userRoleEnumSchema } from "./UserRoleEnum";
+import { UserRoleEnum, userRoleEnumSchema } from "./UserRoleEnum";
 import { userPreviewSchema } from "./UserPreview";
 import { groupNameSchema } from "./Group";
 

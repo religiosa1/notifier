@@ -7,19 +7,19 @@ import { batchDelete } from '~/actions/batchDelete';
 import { serverUrl } from '~/helpers/serverUrl';
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
-  const pagination = getPaginationParams(url);
-  const users = await fetch(serverUrl(paginate(pagination, '/users')))
-    .then(unwrapResult<Counted<UserWithGroups[]>>);
+	const pagination = getPaginationParams(url);
+	const users = await fetch(serverUrl(paginate(pagination, '/users')))
+		.then(unwrapResult<Counted<UserWithGroups[]>>);
 
-  return {
-    users: users.data,
-    pagination: {
-      ...pagination,
-      count: users.count
-    }
-  }
+	return {
+		users: users.data,
+		pagination: {
+			...pagination,
+			count: users.count
+		}
+	}
 };
 
 export const actions: Actions = {
-  delete: batchDelete({ route: "/users" }),
+	delete: batchDelete({ route: "/users" }),
 }
