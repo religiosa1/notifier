@@ -22,8 +22,7 @@ export class ServerError extends Error {
 export function unwrapResult<T>(r: Response): Promise<T> {
   return r.json().then((data: Result<T>) => {
     if (isResultErrorLike(data)) {
-      const err = {...data, message: data.error ?? data.message};
-      error(data.statusCode as NumericRange<400,599>, err);
+      error(data.statusCode as NumericRange<400,599>, data);
     }
     if (!r.ok) {
       throw new Error(`General http error: ${r.status}`);

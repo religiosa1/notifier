@@ -1,10 +1,15 @@
 <script lang="ts">
-	import { enhance } from "$app/forms";
-	import PasswordInput from "~/components/PasswordInput.svelte";
+	import { applyAction, enhance } from "$app/forms";
+	import { invalidate } from "$app/navigation";
   import type { ActionData } from "./$types";
+	import PasswordInput from "~/components/PasswordInput.svelte";
+	import FormResultPanel from "~/components/FormResultPanel.svelte";
   export let form: ActionData;
 </script>
-<form method="POST" use:enhance>
+<form method="POST" use:enhance={() => async ({result}) => {
+  await applyAction(result);
+  await invalidate("app:user");
+}}>
   <h2>Log in</h2>
   <p class="input-group">
     <label>
@@ -30,20 +35,13 @@
       />
     </label>
   </p>
-  {#if form?.error}
-    <p class="error">
-      {form?.errorDetails}
-    </p>
-  {/if}
+  <FormResultPanel {form} />
   <p class="input-group">
     <button>Log in</button>
   </p>
 </form>
 
 <style>
-.error {
-  color: var(--clr-error);
-}
 .input-group input,
 .input-group :global(.input) {
   display: block;

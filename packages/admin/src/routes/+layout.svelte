@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onNavigate } from '$app/navigation';
+	import { applyAction, enhance } from '$app/forms';
+	import { invalidate, onNavigate } from '$app/navigation';
 	import { base } from "$app/paths";
 	import type { LayoutData } from "./$types";
 	import "./layout.scss";
@@ -37,7 +38,10 @@
 		{#if data.user}
 			<div class="user-block">
 				<a href="{base}/users/{data.user.id}">{data.user.name}</a>
-				<form method="post" action="/logout">
+				<form method="post" action="/logout" use:enhance={() => async ({result}) => {
+					await applyAction(result);
+					await invalidate("app:user");
+				}}>
 					<button class="inline">Log out</button>
 				</form>
 			</div>

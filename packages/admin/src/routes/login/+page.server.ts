@@ -5,11 +5,9 @@ import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
 import { hasField } from "~/helpers/hasField";
 import { serverUrl } from "~/helpers/serverUrl";
 
-export const load: PageServerLoad = async ({ parent }) => {
-  const { user } = await parent();
-
-  if (user) {
-    redirect(303, base + '/');
+export const load: PageServerLoad = async ({ locals }) => {
+  if (locals.user) {
+    redirect(307, base + '/');
   }
 }
 
@@ -29,9 +27,10 @@ export const actions: Actions = {
       return handleActionFailure(e, { name });
     }
     if (!hasField(serverData, "token", "string")) {
-      return fail(500, { error: "Bad server response, missing `token` field." });
+      return fail(500, { error: "Bad server response, missing `token` field.", name });
     }
     cookies.set("Authorization", `Bearer ${serverData.token}`, { path: '/' });
-    redirect(303, url.searchParams.get("referer") || "/");
+    const referer = url.searchParams.get("referer");
+    await redirect(307, referer ? base + referer : "/");
   }
 };

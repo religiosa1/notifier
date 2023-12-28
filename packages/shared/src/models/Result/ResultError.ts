@@ -5,7 +5,7 @@ export const resultFailureSchema = z.object({
   success: z.literal(false),
   error: z.string(),
   statusCode: z.number().int().gte(400),
-  message: z.string().optional(),
+  message: z.string(),
   details: z.unknown().optional(),
   ts: z.number().int(),
 });

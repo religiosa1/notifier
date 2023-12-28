@@ -4,6 +4,7 @@
 	import { isResultErrorLike } from '~/models/Result';
 
 	$: details = extractDetaild($page.error?.message);
+	$: console.log($page.error);
 
 	function extractDetaild(error: unknown) {
 		if (typeof error !== "string") {

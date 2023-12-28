@@ -4,7 +4,7 @@ export interface ResultFailure {
   success?: false;
   error: string;
   statusCode: number;
-  message?: string;
+  message: string;
 }
 
 export type Result<T> = {

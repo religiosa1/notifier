@@ -1,9 +1,14 @@
 // See https://kit.svelte.dev/docs/types#app
+
+import type { TokenPayload } from "@shared/models/TokenPayload";
+
 // for information about these interfaces
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			user?: TokenPayload
+		}
 		// interface PageData {}
 		// interface Platform {}
 	}
