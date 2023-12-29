@@ -5,6 +5,6 @@ export const load: LayoutServerLoad = async ({ locals, depends }) => {
 	// as page load and layout load run concurrently and we can't be really sure what finished first
 	// Which results in stale user panel.
 	depends("app:user");
-	const { user } = locals;
-	return { user };
+	const { user, isBackendInitialized } = locals;
+	return { user, isBackendInitialized };
 }

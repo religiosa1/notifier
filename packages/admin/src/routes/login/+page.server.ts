@@ -30,7 +30,10 @@ export const actions: Actions = {
 			return fail(500, { error: "Bad server response, missing `token` field.", name });
 		}
 		cookies.set("Authorization", `Bearer ${serverData.token}`, { path: '/' });
-		const referer = url.searchParams.get("referer");
+		let referer = url.searchParams.get("referer");
+		if (referer === "/login") {
+			referer = null;
+		}
 		await redirect(307, referer ? base + referer : "/");
 	}
 };

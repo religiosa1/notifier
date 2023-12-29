@@ -7,7 +7,8 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
-			user?: TokenPayload
+			user?: TokenPayload;
+			isBackendInitialized: boolean;
 		}
 		// interface PageData {}
 		// interface Platform {}

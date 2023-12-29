@@ -31,9 +31,13 @@
 
 <div class="main-grid">
 	<header class="main-grid__header">
-		<a class="logo-link" href="{base}/">
+		{#if data.isBackendInitialized}
+			<a class="logo-link" href="{base}/">
+				<h1 class="logo-text">Notifier</h1>
+			</a>
+		{:else}
 			<h1 class="logo-text">Notifier</h1>
-		</a>
+		{/if}		
 
 		{#if data.user}
 			<div class="user-block">

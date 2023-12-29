@@ -3,17 +3,21 @@ import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import type { Actions, PageServerLoad } from "./$types";
 
 import { generateJwtSecret } from "~/helpers/generateJwtSecret";
-import { isHttpError, redirect } from "@sveltejs/kit";
+import { isHttpError, isRedirect, redirect } from "@sveltejs/kit";
 import { getFormData } from "~/helpers/getFormData";
 import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
 import { base } from "$app/paths";
 
 export const load: PageServerLoad = async ({ fetch }) => {
+	// Checking if backend has been initialized, by trying to get settings.
+	// The only valid outcome is 550 error response (custom code for uninitialzed backend).
+	// Existing settings (aka initialized backend) results in redirect to the /settings page
 	await fetch(serverUrl("/settings"))
 		.then(unwrapResult<ServerConfig>)
+		.then(() => redirect(303, base + "/settings"))
 		.catch(err => {
 			if (isHttpError(err) && err.status === 550) {
-				redirect(303, base + "settings");
+				return;
 			}
 			throw err;
 		});
