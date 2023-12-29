@@ -27,7 +27,7 @@ describe("pick", () => {
 			foo: 1,
 		};
 		pick(testData, predicate);
-		expect(predicate).toBeCalledWith(1, "foo", testData);
+		expect(predicate).toHaveBeenCalledWith(1, "foo", testData);
 	});
 
 	it("doesn't pick properties from prototype", () => {

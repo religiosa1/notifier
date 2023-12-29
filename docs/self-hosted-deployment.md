@@ -164,3 +164,8 @@ HOST_HEADER=X-Forwarded-Host
 
 They specify the public admin address being forwarded from nginx, so we can setup 
 the CORS correctly.
+
+After that, if you open your admin site in your browser, you should be able to see
+the initial setup page. You need to enter your bot token, publicUrl and DB
+connection and admin password there. After submitting the setup form, you should
+be able to use the service.
