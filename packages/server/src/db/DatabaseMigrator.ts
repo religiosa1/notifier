@@ -33,7 +33,7 @@ export class DatabaseMigrator {
 		this.logger.info("Migration complete");
 	}
 
-	async seed(adminPassword: string): Promise<void> {
+	async seed(adminPassword: string, telegramId: number): Promise<void> {
 		await using db = this.getDbConnection();
 		this.logger.info("Seedin the db, creating groups...");
 		await db.insert(schema.groups)
@@ -51,7 +51,7 @@ export class DatabaseMigrator {
 		await db.insert(schema.users)
 			.values({
 				id: 1,
-				telegramId: 1234567, // TODO move to setup
+				telegramId,
 				name: "admin",
 				password: await hashPassword(adminPassword),
 				authorizationStatus: AuthorizationEnum.accepted,

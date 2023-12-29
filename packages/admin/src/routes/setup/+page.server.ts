@@ -56,8 +56,9 @@ export const actions: Actions = {
 		if (!isDbOk) {
 			return { ...Object.fromEntries(formData), isDatabaseUrlOk: false };
 		}
+		const data = getFormData(formData, setupFormSchema);
 		const retobj = {
-			...Object.fromEntries(formData),
+			...data,
 			isDatabaseUrlOk: true,
 		};
 		return retobj

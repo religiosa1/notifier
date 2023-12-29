@@ -52,13 +52,13 @@ controller.put(
 			throw new ResultError(410, "Server has already been configured.");
 		}
 
-		const { migrate, password, ...configData } = body;
+		const { migrate, password, telegramId, ...configData } = body;
 
 		await settingsService.setConfig(configData);
 		if (migrate) {
 			try {
 				await dbMigrator.migrate();
-				await dbMigrator.seed(password ?? "");
+				await dbMigrator.seed(password ?? "", telegramId ?? 1234567);
 			} catch (e) {
 				// if we failed to migrate DB, then reverting our saved config back
 				await settingsService.removeConfig();

@@ -16,6 +16,7 @@ export type ServerConfig = z.infer<typeof serverConfigSchema>;
 /** ServerSetup request schema */
 export const setupFormSchema = serverConfigSchema.extend({
 	password: passwordSchema,
+	telegramId: z.number().int().gt(0).optional(),
 	migrate: z.boolean().optional(),
 });
 export type SetupForm = z.infer<typeof setupFormSchema>;

@@ -80,6 +80,24 @@
 	</div>
 
 	<div class="input-group">
+		<label class="form-input">
+			<span class="form-label">Admin telegram ID</span>
+			<input
+				name="telegramId"
+				type="text"
+				pattern="\d+"
+				value={settings.telegramId ?? ""}
+			/>
+			<small>
+				Your admin account <em>numeric</em> telegramId that will be used during the migration. <br />
+				You can find out your telegramId using 
+				<a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a> 
+				or by running the hidden command <code>/get_id</code> if notifier bot is already running.
+			</small>
+		</label>
+	</div>
+
+	<div class="input-group">
 		<button disabled={!!submitingAction} class="button">Save</button>
 		{#if submitingAction === "default"}
 			<Spinner />

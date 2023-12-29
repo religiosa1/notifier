@@ -139,6 +139,18 @@ export const botCommands: readonly BotCommand[] = Object.freeze([
 		[],
 		{ noAuth: true }
 	),
+	new BotCommand(
+		"get_id",
+		"",
+		async ({ reply, msg }) => {
+			if (!msg.from) {
+				throw new Error("There's no 'chat' information in the message, unable to process");
+			}
+			await reply(`your telegram chat_id: ${msg.from}`);
+		},
+		[],
+		{ hidden: true, noAuth: true }
+	),
 ]);
 
 function listMessage(prefix: string, items: string[], elseMsg: string): string {
