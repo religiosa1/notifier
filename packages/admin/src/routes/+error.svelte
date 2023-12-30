@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import Panel from '~/components/Panel.svelte';
-	import { isResultErrorLike } from '~/models/Result';
+	import { isResultErrorLike } from '@shared/models/Result';
+	import { attempt } from '@shared/helpers/attempt';
+	import { hasProperty } from '@shared/helpers/hasProperty';
 
 	$: details = extractDetaild($page.error?.message);
 	$: console.log($page.error);
@@ -10,14 +12,11 @@
 		if (typeof error !== "string") {
 			return;
 		}
-		try {
-			const details = JSON.parse(error);
-			if (details.body && typeof details.body === "object" && isResultErrorLike(details.body)) {
-				return details.body;
-			}
-		} catch {
-			return;
+		const [details] = attempt(() => JSON.parse(error));
+		if (hasProperty(details, "body") && isResultErrorLike(details.body)) {
+			return details.body;
 		}
+		return;
 	}
 </script>
 

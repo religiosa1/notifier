@@ -75,7 +75,7 @@ export const handleFetch: HandleFetch = ({ event, request, fetch }) => {
 			global_hasValidServerSettings = false;
 			redirect(303, base + '/setup');
 		}
-		if (!event.url.pathname.startsWith(base + "/login") && r.status === 403 || r.status === 401) {
+		if (!event.url.pathname.startsWith(base + "/login") && (r.status === 403 || r.status === 401)) {
 			event.cookies.delete("Authorization", { path: "/" });
 			redirect(303, base + uri`/login?referer=${event.url.pathname}`);
 		}

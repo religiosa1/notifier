@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
-	import { hasField } from "~/helpers/hasField";
+	import { hasProperty } from "@shared/helpers/hasProperty";
 	import Panel from "./Panel.svelte";
 	export let action: BatchOperationStats | unknown | null;
 	export let verb = "Deleted";
 	export let entityName = "items";
 
 	function isBatchOperationStats(e: unknown): e is BatchOperationStats {
-		return hasField(e, "count", "number") && hasField(e, "outOf", "number");
+		return hasProperty(e, "count", "number") && hasProperty(e, "outOf", "number");
 	}
 </script>
 

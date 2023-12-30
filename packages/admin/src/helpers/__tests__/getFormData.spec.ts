@@ -11,9 +11,9 @@ describe("getFormData", () => {
 		foo: z.string(),
 		bar: z.number(),
 	});
-	// TODO what about files in formData?..
+
 	it("parses supplied formData by the schema, autocoercing numbers", () => {
-		const result = getFormData(formData, schema);
+		const [result] = getFormData(formData, schema);
 		expect(result).toEqual({
 			foo: "qwerty",
 			bar: 123,
@@ -30,7 +30,7 @@ describe("getFormData", () => {
 		const formData = new FormData();
 		formData.set("testTruthy", "on");
 		formData.set("testTruthyOptional", "on");
-		const result = getFormData(formData, schema);
+		const [result] = getFormData(formData, schema);
 		expect(result).toEqual({
 			testTruthy: true,
 			testTruthyOptional: true,
@@ -47,14 +47,14 @@ describe("getFormData", () => {
 		const schema = z.object({
 			foo: z.array(z.number())
 		});
-		const result = getFormData(formData, schema);
+		const [result] = getFormData(formData, schema);
 		expect(result).toEqual({
 			foo: [ 1, 2, 3]
 		});
 	});
 
 	it("allows to specify transformes in arguments", () => {
-		const result = getFormData(formData, schema, {
+		const [result] = getFormData(formData, schema, {
 			bar: (value) => Number(value) - 23
 		});
 		expect(result).toEqual({
@@ -88,7 +88,7 @@ describe("getFormData", () => {
 				empty: z.string().nullable(),
 				notEmpty: z.string().nullable(),
 			});
-			const result = getFormData(formData, schema);
+			const [result] = getFormData(formData, schema);
 			expect(result).toEqual({
 				empty: null,
 				notEmpty: "123"
@@ -100,7 +100,7 @@ describe("getFormData", () => {
 				empty: z.string().optional(),
 				notEmpty: z.string().optional(),
 			});
-			const result = getFormData(formData, schema);
+			const [result] = getFormData(formData, schema);
 			expect(result).toEqual({
 				empty: undefined,
 				notEmpty: "123"
@@ -112,7 +112,7 @@ describe("getFormData", () => {
 				empty: z.string().default("test"),
 				notEmpty: z.string().nullable(),
 			});
-			const result = getFormData(formData, schema);
+			const [result] = getFormData(formData, schema);
 			expect(result).toEqual({
 				empty: "test",
 				notEmpty: "123"
@@ -120,7 +120,7 @@ describe("getFormData", () => {
 		});
 
 		it("applies coercion for nullable items as required", () => {
-			const resultNullable = getFormData(formData,	z.object({
+			const [resultNullable] = getFormData(formData,	z.object({
 				notEmpty: z.number().nullable(),
 			}));
 			expect(resultNullable).toEqual({
@@ -129,7 +129,7 @@ describe("getFormData", () => {
 		});
 
 		it("applies coercion for nullable items as required", () => {
-			const resultNullable = getFormData(formData,	z.object({
+			const [resultNullable] = getFormData(formData,	z.object({
 				notEmpty: z.number().optional(),
 			}));
 			expect(resultNullable).toEqual({

@@ -1,7 +1,8 @@
 import type { Action, RequestEvent } from "@sveltejs/kit";
-import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
+import { unwrapResult } from "~/helpers/unwrapResult";
 import type { BatchOperationStats } from "@shared/models/BatchOperationStats";
 import { serverUrl } from "~/helpers/serverUrl";
+import { serverAction } from "./serverAction";
 
 interface DeleteActionProps {
 	route: string;
@@ -10,27 +11,27 @@ interface DeleteActionProps {
 export const batchDelete = <
 	Params extends Partial<Record<string, string>> = Partial<Record<string, string>>,
 >(propsGetter: DeleteActionProps | ((props: RequestEvent<Params>) => DeleteActionProps)) => (async (props) => {
+		const { request, fetch } = props;
 		const { route, method } = typeof propsGetter === "function"
 			? propsGetter(props)
 			: propsGetter;
 
-		const { request, fetch } = props;
-		const formData = await request.formData();
-		const data = formData.getAll("id")
-			.filter(i => typeof i === "string").join();
-		try {
+		const [serverData, error] = await serverAction(async () => {
+			const formData = await request.formData();
+			const data = formData.getAll("id")
+				.filter(i => typeof i === "string").join();
 			const url = serverUrl(route);
-			url.searchParams.set("id", data)
-			const serverData = await fetch(
+			url.searchParams.set("id", data);
+			return fetch(
 				url,
 				{
 					method: method ?? "DELETE",
 					body: JSON.stringify(data),
 				}
-			).then(unwrapResult) as BatchOperationStats;
-			return serverData;
-		} catch(err) {
-			console.error("Batch delete error", err);
-			return handleActionFailure(err);
+			).then(unwrapResult<BatchOperationStats>);
+		});
+		if (error) {
+			return error;
 		}
+		return serverData;
 	}) satisfies Action<Params>;

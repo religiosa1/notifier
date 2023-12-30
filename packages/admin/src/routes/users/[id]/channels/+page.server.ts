@@ -1,13 +1,14 @@
 import type { Actions, PageServerLoad } from './$types';
-import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
-import { paginate, getPaginationParams } from '~/helpers/pagination';
+import { fail } from '@sveltejs/kit';
 import type { UserDetail } from "@shared/models/User";
 import type { Channel } from "@shared/models/Channel";
 import type { Counted } from "@shared/models/Counted";
-import { batchDelete } from '~/actions/batchDelete';
+import { unwrapResult } from '~/helpers/unwrapResult';
+import { paginate, getPaginationParams } from '~/helpers/pagination';
 import { uri } from '~/helpers/uri';
-import { fail } from '@sveltejs/kit';
 import { serverUrl } from '~/helpers/serverUrl';
+import { batchDelete } from '~/actions/batchDelete';
+import { serverAction } from '~/actions/serverAction';
 
 export const load: PageServerLoad = async ({ fetch, url, params}) => {
 	const pagination = getPaginationParams(url);
@@ -40,15 +41,12 @@ export const actions: Actions = {
 		if (!id || typeof id !== "string") {
 			return fail(422, { error: "id field must be present" });
 		}
-		try {
-			const resposnse = (await fetch(serverUrl(uri`/users/${userId}/channels`), {
+		const [resposnse, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${userId}/channels`), {
 				method: "POST",
 				body: JSON.stringify({ id }),
-			}).then(unwrapResult)) as UserDetail;
-			return resposnse;
-		} catch (err) {
-			console.error("Adding an API-key error", err);
-			return handleActionFailure(err);
-		}
+			}).then(unwrapResult<UserDetail>);
+		}); 
+		return error ?? resposnse;
 	},
 }

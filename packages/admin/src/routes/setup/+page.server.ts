@@ -1,12 +1,13 @@
-import { serverUrl } from "~/helpers/serverUrl";
-import { unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
 import type { Actions, PageServerLoad } from "./$types";
-
-import { generateJwtSecret } from "~/helpers/generateJwtSecret";
-import { isHttpError, isRedirect, redirect } from "@sveltejs/kit";
-import { getFormData } from "~/helpers/getFormData";
-import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
+import { isHttpError, fail, redirect } from "@sveltejs/kit";
 import { base } from "$app/paths";
+import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/models";
+
+import { serverUrl } from "~/helpers/serverUrl";
+import { unwrapResult } from "~/helpers/unwrapResult";
+import { generateJwtSecret } from "~/helpers/generateJwtSecret";
+import { getFormData } from "~/helpers/getFormData";
+import { serverAction } from "~/actions/serverAction";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	// Checking if backend has been initialized, by trying to get settings.
@@ -32,15 +33,15 @@ export const load: PageServerLoad = async ({ fetch }) => {
 export const actions: Actions = {
 	save: async ({ request, fetch }) => {
 		const formData = await request.formData();
-		try {
-			const data = getFormData(formData, setupFormSchema);
-			await fetch(serverUrl("/settings/setup"), {
-				method: "PUT",
-				body: JSON.stringify(data),
-			}).then(unwrapResult<ServerConfig>);
-		} catch (e) {
-			return unwrapValidationError(e, Object.fromEntries(formData));
+		
+		const [data, validationError] = getFormData(formData, setupFormSchema);
+		if (validationError) {
+			fail(422, validationError);
 		}
+		await fetch(serverUrl("/settings/setup"), {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}).then(unwrapResult<ServerConfig>);
 
 		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
 
@@ -49,10 +50,15 @@ export const actions: Actions = {
 	testDbConfiguration: async({request, fetch}) => {
 		const formData = await request.formData();
 		const databaseUrl = formData.get("databaseUrl");
-		var isDbOk = await fetch(serverUrl("/settings/test-database-configuration"), {
-			method: "POST",
-			body: JSON.stringify({ databaseUrl }),
-		}).then(unwrapResult<ServerConfig>);
+		const [isDbOk, error] = await serverAction(() => {
+			return fetch(serverUrl("/settings/test-database-configuration"), {
+				method: "POST",
+				body: JSON.stringify({ databaseUrl }),
+			}).then(unwrapResult<ServerConfig>)
+		});
+		if (error) {
+			return error;
+		}
 		if (!isDbOk) {
 			return { ...Object.fromEntries(formData), isDatabaseUrlOk: false };
 		}

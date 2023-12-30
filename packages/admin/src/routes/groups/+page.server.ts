@@ -1,10 +1,11 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { serverUrl } from "~/helpers/serverUrl";
-import { handleActionFailure, unwrapResult } from "~/helpers/unwrapResult";
-import { paginate, getPaginationParams } from "~/helpers/pagination";
 import type { Group } from "@shared/models/Group";
 import type { Counted } from "@shared/models/Counted";
+import { serverUrl } from "~/helpers/serverUrl";
+import { unwrapResult } from "~/helpers/unwrapResult";
+import { paginate, getPaginationParams } from "~/helpers/pagination";
 import { batchDelete } from "~/actions/batchDelete";
+import { serverAction } from "~/actions/serverAction";
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const pagination = getPaginationParams(url);
@@ -25,13 +26,10 @@ export const actions: Actions = {
 	add: async ({ request, fetch }) => {
 		const fd = await request.formData();
 		const name = fd.get("name");
-		try {
-			fetch(serverUrl("/groups"), {
-				method: "POST",
-				body: JSON.stringify({ name }),
-			})
-		} catch(err) {
-			handleActionFailure(err);
-		}
+		const [data, error] = await serverAction(() => fetch(serverUrl("/groups"), {
+			method: "POST",
+			body: JSON.stringify({ name }),
+		}));
+		return error ?? data;
 	},
 }

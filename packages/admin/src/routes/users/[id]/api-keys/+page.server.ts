@@ -1,12 +1,13 @@
 import type { Actions, PageServerLoad } from './$types';
-import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
-import { paginate, getPaginationParams } from '~/helpers/pagination';
+import { fail } from '@sveltejs/kit';
 import type { UserDetail } from "@shared/models/User";
 import type { Counted } from "@shared/models/Counted";
 import type { ApiKeyPreview } from "@shared/models/ApiKey";
+import { unwrapResult } from '~/helpers/unwrapResult';
+import { paginate, getPaginationParams } from '~/helpers/pagination';
 import { uri } from '~/helpers/uri';
-import { fail } from '@sveltejs/kit';
 import { serverUrl } from '~/helpers/serverUrl';
+import { serverAction } from "~/actions/serverAction";
 
 export const load: PageServerLoad = async ({ fetch, url, params}) => {
 	const pagination = getPaginationParams(url);
@@ -36,38 +37,32 @@ export const actions: Actions = {
 		if (!prefix || typeof prefix !== "string") {
 			return fail(422, { error: "Prefix field must be present" });
 		}
-		try {
-			const resposnse = await fetch(serverUrl(uri`/users/${userId}/api-keys/${prefix}`), {
+		const [resposnse, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${userId}/api-keys/${prefix}`), {
 				method: "DELETE",
 				body: JSON.stringify({}),
 			}).then(unwrapResult<UserDetail>);
-			return resposnse;
-		} catch (err) {
-			return handleActionFailure(err);
-		}
+		});
+		return error ?? resposnse;
 	},
 	deleteAll: async ({ params, fetch}) => {
 		const userId = params.id;
-		try {
-			const resposnse = await fetch(serverUrl(uri`/users/${userId}/api-keys`), {
+		const [resposnse, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${userId}/api-keys`), {
 				method: "DELETE",
 				body: JSON.stringify({}),
 			}).then(unwrapResult<UserDetail>);
-			return resposnse;
-		} catch (err) {
-			return handleActionFailure(err);
-		}
+		});
+		return error ?? resposnse;
 	},
 	add: async ({ params, fetch }) => {
 		const userId = params.id;
-		try {
-			const resposnse = await fetch(serverUrl(uri`/users/${userId}/api-keys`), {
+		const [resposnse, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${userId}/api-keys`), {
 				method: "POST",
 				body: JSON.stringify({}),
 			}).then(unwrapResult<UserDetail>);
-			return resposnse;
-		} catch (err) {
-			return handleActionFailure(err);
-		}
+		});
+		return error ?? resposnse;
 	}
 }

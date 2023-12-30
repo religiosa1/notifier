@@ -3,6 +3,7 @@
 	export let value: string | undefined;
 	export let name: string | undefined;
 	export let items: string[];
+	export let required = false;
 
 	const dataListId = nanoid();
 
@@ -24,6 +25,7 @@
 	autocomplete="off"
 	bind:value={value}
 	list={dataListId}
+	{required}
 	{name}
 />
 <datalist id={dataListId}>

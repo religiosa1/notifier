@@ -1,4 +1,5 @@
 import z from "zod";
+import type { FormValidationError } from "~/models/FormValidationError";
 
 // TODO: Correct type?
 type ZodObjectType = any;
@@ -12,19 +13,20 @@ type FormDataTransformers<TSchema extends z.AnyZodObject> = {
 	) => unknown
 }
 
+export type GetFormDataSuccess<T extends z.AnyZodObject> = [ data: z.infer<T>, error: undefined ];
+export type GetFormDataError<T extends z.AnyZodObject> = [ data: undefined, error: FormValidationError<z.infer<T>> ];
+
+
 export function getFormData<T extends z.AnyZodObject>(
 	formData: FormData,
 	schema: T,
 	transformers?: FormDataTransformers<T>
-): z.infer<T> {
-	const formDataData: Record<string, FormDataEntryValue[]>= Object.fromEntries(
-			Array.from(formData.keys(), (key) => {
-				const values = formData.getAll(key);
-				return [key, values];
-			})
-			// TODO: Why it was here?
-			// .filter(i => Array.isArray(i) && i.length === 2 && i[1] !== undefined)
-	);
+): GetFormDataSuccess<T> | GetFormDataError<T> {
+	const formDataData: Record<string, string[]> = {};
+	for (const key of formData.keys()) {
+		const values = formData.getAll(key).filter((i): i is string => typeof i === "string");
+		formDataData[key] = values;
+	}
 	const coercedData: Record<string, unknown> = { ...formData };
 	for (const [key, schemaField] of Object.entries(schema.shape)) {
 		const values = formDataData[key];
@@ -38,7 +40,16 @@ export function getFormData<T extends z.AnyZodObject>(
 		}
 	}
 
-	return schema.parse(coercedData);
+	const result = schema.safeParse(coercedData);
+	if (result.success) {
+		return [result.data, undefined];
+	} else {
+		return [undefined, {
+			...Object.fromEntries(formData) as Record<keyof z.infer<T>, string>,
+			error: "Validation Error",
+			details: result.error.flatten() 
+		}];
+	}
 }
 
 function handleEmptyField(zodtype: ZodObjectType) {

@@ -1,11 +1,13 @@
 import type { Actions, PageServerLoad } from "./$types";
 import { fail } from "@sveltejs/kit";
+import z from "zod";
 import { passwordSchema, userUpdateSchema, type UserDetail } from "@shared/models/User";
-import { handleActionFailure, unwrapResult, unwrapValidationError } from "~/helpers/unwrapResult";
+import type { Group } from "@shared/models/Group";
+import { unwrapResult } from "~/helpers/unwrapResult";
 import { uri } from "~/helpers/uri";
 import { getFormData } from "~/helpers/getFormData";
 import { serverUrl } from "~/helpers/serverUrl";
-import type { Group } from "@shared/models/Group";
+import { serverAction } from "~/actions/serverAction";
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
 	const [user, groups] = await Promise.all([
@@ -22,75 +24,74 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 export const actions: Actions = {
 	async edit({ fetch, request, params }) {
 		const formData = await request.formData();
-		try {
-			var data = getFormData(formData, userUpdateSchema, {
-				password: () => undefined,
-			});
-		} catch (e) {
-			return unwrapValidationError(e, Object.fromEntries(formData));
+		const [data, validationError] = getFormData(formData, userUpdateSchema, {
+			password: () => undefined,
+		});
+		if (validationError) {
+			fail(422, validationError);
 		}
-		try {
-			const serverData = (await fetch(serverUrl(uri`/users/${params.id}`), {
+		const [serverData, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${params.id}`), {
 				method: "PUT",
 				body: JSON.stringify(data),
-			}).then(unwrapResult)) as UserDetail;
-			return {
-				user: serverData
-			}
-		} catch (err) {
-			console.error("User update error", err);
-			return handleActionFailure(err, data!);
+			}).then(unwrapResult<UserDetail>);
+		});
+		if (error) {
+			return error;
+		}
+		return {
+			user: serverData
 		}
 	},
 	async resetPassword({ fetch, request, params }) {
 		const formData = await request.formData();
-		try {
-			var password = passwordSchema.parse(formData.get("password") || null, { path: ["password"]});
-		} catch (e) {
-			return unwrapValidationError(e, Object.fromEntries(formData));
+		const [{ password = "" } = {}, validationError] = getFormData(formData, z.object({
+			password: passwordSchema
+		}));
+		if (validationError) {
+			return fail(422, validationError);
 		}
-		try {
-			const serverData = (await fetch(serverUrl(uri`/users/${params.id}`), {
+		const [serverData, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${params.id}`), {
 				method: "POST",
 				body: JSON.stringify({ password }),
-			}).then(unwrapResult)) as UserDetail;
-			return {
-				user: serverData
-			}
-		} catch (err) {
-			console.error("User update error", err);
-			return handleActionFailure(err);
+			}).then(unwrapResult<UserDetail>);
+		});
+		if (error) {
+			return error;
+		}
+		return {
+			user: serverData
 		}
 	},
-	// TODO change all the unwrapped error values for scoping
 	async addOrCreateGroup({ fetch, request, params }) {
 		const formData = await request.formData();
 		const name = formData.get("name");
-		try {
-			const serverData = await fetch(serverUrl(uri`/users/${params.id}/groups`), {
+		const [serverData, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${params.id}/groups`), {
 				method: "POST",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);
-			return {
-				groups: serverData
-			};
-		} catch (err) {
-			console.error("Create group error", err);
-			return handleActionFailure(err);
+		});
+		if (error) {
+			return error;
 		}
+		return {
+			groups: serverData
+		};
 	},
 	async deleteAllGroups({ fetch, params }) {
-		try {
-			const result = await fetch(serverUrl(uri`/users/${params.id}/groups`), {
+		const [result, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${params.id}/groups`), {
 				method: "DELETE",
 			}).then(unwrapResult);
-			return {
-				groups: result
-			};
-		} catch (err) {
-			console.error("Delete all error", err);
-			return handleActionFailure(err);
+		});
+		if (error) {
+			return error;
 		}
+		return {
+			groups: result
+		};
 	},
 	async deleteGroup({ fetch, params, request }) {
 		const formData = await request.formData();
@@ -98,16 +99,16 @@ export const actions: Actions = {
 		if (!id || typeof id !== "string") {
 			return fail(422);
 		}
-		try {
-			const result = await fetch(serverUrl(uri`/users/${params.id}/groups/${id}`), {
+		const [result, error] = await serverAction(() => {
+			return fetch(serverUrl(uri`/users/${params.id}/groups/${id}`), {
 				method: "DELETE",
 			}).then(unwrapResult);
-			return {
-				groups: result
-			};
-		} catch (err) {
-			console.error("Delete group error", err);
-			return handleActionFailure(err);
+		});
+		if (error) {
+			return error;
 		}
+		return {
+			groups: result
+		};
 	},
 }

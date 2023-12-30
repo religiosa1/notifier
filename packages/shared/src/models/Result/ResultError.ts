@@ -1,10 +1,11 @@
 import { getStatusPhrase, StatusCodes } from "../StatusCodes";
 import { z } from "zod";
+import { hasProperty } from "../../helpers/hasProperty";
 
 export const resultFailureSchema = z.object({
 	success: z.literal(false),
 	error: z.string(),
-	statusCode: z.number().int().gte(400),
+	statusCode: z.number().int().gte(400).lt(600),
 	message: z.string(),
 	details: z.unknown().optional(),
 	ts: z.number().int(),
@@ -15,8 +16,9 @@ export type ResultFaliure = z.infer<typeof resultFailureSchema>;
 interface ResultErrorOptions {
 	cause?: unknown;
 }
-export class ResultError extends Error {
+export class ResultError extends Error implements ResultFaliure {
 	override name = "ResultError";
+	readonly success = false;
 	error: string = StatusCodes[500];
 	statusCode = 500;
 	details?: unknown;
@@ -49,7 +51,7 @@ export class ResultError extends Error {
 
 	static from(err: unknown): ResultError{
 		const e = new ResultError();
-		if (err instanceof ResultError) {
+		if (isResultErrorLike(err)) {
 			Object.assign(e, err);
 			// need to do that separately, as it comes from the proto
 			e.message = err.message;
@@ -80,4 +82,21 @@ export class ResultError extends Error {
 		}
 		return e;
 	}
+}
+
+export function isResultErrorLike(t: unknown): t is ResultFaliure {
+	if (!hasProperty(t, "success") || t.success !== false) {
+		return false;
+	}
+	if (!hasProperty(t, "ts", "number")) {
+		return false;
+	}	
+	if (
+		!hasProperty(t, "error", "string")
+		|| !hasProperty(t, "statusCode", "number")
+		|| !hasProperty(t, "message", "string")
+	) {
+		return false;
+	}	
+	return true;
 }

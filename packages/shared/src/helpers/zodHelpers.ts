@@ -1,4 +1,3 @@
-
 export function intGt(gt: number) {
 	return [
 		(value: string) => {

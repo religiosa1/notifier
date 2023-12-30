@@ -1,10 +1,11 @@
 import type { Actions, PageServerLoad } from './$types';
-import { unwrapResult, handleActionFailure } from '~/helpers/unwrapResult';
 import type { GroupDetail } from "@shared/models/Group";
 import type { Channel } from '@shared/models/Channel';
+import { unwrapResult } from '~/helpers/unwrapResult';
 import { uri } from "~/helpers/uri";
-import { batchDelete } from '~/actions/batchDelete';
 import { serverUrl } from '~/helpers/serverUrl';
+import { batchDelete } from '~/actions/batchDelete';
+import { serverAction } from '~/actions/serverAction';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
 	const [ group, users, channels ] = await Promise.all([
@@ -21,59 +22,52 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
 
 export const actions: Actions = {
 	edit: async ({ params, request, fetch }) => {
-		const fd = await request.formData();
-		const name = fd.get("name");
-		try {
-			await fetch(serverUrl(uri`/groups/${params.id}`), {
+		const [data, error] = await serverAction(async () => {
+			const fd = await request.formData();
+			const name = fd.get("name");
+			return fetch(serverUrl(uri`/groups/${params.id}`), {
 				method: "PUT",
 				body: JSON.stringify({ name })
-			}).then(unwrapResult);
-		} catch(err) {
-			return handleActionFailure(err, { name });
-		}
+			}).then(unwrapResult)
+		});
+		return error ?? data;
 	},
 	disconnectUsers: batchDelete(({ params }) => ({ route: uri`/groups/${params.id}/users` })),
 	disconnectAllUsers: async ({ params, fetch }) => {
-		try {
+		const [data, error] = await serverAction(async () => {
 			await fetch(serverUrl(uri`/groups/${params.id}/users`), {
 				method: "DELETE",
-			}).then(unwrapResult);
-		} catch(err) {
-			return handleActionFailure(err);
-		}
+			}).then(unwrapResult)
+		});
+		return error ?? data;
 	},
 	addUser: async ({ params, fetch, request }) => {
-		const fd = await request.formData();
-		const name = fd.get("name");
-		try {
+		const [data, error] = await serverAction(async () => {
+			const fd = await request.formData();
+			const name = fd.get("name");
 			await fetch(serverUrl(uri`/groups/${params.id}/users`), {
 				method: "POST",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);
-		} catch(err) {
-			return handleActionFailure(err);
-		}
+		});
+		return [error, data];
 	},
 	disconnectChannels: batchDelete(({ params }) => ({ route: uri`/groups/${params.id}/channels` })),
 	disconnectAllChannels: async ({ params, fetch }) => {
-		try {
-			await fetch(serverUrl(uri`/groups/${params.id}/channels`), {
-				method: "DELETE",
-			}).then(unwrapResult);
-		} catch(err) {
-			return handleActionFailure(err);
-		}
+		const [data, error] = await serverAction(() => fetch(serverUrl(uri`/groups/${params.id}/channels`), {
+			method: "DELETE",
+		}).then(unwrapResult));
+		return error ?? data;
 	},
 	addChannel: async ({params, fetch, request}) => {
-		const fd = await request.formData();
-		const name = fd.get("name");
-		try {
+		const [data, error] = await serverAction(async () => {
+			const fd = await request.formData();
+			const name = fd.get("name");
 			await fetch(serverUrl(uri`/groups/${params.id}/channels`), {
 				method: "POST",
 				body: JSON.stringify({ name }),
 			}).then(unwrapResult);
-		} catch(err) {
-			return handleActionFailure(err);
-		}
+		});
+		return error ?? data;
 	},
 }

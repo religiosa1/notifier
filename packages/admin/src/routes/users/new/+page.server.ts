@@ -1,12 +1,13 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { unwrapResult, handleActionFailure, unwrapValidationError } from "~/helpers/unwrapResult";
-import { uri } from "~/helpers/uri";
+import { redirect, fail } from "@sveltejs/kit";
 import { passwordSchema, userCreateSchema, type UserDetail } from "@shared/models/User";
-import { redirect } from "@sveltejs/kit";
+import { groupNameSchema, type Group } from "@shared/models/Group";
+import { unwrapResult } from "~/helpers/unwrapResult";
+import { uri } from "~/helpers/uri";
 import { base } from "$app/paths";
 import { getFormData } from "~/helpers/getFormData";
-import { groupNameSchema, type Group } from "@shared/models/Group";
 import { serverUrl } from "~/helpers/serverUrl";
+import { serverAction } from "~/actions/serverAction";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	const groups = await fetch(serverUrl(uri`/groups/search`))
@@ -20,30 +21,30 @@ export const load: PageServerLoad = async ({ fetch }) => {
 export const actions: Actions = {
 	async create({ request, fetch }) {
 		const formData = await request.formData();
-		try {
-			var data = getFormData(formData, userCreateSchema, {
-				password: (i) => i[0]
-					? passwordSchema.parse(i[0], { path: ["password"] })
-					: null,
-				groups: ([groups]) => typeof groups === "string"
-					? groups
-						.trim().split(/\s*,?\s+/)
-						.filter(Boolean)
-						.map((g) => groupNameSchema.parse(g, { path: ["password"] }))
-					: undefined
-			});
-		} catch (e) {
-			return unwrapValidationError(e, Object.fromEntries(formData));
+		const [ data, validationError ] = getFormData(formData, userCreateSchema, {
+			password: (i) => i[0]
+				? passwordSchema.parse(i[0], { path: ["password"] })
+				: null,
+			groups: ([groups]) => typeof groups === "string"
+				? groups
+					.trim().split(/\s*,?\s+/)
+					.filter(Boolean)
+					.map((g) => groupNameSchema.parse(g, { path: ["password"] }))
+				: undefined
+		});
+		if (validationError) {
+			return fail(422, validationError);
 		}
-		try {
-			var serverData = (await fetch(serverUrl("/users"), {
+		const [serverData, error] = await serverAction(async () => {
+			return await fetch(serverUrl("/users"), {
 				method: "POST",
 				body: JSON.stringify(data),
-			}).then(unwrapResult)) as UserDetail;
-		} catch (err) {
-			console.error("User create error", err);
-			return handleActionFailure(err, data!);
+			}).then(unwrapResult<UserDetail>);
+		});
+		if (error) {
+			return error;
 		}
+
 		if (new URLSearchParams(request.url).has("addNew")) {
 			return {
 				success: true,
