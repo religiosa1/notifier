@@ -18,9 +18,9 @@ export class BotService {
 		appListenService = di.inject("AppListenService"),
 	) {
 		settingsService.subscribe(async (settings) => {
-			const { botToken, publicUrl } = settings || {};
+			const { botToken, publicUrl, tgHookSecret } = settings || {};
 			logger.info("Initializing the bot");
-			if (!botToken || !publicUrl) {
+			if (!botToken || !publicUrl || !tgHookSecret) {
 				this.#instanceData = undefined;
 				logger.warn("Bot token or publicUrl is missing in the settings, bot is NOT initialized");
 				return;
@@ -37,7 +37,7 @@ export class BotService {
 				const webHookAddress = urlJoin(publicUrl, "bot", botToken);
 
 				logger.info("Setting webhook on %s", webHookAddress);
-				const  d = await bot.setWebHook(webHookAddress);
+				const  d = await bot.setWebHook(webHookAddress, tgHookSecret);
 				logger.info("Webhook is set", d);
 				this.#instanceData = { bot, botToken };
 				return () => bot.destroy();
@@ -45,7 +45,7 @@ export class BotService {
 				bot.destroy();
 				return;
 			}
-		}, [ "botToken", "publicUrl" ]);
+		}, [ "botToken", "publicUrl", "tgHookSecret" ]);
 	}
 }
 

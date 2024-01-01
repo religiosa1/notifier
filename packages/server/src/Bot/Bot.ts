@@ -64,8 +64,11 @@ export class Bot implements IBot {
 		this.bot.setMyCommands(publicCommands.map(i => i.toTelegramCommand()));
 	}
 
-	async setWebHook(token: string): Promise<void> {
-		await this.bot.setWebHook(token);
+	async setWebHook(token: string, secretToken: string): Promise<void> {
+		await this.bot.setWebHook(token, {
+			//@ts-ignore declarations on DefinitelyTyped are incomplete
+			secret_token: secretToken
+		});
 	}
 
 	processUpdate(update: Update): void {

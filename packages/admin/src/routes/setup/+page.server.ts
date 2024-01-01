@@ -5,7 +5,7 @@ import { setupFormSchema, type SetupForm, type ServerConfig } from "@shared/mode
 
 import { serverUrl } from "~/helpers/serverUrl";
 import { unwrapResult } from "~/helpers/unwrapResult";
-import { generateJwtSecret } from "~/helpers/generateJwtSecret";
+import { generateSecretKey } from "~/helpers/generateSecretKey";
 import { getFormData } from "~/helpers/getFormData";
 import { serverAction } from "~/actions/serverAction";
 
@@ -23,8 +23,14 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			throw err;
 		});
 
+	const [ jwtSecret, tgHookSecret ] = await Promise.all([ 
+		generateSecretKey("base64"), 
+		generateSecretKey("base32", 1000), 
+	]);
+
 	const settings: Partial<SetupForm> = {
-		jwtSecret: generateJwtSecret(),
+		jwtSecret,
+		tgHookSecret,
 	};
 
 	return { settings }

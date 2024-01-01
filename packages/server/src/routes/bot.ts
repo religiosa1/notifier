@@ -8,9 +8,17 @@ const controller = new Hono();
 
 controller.post("*", async (c) => {
 		const { bot, botToken: token } = di.inject("Bot").getInstanceAndToken() ?? {};
-		const logger = di.inject("logger");		
+		const logger = di.inject("logger");
+		const { tgHookSecret } = di.inject("SettingsService").getConfig() ?? {};
+	
 		if (!bot) {
 			throw new ResultError(503, "Bot isn't ready to process incoming requests");
+		}
+		if (!tgHookSecret) {
+			throw new ResultError(503, "Telegram webhook secret is missing in config");
+		}
+		if (c.req.raw.headers.get('X-Telegram-Bot-Api-Secret-Token') !== tgHookSecret) {
+			throw new ResultError(400, "Request to Telegram WebHook with incorrect secret key");
 		}
 		if (token && !new URL(c.req.url).pathname.endsWith(token)) {
 			logger.info("Someone tried to call the bot webhook on a nonexisting url", c.req);

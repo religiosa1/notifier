@@ -9,7 +9,7 @@ export interface IBotConstructor {
 }
 
 export interface IBot {
-	setWebHook(token: string): Promise<void>;
+	setWebHook(token: string, secretToken: string): Promise<void>;
 	processUpdate(update: Update): void;
 	broadcastMessage(
 		chats: Array<string | number>,

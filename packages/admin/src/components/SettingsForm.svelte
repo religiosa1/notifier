@@ -2,24 +2,9 @@
 <script lang="ts">
 	import type { ServerConfig } from "@shared/models";
 	import Spinner from "./Spinner.svelte";
+	import CryptoKeyInput from "./CryptoKeyInput.svelte";
 	export let data: Partial<ServerConfig & { isDatabaseUrlOk?: boolean }> | undefined = undefined;
 	export let testingDb = false;
-	async function generateJWTSecret() {
-		const key = await crypto.subtle.generateKey(
-			{ name: 'HMAC', hash: { name: 'SHA-256' } },
-			true,
-			['sign', 'verify']
-		);
-		const keyData = await crypto.subtle.exportKey('raw', key);
-		const secret = btoa(String.fromCharCode(...new Uint8Array(keyData)));
-
-		return secret;
-	}
-
-	let jwtInput: HTMLInputElement;
-	async function handleGenerateClick() {
-		jwtInput.value = await generateJWTSecret();
-	}
 </script>
 
 <div class="input-group">
@@ -97,21 +82,34 @@
 	<summary>Advanced</summary>
 	<div class="details-body">
 		<div class="input-group">
-			<label class="form-input">
+			<label class="form-input" for={undefined}>
 				<span class="form-label">Server JWT secret</span>
-				<input
-					bind:this={jwtInput}
-					name="jwtSecret"
-					type="text"
-					pattern={`[A-Za-z0-9+\\/]+={0,2}`}
+				<CryptoKeyInput 
 					value={data?.jwtSecret ?? ""}
+					name="jwtSecret"
 					required
 				/>
-				<button type="button" on:click={handleGenerateClick}>Generate</button>
 				<small>
 					This secret is used for signing JWT tokens on server. It has to be cryptograpgically sound.
 					If you leave this field empty, it will be automatically generated.<br />
 					Making this change will require all users to log in again!
+				</small>
+			</label>
+		</div>
+		<div class="input-group">
+			<label class="form-input" for={undefined}>
+				<span class="form-label">Telegram Webhook secret</span>
+				<CryptoKeyInput 
+					value={data?.tgHookSecret ?? ""}
+					name="tgHookSecret"
+					base32
+					length={1000}
+					required
+				/>
+				<small>
+					This secret is used for access-control on Telegram Webhook. Each incoming message
+					should contain this signature.
+					If you leave this field empty, it will be automatically generated.
 				</small>
 			</label>
 		</div>
