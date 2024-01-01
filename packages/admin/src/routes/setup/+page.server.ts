@@ -36,14 +36,15 @@ export const actions: Actions = {
 		
 		const [data, validationError] = getFormData(formData, setupFormSchema);
 		if (validationError) {
-			fail(422, validationError);
+			return fail(422, validationError);
 		}
-		await fetch(serverUrl("/settings/setup"), {
+		const [, error ] = await serverAction(() => fetch(serverUrl("/settings/setup"), {
 			method: "PUT",
 			body: JSON.stringify(data),
-		}).then(unwrapResult<ServerConfig>);
-
-		// TODO display status of various setup operations, i.e. migration, seeding, bot connection, etc.
+		}).then(unwrapResult<ServerConfig>));
+		if (error) { 
+			return error;
+		}
 
 		redirect(303, base + "/login?referer=%2F");
 	},

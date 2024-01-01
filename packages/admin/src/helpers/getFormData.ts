@@ -39,7 +39,6 @@ export function getFormData<T extends z.AnyZodObject>(
 			coercedData[key] = coerce(values, schemaField);
 		}
 	}
-
 	const result = schema.safeParse(coercedData);
 	if (result.success) {
 		return [result.data, undefined];
@@ -100,6 +99,9 @@ function coerceSimple(typeName: z.ZodFirstPartyTypeKind, value: unknown) {
 	switch (typeName) {
 		case z.ZodFirstPartyTypeKind.ZodNativeEnum:
 		case z.ZodFirstPartyTypeKind.ZodNumber:
+			if (!value) {
+				return undefined;
+			}
 			return Number(value);
 		case z.ZodFirstPartyTypeKind.ZodBoolean:
 			return value === "on";
