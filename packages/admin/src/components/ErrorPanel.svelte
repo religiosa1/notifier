@@ -2,6 +2,7 @@
 	import { hasProperty } from "@shared/helpers/hasProperty";
 	import { isResultErrorLike } from "@shared/models/Result";
 	import { isValidationError } from "~/models/FormValidationError";
+	import ValidationErrorDetails from "./ValidationErrorDetails.svelte";
 	import Panel from "./Panel.svelte";
 
 	export let action: unknown | null;
@@ -16,7 +17,11 @@
 			{action.error}
 		</b><br />
 
-		{#if isValidationError(action) || isResultErrorLike(action)}
+		{#if isValidationError(action)}
+			<ValidationErrorDetails error={action.details} />
+		{/if}
+
+		{#if isResultErrorLike(action)}
 			<p><i>{action.message}</i></p>
 			{#if action.details}
 				<pre>{JSON.stringify(action.details, undefined, 4)}</pre>
