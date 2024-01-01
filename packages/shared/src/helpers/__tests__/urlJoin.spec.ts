@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { urlJoin } from "../urlJoin";
 
 describe("urlJoin", () => {

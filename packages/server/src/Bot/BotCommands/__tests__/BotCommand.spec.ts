@@ -1,8 +1,9 @@
+import { describe, it, expect, vi } from "vitest";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
 import { BotCommand } from "../BotCommand";
 
 describe("BotCommand", () => {
-	const mockHandler = jest.fn();
+	const mockHandler = vi.fn();
 	const cmd = new BotCommand(
 		"test",
 		"test command",

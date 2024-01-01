@@ -73,10 +73,20 @@ describe("getFormData", () => {
 		expect(barTransform).toBeCalledWith(["123"], "bar", schema, formData);
 	});
 
-	it("throws an error, if formData value doesn't match the schema", () => {
+	it("returns an error as the second value of tuple, if formData value doesn't match the schema", () => {
 		const fd2 = new FormData();
 		fd2.set("foo", "qwerty");
-		expect(() => getFormData(fd2, schema)).toThrow();
+		const result = getFormData(fd2, schema);
+		expect(result).toEqual([ undefined, {
+			"details": {
+				"fieldErrors": {
+					"bar": [ "Required" ],
+				},
+				"formErrors": [],
+			},
+			"error": "Validation Error",
+			"foo": "qwerty",
+		}]);
 	});
 
 	describe("nullable tests", () => {

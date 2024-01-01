@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { pick } from "../pick";
 
 describe("pick", () => {
@@ -22,7 +23,7 @@ describe("pick", () => {
 	});
 
 	it("passes the correct values to the predicate", () => {
-		const predicate = jest.fn(() => { });
+		const predicate = vi.fn(() => { });
 		const testData = {
 			foo: 1,
 		};

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { NullishError, attempt } from "../attempt";
 
 describe("attempt", () => {
