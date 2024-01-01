@@ -1,9 +1,21 @@
-import { dirname } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { existsSync } from "fs";
 
-export function getRootDir(): string {
-	const path = fileURLToPath(import.meta.url);
-	// We're cutting 3 times, as we're in src/util/getRootDir.ts. If we move this filem code should change.
-	const dir = dirname(dirname(dirname(path)));
-	return dir;
+/** Returns the rootDir */
+export function getRootDir(): string {	
+	if (process.env.NODE_ENV === "production") {
+		// on prod env it's just the same dir, where bundle is situated
+		return dirname(fileURLToPath(import.meta.url));
+	} else {
+		// on dev we're taking the closes dir with package.json file
+		let path = fileURLToPath(import.meta.url);
+		do {
+			path = dirname(path);
+			if (existsSync(join(path, "package.json"))) {
+				return path;
+			}
+		} while(path);
+		return dirname(fileURLToPath(import.meta.url));
+	}
 }

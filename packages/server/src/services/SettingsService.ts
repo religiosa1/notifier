@@ -1,15 +1,18 @@
 import { join } from "path";
 import { writeFile, readFile, access, constants, unlink } from "fs/promises";
 import { stripComments } from "jsonc-parser";
+import { watch } from "node:fs";
+
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
+import { ResultError } from "@shared/models/Result";
+
+import { di } from "src/injection";
 import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
-import { watchFile } from "node:fs";
-import { di } from "src/injection";
-
 import { getRootDir } from "src/util/getRootDir";
-import { DatabaseConfigurator } from "src/db/DatabaseConnectionTester";
-import { ResultError } from "@shared/models/Result";
+import { DatabaseConnectionTester } from "src/db/DatabaseConnectionTester";
+import type { FSWatcher } from "fs";
+
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
@@ -17,6 +20,7 @@ type Disposer = () => MaybePromise<void>;
 export class SettingsService {
 	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
 	private disposerLock = new Lock();
+	#watcher?: FSWatcher;
 
 	#config: ServerConfig | undefined;
 	private get config() {
@@ -30,32 +34,33 @@ export class SettingsService {
 
 	constructor(
 		private readonly logger = di.inject("logger"),
-		private readonly initialConfigName = "config.json",
-		private readonly storagePath: string = getRootDir(),
-		private readonly databaseConfigurator = new DatabaseConfigurator(),
-	) {
-		const watchHandler = () => {
-			this.logger.warn("Settings file was changed");
-			this.loadConfig().catch((e) => {
-				this.logger.warn("Unable to load settings file", e);
-				this.config = undefined;
-			});
-		};
-		watchFile(this.getConfigFileName(), watchHandler);
+		private readonly dbConnectionTester = new DatabaseConnectionTester(),
+		private readonly configFileName = process.env.NOTIFIER_CONFIG_LOCATION || join(getRootDir(), "config.json"),
+	) {}
+
+	dispose() {
+		this.#watcher?.close();
+		this.unsubscribeAll();
+	}
+	[Symbol.dispose]() {
+		this.dispose();
 	}
 
 	async loadConfig(): Promise<ServerConfig | undefined> {
-		const configName = this.getConfigFileName();
-
 		if (!await this.isConfigFileReadable()) {
 			return;
 		}
-		const dataString = await readFile(configName, "utf8");
+
+		const dataString = await readFile(this.configFileName, "utf8");
+		this.#watcher ??= watch(this.configFileName, { persistent: false }, () => {
+			this.logger.warn("Settings file was changed");
+			this.loadConfig().catch((e) => { this.logger.warn("Unable to load settings file: %O", e) });
+		});
 		const data = JSON.parse(stripComments(dataString, " "));
 		if (!serverConfigSchema.safeParse(data).success) {
 			return this.config = undefined;
 		}
-		return this.config = data;;
+		return this.config = data;
 	}
 
 	getConfig(): ServerConfig | undefined {
@@ -65,14 +70,14 @@ export class SettingsService {
 	async setConfig(config: ServerConfig): Promise<void> {
 		let storedConfig: ServerConfig | undefined;
 		serverConfigSchema.parse(config);
-		const isDbOk = await this.databaseConfigurator.checkConnectionString(config.databaseUrl);
+		const isDbOk = await this.dbConnectionTester.checkConnectionString(config.databaseUrl);
 		if (!isDbOk) {
 			throw new ResultError(422, "Cannot connect to the DB with the provided 'databaseUrl' string");
 		}
 		try {
 			await this.disposerLock.wait();
 			const output = JSON.stringify(config, undefined, 4);
-			await writeFile(this.getConfigFileName(), output, "utf8");
+			await writeFile(this.configFileName, output, "utf8");
 			storedConfig = config
 		} finally {
 			this.config = storedConfig;
@@ -80,11 +85,13 @@ export class SettingsService {
 	}
 
 	testConfigsDatabaseConnection(connectionString: string): Promise<boolean> {
-		return this.databaseConfigurator.checkConnectionString(connectionString);
+		return this.dbConnectionTester.checkConnectionString(connectionString);
 	}
 
 	async removeConfig(): Promise<void> {
-		await unlink(this.getConfigFileName());
+		this.#watcher?.close();
+		this.#watcher = undefined;
+		await unlink(this.configFileName);
 		this.config = undefined;
 	}
 
@@ -114,16 +121,7 @@ export class SettingsService {
 		this.emitter.clear();
 	}
 
-	private getConfigFileName() {
-		return join(this.storagePath, this.initialConfigName)
-	}
-
 	private isConfigFileReadable(): Promise<boolean> {
-		return isReadable(this.getConfigFileName());
+		return access(this.configFileName, constants.R_OK).then(() => true, () => false);
 	}
-}
-
-function isReadable(filename: string): Promise<boolean> {
-	return access(filename, constants.F_OK | constants.R_OK)
-		.then(() => true, () => false);
 }
