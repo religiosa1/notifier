@@ -16,7 +16,7 @@ describe("getRootDir", () => {
 		vi.stubEnv('NODE_ENV', 'production');
 		const rootPath = getRootDir();
 		const testDir = fileURLToPath(import.meta.url);
-		const expectedResult = dirname(dirname(testDir)); 
+		const expectedResult = dirname(dirname(dirname(testDir))); 
 		expect(rootPath).toBe(expectedResult);
 	});
 });

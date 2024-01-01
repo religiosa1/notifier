@@ -1,10 +1,13 @@
+//@ts-check
+const { join } = require("path");
+
 module.exports = {
   apps : [
 		{
 			name: "notifier",
 			script: "./packages/server/dist/index.js",
 			env_production: {
-				NODE_ENV: "production"
+				NODE_ENV: "production",
 			},
 			env_development: {
 				NODE_ENV: "development"
@@ -20,7 +23,6 @@ module.exports = {
 				NODE_ENV: "production",
 				PROTOCOL_HEADER: "X-Forwarded-Proto",
 				HOST_HEADER: "X-Forwarded-Host",
-				NOTIFIER_CONFIG_LOCATION: "./config.json",
 			},
 			env_development: {
 				NODE_ENV: "development",
