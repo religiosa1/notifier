@@ -1,7 +1,6 @@
 import { join } from "path";
 import { writeFile, readFile, access, constants, unlink } from "fs/promises";
 import { stripComments } from "jsonc-parser";
-import { watch } from "node:fs";
 
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
 import { ResultError } from "@shared/models/Result";
@@ -11,7 +10,6 @@ import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
 import { getRootDir } from "src/util/getRootDir";
 import { DatabaseConnectionTester } from "src/db/DatabaseConnectionTester";
-import type { FSWatcher } from "fs";
 
 
 type MaybePromise<T> = Promise<T> | T;
@@ -20,7 +18,6 @@ type Disposer = () => MaybePromise<void>;
 export class SettingsService {
 	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
 	private disposerLock = new Lock();
-	#watcher?: FSWatcher;
 
 	#config: ServerConfig | undefined;
 	private get config() {
@@ -39,7 +36,6 @@ export class SettingsService {
 	) {}
 
 	dispose() {
-		this.#watcher?.close();
 		this.unsubscribeAll();
 	}
 	[Symbol.dispose]() {
@@ -52,10 +48,6 @@ export class SettingsService {
 		}
 
 		const dataString = await readFile(this.configFileName, "utf8");
-		this.#watcher ??= watch(this.configFileName, { persistent: false }, () => {
-			this.logger.warn("Settings file was changed");
-			this.loadConfig().catch((e) => { this.logger.warn("Unable to load settings file: %O", e) });
-		});
 		const data = JSON.parse(stripComments(dataString, " "));
 		if (!serverConfigSchema.safeParse(data).success) {
 			return this.config = undefined;
@@ -89,8 +81,6 @@ export class SettingsService {
 	}
 
 	async removeConfig(): Promise<void> {
-		this.#watcher?.close();
-		this.#watcher = undefined;
 		await unlink(this.configFileName);
 		this.config = undefined;
 	}
