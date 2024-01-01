@@ -8,13 +8,13 @@ import { SettingsService } from "src/services/SettingsService";
 
 const rl = readline.createInterface({ input: stdin, output: stdout });
 
-const password = process.env["NOTIFIER_ADMIN_PWD"] || await rl.question("Enter admin's password");
+const password = process.env.NOTIFIER_ADMIN_PWD || await rl.question("Enter admin's password");
 if (!password) {
 	console.warn("You must supply admin's password either through NOTIFIER_ADMIN_PWD ennvironment variable or in the cli.");
 	process.exit(1);
 }
 
-const telegramIdInput = process.env["NOTIFIER_ADMIN_TGID"] || await rl.question("Enter admin's telegram ID");
+const telegramIdInput = process.env.NOTIFIER_ADMIN_TGID || await rl.question("Enter admin's telegram ID");
 
 const telegramId = parseInt(telegramIdInput);
 if (!Number.isInteger(telegramId) || telegramId <= 0) {

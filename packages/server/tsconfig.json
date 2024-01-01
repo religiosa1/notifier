@@ -1,14 +1,6 @@
 {
   "extends": ["@tsconfig/strictest/tsconfig", "@tsconfig/node-lts/tsconfig"],
   "references": [{ "path": "../shared/tsconfig.json"}],
-  // "ts-node": {
-  //   "require": ["tsconfig-paths/register"],
-  //   "transpileOnly": true,
-  //   "files": true,
-  //   "ignoreDeprecations": "5.0",
-  //   "compilerOptions": {
-  //   }
-  // },
   "include": [
     "./src/",
     "./scripts/",
@@ -27,6 +19,7 @@
     "declaration": true,
     "exactOptionalPropertyTypes": false,
     "verbatimModuleSyntax": true,
+    "noPropertyAccessFromIndexSignature": true,
     "paths": {
       "@shared/*": [  "../shared/src/*" ]
     }

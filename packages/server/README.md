@@ -14,3 +14,5 @@ methods in the [repositories](./src/repositories/) folder.
 There are migration scripts and db seeding provided in the [scripts](./scripts/) 
 folder, but you probably do not need them, as this all is handled by the setup
 page of admin. Use them only if you know what you're doing.
+
+See the list of available environment variables for configuration in [src/env.d.ts](./src//env.d.ts).

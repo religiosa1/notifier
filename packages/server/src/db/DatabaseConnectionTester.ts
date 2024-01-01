@@ -1,6 +1,6 @@
 import postgres from "postgres";
 
-export class DatabaseConfigurator {
+export class DatabaseConnectionTester {
 	async checkConnectionString(connectionString: string): Promise<boolean> {
 		try {
 			const sql = postgres(connectionString, { max: 1 });

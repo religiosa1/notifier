@@ -15,8 +15,8 @@ import settings from "src/routes/settings";
 import usersController from "src/routes/users";
 import groupsController from "src/routes/groups";
 import channelsController from "src/routes/channels";
-import notifyController from "src/routes/notify";
 import authRequestController from "src/routes/user-confirmation-request";
+import notifyController from "src/routes/notify";
 import loginController from "src/routes/login";
 import botController from "src/routes/bot";
 

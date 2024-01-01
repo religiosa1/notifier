@@ -35,7 +35,7 @@ class DiContainer<T extends Record<string, {}>> {
 
 export const di = new DiContainer({
 	AppListenService: () => new AppListenService(),
-	logger: () => pino({ level: 'trace' }) as BaseLogger,
+	logger: () => pino({ level: process.env.NOTIFIER_LOG_LEVEL || 'info' }) as BaseLogger,
 	SettingsService: () => new SettingsService(),
 	db: () => new DatabaseConnectionManager(),
 	DatabaseMigrator: () => new DatabaseMigrator(),
