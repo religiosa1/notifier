@@ -25,6 +25,7 @@
 		<SettingsForm data={settings} />
 		<div class="input-group">
 			<button class="button">Save</button>
+			<a class="button" href="/settings/export" download="config.json">Export settings</a>
 		</div>
 	</div>
 </form>
