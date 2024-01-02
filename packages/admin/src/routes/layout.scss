@@ -214,3 +214,7 @@ input:not([type="checkbox"], [type="radio"], [type="submit"]) {
 	border-top: 1px dotted var(--clr-brd);
 	padding-top: 1rem;
 }
+
+.details-body {
+	margin: 10px 0;
+}

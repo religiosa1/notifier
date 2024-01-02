@@ -45,6 +45,7 @@ export function getFormData<T extends z.AnyZodObject>(
 	} else {
 		return [undefined, {
 			...Object.fromEntries(formData) as Record<keyof z.infer<T>, string>,
+			success: false,
 			error: "Validation Error",
 			details: result.error.flatten() 
 		}];

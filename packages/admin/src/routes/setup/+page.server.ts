@@ -8,6 +8,7 @@ import { unwrapResult } from "~/helpers/unwrapResult";
 import { generateSecretKey } from "~/helpers/generateSecretKey";
 import { getFormData } from "~/helpers/getFormData";
 import { serverAction } from "~/actions/serverAction";
+import { importConfigAction } from "~/actions/importConfigAction";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	// Checking if backend has been initialized, by trying to get settings.
@@ -25,7 +26,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
 	const [ jwtSecret, tgHookSecret ] = await Promise.all([ 
 		generateSecretKey("base64"), 
-		generateSecretKey("base32", 1000), 
+		generateSecretKey("base32", 514), 
 	]);
 
 	const settings: Partial<SetupForm> = {
@@ -54,7 +55,7 @@ export const actions: Actions = {
 
 		redirect(303, base + "/login?referer=%2F");
 	},
-	testDbConfiguration: async({request, fetch}) => {
+	testDbConfiguration: async ({request, fetch}) => {
 		const formData = await request.formData();
 		const databaseUrl = formData.get("databaseUrl");
 		const [isDbOk, error] = await serverAction(() => {
@@ -76,4 +77,6 @@ export const actions: Actions = {
 		};
 		return retobj
 	},
+
+	import: importConfigAction,
 }

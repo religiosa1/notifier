@@ -90,8 +90,7 @@
 					required
 				/>
 				<small>
-					This secret is used for signing JWT tokens on server. It has to be cryptograpgically sound.
-					If you leave this field empty, it will be automatically generated.<br />
+					This secret is used for signing JWT tokens on server. It has to be cryptograpgically sound.<br />
 					Making this change will require all users to log in again!
 				</small>
 			</label>
@@ -103,13 +102,11 @@
 					value={data?.tgHookSecret ?? ""}
 					name="tgHookSecret"
 					base32
-					length={1000}
+					length={514}
 					required
 				/>
 				<small>
-					This secret is used for access-control on Telegram Webhook. Each incoming message
-					should contain this signature.
-					If you leave this field empty, it will be automatically generated.
+					This secret is used to ensure that incomming WebHook messages are comming from Telegram.
 				</small>
 			</label>
 		</div>

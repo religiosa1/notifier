@@ -4,6 +4,7 @@
 	import type { PageData, ActionData } from "./$types";
 	import SettingsForm from "~/components/SettingsForm.svelte";
 	import BreadCrumbs from '~/components/BreadCrumbs.svelte';
+	import ImportConfigForm from '~/components/ImportConfigForm.svelte';
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -29,3 +30,5 @@
 		</div>
 	</div>
 </form>
+
+<ImportConfigForm {form} />

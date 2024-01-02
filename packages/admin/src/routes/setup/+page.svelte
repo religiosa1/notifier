@@ -5,6 +5,7 @@
 	import PasswordInput from "~/components/PasswordInput.svelte";
 	import SettingsForm from "~/components/SettingsForm.svelte";
 	import Spinner from '~/components/Spinner.svelte';
+	import ImportConfigForm from '~/components/ImportConfigForm.svelte';
 
 	export let data: PageData;
 	export let form: ActionData;	
@@ -38,6 +39,7 @@
 </p>
 
 <FormResultPanel {form} />
+
 <form method="POST" action="?/save" use:enhance={
 	({action}) => {
 		submitingAction = action.search.includes("testDbConfiguration") ? "testDb" : "default";
@@ -104,3 +106,5 @@
 		{/if}
 	</div>
 </form>
+
+<ImportConfigForm {form} />

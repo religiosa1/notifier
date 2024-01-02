@@ -5,6 +5,7 @@ import { getFormData } from "~/helpers/getFormData";
 import { unwrapResult } from "~/helpers/unwrapResult";
 import { serverUrl } from "~/helpers/serverUrl";
 import { serverAction } from "~/actions/serverAction";
+import { importConfigAction } from "~/actions/importConfigAction";
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	const settings = await fetch(serverUrl("/settings"))
@@ -54,4 +55,6 @@ export const actions: Actions = {
 		};
 		return retobj
 	},
+
+	import: importConfigAction,
 }
