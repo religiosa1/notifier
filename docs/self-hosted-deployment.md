@@ -67,7 +67,7 @@ sudo -u postgres psql # this will open postgres console
 CREATE USER notifier;
 CREATE DATABASE notifierdb; 
 ALTER USER notifier with encrypted password 'qwerty';
-GRANT all privileges on DATABASE notifierdb to testuser;
+GRANT all privileges on DATABASE notifierdb to notifier;
 ```
 
 After running each of those lines you should see the success message from the 
