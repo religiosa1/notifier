@@ -21,9 +21,9 @@ import type { ContextVariables } from "src/ContextVariables";
 const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 
-controller.route("/channels", userChannelsController);
-controller.route("/groups", userGroupsController);
-controller.route("/api-keys", userKeysController);
+controller.route("/:userId/channels", userChannelsController);
+controller.route("/:userId/groups", userGroupsController);
+controller.route("/:userId/api-keys", userKeysController);
 
 const usersRepository = di.inject("UsersRepository");
 

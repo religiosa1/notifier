@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ fetch, url, params}) => {
 	const [ user, availableChannels, channels ] = await Promise.all([
 		fetch(serverUrl(uri`/users/${params.id}`))
 			.then(unwrapResult<UserDetail>),
-		fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/available-channels`)))
+		fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/channels/available`)))
 			.then(unwrapResult<Channel[]>),
 		fetch(serverUrl(paginate(pagination, uri`/users/${params.id}/channels`)))
 			.then(unwrapResult<Counted<Channel[]>>),

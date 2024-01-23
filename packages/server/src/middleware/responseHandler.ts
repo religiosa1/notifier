@@ -23,7 +23,7 @@ export const responseHandler = createMiddleware(async (c, next) => {
 		}
 	
 	} else if (c.res.status === 404 && mimeType !== MIME_JSON) {
-		throw new ResultError(404);
+		throw new ResultError(404, `Not Found: ${c.req.url}`);
 	}
 });
 

@@ -13,7 +13,7 @@ export class GroupsRepository {
 
 	//============================================================================
 
-	private queryCheckGroupExists = this.dbm.prepare((db) =>  db.select({ id: schema.groups.id })
+	private readonly queryCheckGroupExists = this.dbm.prepare((db) =>  db.select({ id: schema.groups.id })
 		.from(schema.groups)
 		.where(eq(schema.groups.id, sql.placeholder("groupId")))
 		.prepare("check_group")
@@ -27,12 +27,12 @@ export class GroupsRepository {
 	//============================================================================
 	// LIST
 
-	private queryCountGroups = this.dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
+	private readonly queryCountGroups = this.dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
 		.from(schema.groups)
 		.prepare("count_groups")
 	);
 
-	private querListGroups = this.dbm.prepare((db) => db.select({
+	private readonly querListGroups = this.dbm.prepare((db) => db.select({
 			...getTableColumns(schema.groups),
 			channelsCount: sql<number>`count(${schema.channelsToGroups.channelId})::int`,
 			usersCount: sql<number>`count(${schema.usersToGroups.userId})::int`
@@ -60,7 +60,7 @@ export class GroupsRepository {
 	//============================================================================
 	// PREVIEW
 
-	private queryGetGroupPreview = this.dbm.prepare((db) => db.query.groups.findFirst({
+	private readonly queryGetGroupPreview = this.dbm.prepare((db) => db.query.groups.findFirst({
 		where: eq(schema.groups.id, sql.placeholder("groupId"))
 	}).prepare("get_group_preview"));
 
@@ -73,7 +73,7 @@ export class GroupsRepository {
 	//============================================================================
 	// DETAIL
 
-	private queryGetGroupDetail = this.dbm.prepare((db) => db.query.groups.findFirst({
+	private readonly queryGetGroupDetail = this.dbm.prepare((db) => db.query.groups.findFirst({
 		where: eq(schema.groups.id, sql.placeholder("groupId")),
 		with: {
 			channels: { with: { channel: {
@@ -119,7 +119,7 @@ export class GroupsRepository {
 	//============================================================================
 	// INSERT
 
-	private queryInsertGroup = this.dbm.prepare((db) => db.insert(schema.groups)
+	private readonly queryInsertGroup = this.dbm.prepare((db) => db.insert(schema.groups)
 		.values({ name: sql.placeholder("name") })
 		.returning({ id: schema.groups.id })
 		.prepare("insert_group")

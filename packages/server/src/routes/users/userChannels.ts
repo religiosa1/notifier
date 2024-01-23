@@ -29,7 +29,7 @@ controller.get(
 );
 
 controller.get(
-	"/available-channels",
+	"/available",
 	zValidator("param", userIdParamsSchema, paramErrorHook),
 	zValidator("query", pageinationQuerySchema, validationErrorHook),
 	async (c) => {

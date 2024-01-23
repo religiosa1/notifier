@@ -8,9 +8,16 @@ import { di } from "src/injection";
 export class ApiKeysRepository {
 	private readonly dbm = di.inject("db");
 
+	private readonly queryInsertKey = this.dbm.prepare((db) => db.insert(schema.apiKeys)
+		.values({ 
+			userId: sql.placeholder("userId"),
+			prefix: sql.placeholder("prefix"),
+			hash: sql.placeholder("hash"),
+		})
+		.prepare("insert_key")
+	);
 	async insertKey(userId: number, prefix: string, hashedKey: string): Promise<void> {
-		const db = this.dbm.connection;
-		db.insert(schema.apiKeys).values({
+		await this.queryInsertKey.value.execute({
 			userId,
 			prefix,
 			hash: hashedKey,
@@ -107,7 +114,7 @@ export class ApiKeysRepository {
 		}
 	}
 
-	private queryDeleteAllKeys = this.dbm.prepare(db => db.delete(schema.apiKeys)
+	private readonly queryDeleteAllKeys = this.dbm.prepare(db => db.delete(schema.apiKeys)
 		.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
 		.prepare("delete_key")
 	);
