@@ -43,7 +43,7 @@ export class UserToGroupRelationsRepository {
 
 	async deleteGroupFromUser(userId: number, groupId: number): Promise<void> {
 		const data  = await this.queryDeleteGroupFromUser.value.execute({ userId, groupId });
-		assert(data, `Failed to delete group id = ${groupId} from user id = '${userId}'`);
+		assert(data.length, `Failed to delete group id = ${groupId} from user id = '${userId}'`);
 	}
 
 	async deleteAllGroupsFromUser(userId: number): Promise<void> {
