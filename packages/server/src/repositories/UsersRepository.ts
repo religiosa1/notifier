@@ -1,4 +1,5 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
+import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
 import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, isNull } from "drizzle-orm";
 import { hashPassword } from "src/services/hash";
@@ -98,6 +99,18 @@ export class UsersRepository {
 			})),
 			count,
 		];
+	}
+
+	private queryGetNotifiableAdminChatIds = this.dbm.prepare(
+		(db) => db.select({ telegramId: schema.users.telegramId })
+			.from(schema.users)
+			.where(eq(schema.users.role, UserRoleEnum.admin))
+			.prepare("query_get_notifiable_admin_chat_ids_query")
+	);
+	async getNotifiableAdminsChatIds(): Promise<number[]> {
+		const data = await this.queryGetNotifiableAdminChatIds.value.execute();
+		// TODO ability to turn notifications on and off
+		return data.map(i => i.telegramId);
 	}
 
 	//============================================================================

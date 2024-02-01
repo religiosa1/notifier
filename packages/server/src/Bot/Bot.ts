@@ -22,7 +22,7 @@ export class Bot implements IBot {
 			throw new Error("Bot token isn't supplied! (is it defined in env variables?)");
 		}
 		this.bot = new TelegramBot(token);
-		this.#commandContextFactory = new BotCommandContextFactory(this.bot, logger);
+		this.#commandContextFactory = new BotCommandContextFactory(this.bot, this.broadcastMessage.bind(this), logger);
 
 		this.bot.on("text", (message) => {
 			logger.debug("Bot command recieved: %o", message);

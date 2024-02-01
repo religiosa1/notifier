@@ -7,9 +7,10 @@ export const botCommands: readonly BotCommand[] = Object.freeze([
 	new BotCommand(
 		"start",
 		"",
-		async ({ logger, reply, userId, msg }) => {
+		async ({ logger, broadcastMessage, reply, userId, msg }) => {
 			const usersRepository = di.inject("UsersRepository");
-			// FIXME this command doesn't even require the authorization status check, only that we have a request
+			const settingsService = di.inject("SettingsService");
+
 			if (!isNaN(userId)) {
 				await reply("You've already started using the bot.");
 				return;
@@ -17,14 +18,25 @@ export const botCommands: readonly BotCommand[] = Object.freeze([
 			if (!msg.from) {
 				throw new Error("There's no 'chat' information in the message, unable to process");
 			}
-			logger.info({ event: "start command", chat: msg.chat }),
-				await usersRepository.insertUser({
+			logger.info({ event: "start command", chat: msg.chat });
+
+			const [adminChats, user] = await Promise.all([
+				usersRepository.getNotifiableAdminsChatIds(), 
+				usersRepository.insertUser({
 					name: msg.chat.username,
 					telegramId: msg.chat.id,
-				});
-			await reply(
-				"Thank you, you'll be able to use the service, once an admin will approve your join request."
-			);
+				}),
+			]);
+
+			const config = settingsService.getConfig();
+			const userProfileUrl = new URL(`/users/${user.id}`, config?.publicUrl);
+
+			await Promise.all([
+				reply("Thank you, you'll be able to use the service, once an admin will approve your join request."),
+				broadcastMessage(adminChats, {
+					text: `New authorization request: \n${userProfileUrl}`
+				})
+			]);
 		},
 		[],
 		{ hidden: true, noAuth: true }
