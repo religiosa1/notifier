@@ -32,7 +32,7 @@ export class SettingsService {
 	constructor(
 		private readonly logger = di.inject("logger"),
 		private readonly dbConnectionTester = new DatabaseConnectionTester(),
-		private readonly configFileName = process.env.NOTIFIER_CONFIG_LOCATION || join(getRootDir(), "config.json"),
+		private readonly configFileName = process.env.NOTIFIER_CONFIG_FILENAME || join(getRootDir(), "config.json"),
 	) {}
 
 	dispose() {

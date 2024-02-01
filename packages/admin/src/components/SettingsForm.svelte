@@ -102,7 +102,7 @@
 					value={data?.tgHookSecret ?? ""}
 					name="tgHookSecret"
 					base32
-					length={514}
+					length={512}
 					required
 				/>
 				<small>
