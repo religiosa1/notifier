@@ -14,6 +14,21 @@ type MessageHandler = (
 export class BotCommand {
 	public hidden = false;
 	public noAuth = false;
+	
+	get pattern(): RegExp {
+		// Using repeat here, so all of the args are correctly packed into their own capture group
+		const argsRe = "(?:\\s+([0-9\\w]+))?".repeat(this.args.length);
+		const garbageRe = "(?:\\s+.*)?";
+		return new RegExp("^\\/" + reEscape(this.command) + argsRe + garbageRe +"$");
+	}
+
+	get usageString(): string {
+		return [
+			"/" + this.command,
+			...this.args.map(a => `<${a.toUpperCase()}>`)
+		].join(" ");
+	}
+
 	constructor(
 		public command: string,
 		public description: string,
@@ -34,13 +49,6 @@ export class BotCommand {
 		}
 		this.hidden = hidden;
 		this.noAuth = noAuth;
-	}
-
-	get pattern(): RegExp {
-		// Using repeat here, so all of the args are correctly packed into their own capture group
-		const argsRe = "(?:\\s+([0-9\\w]+))?".repeat(this.args.length);
-		const garbageRe = "(?:\\s+.*)?";
-		return new RegExp("^\\/" + reEscape(this.command) + argsRe + garbageRe +"$");
 	}
 
 	extractArgs(match: RegExpMatchArray | null): string[] {
@@ -66,12 +74,5 @@ export class BotCommand {
 			command: this.command,
 			description: this.description,
 		};
-	}
-
-	get usageString(): string {
-		return [
-			"/" + this.command,
-			...this.args.map(a => `<${a.toUpperCase()}>`)
-		].join(" ");
 	}
 }

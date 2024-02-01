@@ -2,6 +2,7 @@ import type { Message } from "node-telegram-bot-api";
 import type TelegramBot from "node-telegram-bot-api";
 import type { BaseLogger } from "pino";
 import { BotCommandError } from "src/Bot/BotCommands/BotErrors";
+import type { IBot } from "src/Bot/Models";
 import { di } from "src/injection";
 
 
@@ -10,16 +11,17 @@ type Shift<T extends any[]> = ((...args: T) => any) extends (arg: any, ...rest: 
 export interface BotCommandContext {
 	/** Send message back to the message's author. */
 	reply: (...args: Shift<Parameters<TelegramBot["sendMessage"]>>) => ReturnType<TelegramBot["sendMessage"]>;
+	broadcastMessage: IBot['broadcastMessage'];
 	/** UserId, can be NaN for noAuth commands */
 	userId: number;
 	msg: Message;
-	bot: TelegramBot;
 	logger: BaseLogger;
 }
 
 export class BotCommandContextFactory {
 	constructor(
 		public bot: TelegramBot,
+		public broadcastMessage: IBot['broadcastMessage'],
 		public logger: BaseLogger,
 		private readonly usersRepository = di.inject("UsersRepository"),
 	) {}
@@ -32,7 +34,7 @@ export class BotCommandContextFactory {
 		}
 
 		return {
-			bot: this.bot,
+			broadcastMessage: this.broadcastMessage,
 			logger: this.logger,
 			reply,
 			userId: userId ?? NaN,
