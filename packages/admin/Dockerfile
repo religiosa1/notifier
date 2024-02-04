@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 
 # You should build this image from the root of the repo, like this:
-# docker build -t notifier-admin -f ./packages/admin/Dockerfile .
+# docker build -t notifier-admin -f ./packages/admin/Dockerfile . \
+#  --build-arg=API_URL=http://your-backend-address:8085/
 
 # https://docs.docker.com/engine/reference/builder/
 
@@ -40,6 +41,9 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 FROM deps as build
 
 ARG API_URL
+ARG ORIGIN
+ARG PROTOCOL_HEADER="X-Forwarded-Proto"
+ARG HOST_HEADER="X-Forwarded-Host"
 
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=packages/admin/package.json,target=packages/admin/package.json \

@@ -64,6 +64,10 @@ FROM base as final
 # Use production node environment by default.
 ENV NODE_ENV production
 
+# Creating a directory for the settings file and setting the write permissions 
+RUN mkdir -p /run/server-settings
+RUN chown node:node /run/server-settings
+
 # Run the application as a non-root user.
 USER node
 
@@ -75,7 +79,6 @@ COPY packages/server/package.json ./packages/server/package.json
 COPY --from=deps /usr/src/app/node_modules ./node_modules 
 COPY --from=deps /usr/src/app/packages/server/node_modules ./packages/server/node_modules
 COPY --from=build /usr/src/app/packages/server/dist ./packages/server/dist
-
 
 # Expose the port that the application listens on.
 EXPOSE 8085
