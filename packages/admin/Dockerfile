@@ -40,7 +40,11 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 # Create a stage for building the application.
 FROM deps as build
 
+# REQUIRED: backend connection url 
 ARG API_URL
+# Optional initial database connection url value for the setup page
+ARG DB_URL
+# Optional hardcoded public URL for CORS
 ARG ORIGIN
 ARG PROTOCOL_HEADER="X-Forwarded-Proto"
 ARG HOST_HEADER="X-Forwarded-Host"

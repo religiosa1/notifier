@@ -12,6 +12,7 @@ services:
       dockerfile: ./packages/admin/Dockerfile
       args:
         - API_URL=http://backend:8085/
+        - DB_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       - backend
     ports:
@@ -44,8 +45,8 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: notifier
-      POSTGRES_PASSWORD: 1234567
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     #  - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
     expose:
       - 5432

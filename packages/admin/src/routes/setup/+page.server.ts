@@ -34,6 +34,11 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		tgHookSecret,
 	};
 
+	const dbUrl = import.meta.env.DB_URL;
+	if (dbUrl) {
+		settings.databaseUrl = dbUrl;
+	}
+
 	return { settings }
 }
 
