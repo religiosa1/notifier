@@ -1,0 +1,62 @@
+version: '3.1'
+
+# https://docs.docker.com/compose/compose-file/
+# For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+
+services:
+  # Admin web interface
+  admin:
+    build:
+      context: .
+      dockerfile: ./packages/admin/Dockerfile
+      args:
+        - API_URL=http://backend:8085/
+    depends_on:
+      - backend
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=production
+      - PROTOCOL_HEADER=X-Forwarded-Proto
+      - HOST_HEADER=X-Forwarded-Host
+  # Bot itself and REST api
+  backend:
+    build:
+      context: .
+      dockerfile: ./packages/server/Dockerfile
+    depends_on:
+      db:
+         condition: service_healthy
+    volumes:
+      - backend-settings:/run/server-settings
+    environment:
+      - NOTIFIER_SETTINGS_FILENAME=/run/server-settings/settings.json
+    ports:
+      - 3001:8085
+  # DB for the backend
+  db:
+    image: postgres
+    restart: unless-stopped
+    user: postgres
+    # secrets:
+    #  - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: notifier
+      POSTGRES_PASSWORD: 1234567
+    #  - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+    expose:
+      - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  db-data:
+  backend-settings:
+secrets:
+  db-password:
+    file: db/password.txt

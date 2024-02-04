@@ -6,7 +6,8 @@ Windows machine will do, you just need to modify the installation procedure
 so it works with the package manager available on your system.
 
 This is the most complicated way of deploy, but the one that gives you the most
-authority and flexibility.
+authority and flexibility. Easier option would be deploy via docker, please
+refer to the [documentation](./docker-deployment.md)
 
 ## Prerequisites
 
