@@ -28,7 +28,6 @@
 		"@sveltejs/vite-plugin-svelte": "^3.0.2",
 		"@typescript-eslint/eslint-plugin": "^6.20.0",
 		"@typescript-eslint/parser": "^6.20.0",
-		"dotenv": "^16.4.1",
 		"eslint": "^8.56.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.35.1",
@@ -43,6 +42,7 @@
 		"vitest": "^1.2.2"
 	},
 	"dependencies": {
+		"dotenv": "^16.4.1",
 		"nanoid": "^5.0.4",
 		"rfc4648": "^1.5.3",
 		"zod": "^3.22.4"

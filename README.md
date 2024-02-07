@@ -28,8 +28,8 @@ Deployment options are described in the [docs](./docs/).
 A user who wants to receive notifications goes to the bot account in Telegram
 and executes `/start` command there.
 
-This command will create a request for activation in the admin panel and
-optionally sends a notification to the admin.
+This command will create a request for activation in the admin panel.
+<!-- WIP: and optionally sends a notification to the admin. -->
 
 Once the user request is accepted, they will be notified by the bot that, they
 can start using the API.
@@ -86,6 +86,15 @@ x-api-key: THE_KEY_GOES_HERE
 All of the methods, that admin's site uses can also be exposed with JWT authenthication
 if you need to do some stuff programmatically. See [server routes](./packages/server/src/routes/) 
 to check all of the available methods.
+
+### Current project status
+This project initially was created for the personal use. Currently it's in the
+development/underoing feature bloat, as there are a couple of things I still 
+want to include, mostly quality of life kind of improvents. However, it also 
+means, that there _will_ be bugs.
+
+If you encounter some problems with the app, feel free to file an issue, or 
+even better -- create a PR, fixing it.
 
 ## License
 all of these packages are MIT licensed.

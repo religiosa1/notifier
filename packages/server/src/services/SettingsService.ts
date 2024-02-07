@@ -32,7 +32,7 @@ export class SettingsService {
 	constructor(
 		private readonly logger = di.inject("logger"),
 		private readonly dbConnectionTester = new DatabaseConnectionTester(),
-		private readonly configFileName = process.env.NOTIFIER_CONFIG_LOCATION || join(getRootDir(), "config.json"),
+		private readonly settingsFileName = process.env.NOTIFIER_SETTINGS_FILENAME || join(getRootDir(), "config.json"),
 	) {}
 
 	dispose() {
@@ -47,7 +47,7 @@ export class SettingsService {
 			return;
 		}
 
-		const dataString = await readFile(this.configFileName, "utf8");
+		const dataString = await readFile(this.settingsFileName, "utf8");
 		const data = JSON.parse(stripComments(dataString, " "));
 		if (!serverConfigSchema.safeParse(data).success) {
 			return this.config = undefined;
@@ -69,7 +69,7 @@ export class SettingsService {
 		try {
 			await this.disposerLock.wait();
 			const output = JSON.stringify(config, undefined, 4);
-			await writeFile(this.configFileName, output, "utf8");
+			await writeFile(this.settingsFileName, output, "utf8");
 			storedConfig = config
 		} finally {
 			this.config = storedConfig;
@@ -81,7 +81,7 @@ export class SettingsService {
 	}
 
 	async removeConfig(): Promise<void> {
-		await unlink(this.configFileName);
+		await unlink(this.settingsFileName);
 		this.config = undefined;
 	}
 
@@ -112,6 +112,6 @@ export class SettingsService {
 	}
 
 	private isConfigFileReadable(): Promise<boolean> {
-		return access(this.configFileName, constants.R_OK).then(() => true, () => false);
+		return access(this.settingsFileName, constants.R_OK).then(() => true, () => false);
 	}
 }

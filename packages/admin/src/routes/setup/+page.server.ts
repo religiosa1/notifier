@@ -26,13 +26,18 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
 	const [ jwtSecret, tgHookSecret ] = await Promise.all([ 
 		generateSecretKey("base64"), 
-		generateSecretKey("base32", 514), 
+		generateSecretKey("base32", 512), 
 	]);
 
 	const settings: Partial<SetupForm> = {
 		jwtSecret,
 		tgHookSecret,
 	};
+
+	const dbUrl = import.meta.env.DB_URL;
+	if (dbUrl) {
+		settings.databaseUrl = dbUrl;
+	}
 
 	return { settings }
 }

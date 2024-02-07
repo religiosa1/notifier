@@ -12,8 +12,8 @@ declare global {
 			NOTIFIER_ADMIN_TGID?: string;
 			/** Log level. @see {@link pino.LevelWithSilent}  */
 			NOTIFIER_LOG_LEVEL?:  pino.LevelWithSilentOrString;
-			/** Override the default location of the config file created during setup. */
-			NOTIFIER_CONFIG_LOCATION?: string;
+			/** Override the default file name of the settings file created during setup. */
+			NOTIFIER_SETTINGS_FILENAME?: string;
 			NODE_ENV: string;
 		}
 	}
