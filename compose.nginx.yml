@@ -9,9 +9,7 @@ services:
         source: ./nginx.conf
         target: /etc/nginx/conf.d/default.conf
         read_only: true
-      # TODO volumes for certificates?.. Cert files?
     ports:
-      - 80:80
-      - 443:443
+      - ${NOTIFIER_NGINX_PORT}:80
     depends_on: 
       - backend
