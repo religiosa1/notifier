@@ -34,19 +34,18 @@ export class DatabaseConnectionManager {
 			if (this.#connection || this.#database) {
 				this.#database?.close();
 			}
-			const {databaseUrl} = config ?? {};
+			const {databaseFileName} = config ?? {};
 			try {
-				assert(databaseUrl);
-				this.#database = getDatabase();
-
-				this.connection = databaseUrl ? drizzle(this.#database, { schema }) : undefined;
+				assert(databaseFileName);
+				this.#database = getDatabase(databaseFileName);
+				this.connection = databaseFileName ? drizzle(this.#database, { schema }) : undefined;
 			} catch(e) {
 				const logger = di.inject("logger");
 				logger.error("Unable to connect to DB", e);
 				this.connection = undefined;
 				this.#database = undefined;
 			}
-		}, ["databaseUrl"]);
+		}, ["databaseFileName"]);
 	}
 
 	async [Symbol.asyncDispose]() {

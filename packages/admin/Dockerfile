@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # You should build this image from the root of the repo, like this:
-# docker build -t notifier-admin -f ./packages/admin/Dockerfile . \
-#  --build-arg=API_URL=http://your-backend-address:8085/
+# docker build -t notifier-admin -f ./packages/admin/Dockerfile .
 
 # https://docs.docker.com/engine/reference/builder/
 
@@ -40,10 +39,6 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 # Create a stage for building the application.
 FROM deps as build
 
-# REQUIRED: backend connection url 
-ARG API_URL
-# Optional hardcoded public URL for CORS
-ARG ORIGIN
 ARG PROTOCOL_HEADER="X-Forwarded-Proto"
 ARG HOST_HEADER="X-Forwarded-Host"
 ARG NODE_ENV="production"

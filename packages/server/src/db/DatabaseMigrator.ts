@@ -9,11 +9,13 @@ import { getDatabase } from "src/db/db";
 
 export class DatabaseMigrator {
 	constructor(
+		private readonly settingsService = di.inject("SettingsService"),
 		private readonly logger = di.inject("logger"),
 	) { }
 
 	private getDbConnection(): BetterSQLite3Database<typeof schema> & Disposable {
-		const database = getDatabase();
+		const { databaseFileName } = this.settingsService.getConfig() ?? {};
+		const database = getDatabase(databaseFileName!);
 		const db = drizzle(database, { schema }) as BetterSQLite3Database<typeof schema> & Disposable;
 		db[Symbol.dispose] ??= () => database.close();
 		return db;

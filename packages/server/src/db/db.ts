@@ -1,7 +1,9 @@
 import Database from "better-sqlite3";
-import { DEFAULT_DB_NAME } from "drizzle.config";
 
-export function getDatabase(dbFile = process.env['DB_FILE'] ?? DEFAULT_DB_NAME): Database.Database {
+export function getDatabase(dbFile: string): Database.Database {
+	if (!dbFile) {
+		throw new Error("Database file name is not provided");
+	}
 	const db = new Database(dbFile);
 	// Write-ahed-log is around 10 times faster than the standard rollback
 	db.exec("PRAGMA journal_mode = WAL;");

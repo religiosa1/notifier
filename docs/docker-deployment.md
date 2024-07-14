@@ -36,36 +36,29 @@ request headers. This is ususally handled by nginx, please refer to the provided
 [nginx.conf](../nginx.conf) section of self-hosted deployment guide for the 
 reference.
 
-You can overrride name of those headers via BUILD_ARGS:
+You can overrride name of those headers via BUILD_ARGS while building the image:
 	- PROTOCOL_HEADER: "X-Forwarded-Proto"
 	- HOST_HEADER: "X-Forwarded-Host"
 
 If you don't use a reverse proxy or want to launch the container locally, 
-you should supply the ORIGIN build arg manually.
+you should supply the ORIGIN environmental variable to override it.
 
 ```sh
-docker build -t notifier-admin -f ./packages/admin/Dockerfile . --build-arg=ORIGIN=https://your-website.com
+docker run --env=ORIGIN=https://your-website.com -f ./packages/admin/Dockerfile .
 ```
 
 Please notice, that origin address should NOT contain the trailing slash.
 Also, you will require an ssl for the backend's web hook to work, so specifying
 ORIGIN usecases are limited.
 
-In any case you also need to specify the backend URL location in the build args.
-
-```sh
-docker build ... --build-arg=API_URL=http://your-backend-address:8085/
-```
 docker-compose files handles all that for you.
 
 ### notifier-backend
 notifier-backend __requires__ some kind of reverse proxy and SSL certificate to 
 function. Besides that it also requires:
-1. [volume](https://docs.docker.com/engine/reference/commandline/container_run/#volume) 
+[volume](https://docs.docker.com/engine/reference/commandline/container_run/#volume) 
   for storing the settings file.
-2. PosgresSQL connection. Connection parameters can be specified after the first 
-launch in the settings wizards.
 
 ```sh
-docker compose -f .\compose.nginx.yml up --build
+docker compose -f ./compose.nginx.yml up --build
 ```

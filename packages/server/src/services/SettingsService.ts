@@ -1,13 +1,10 @@
-import { join } from "path";
-import { writeFile, readFile, access, constants, unlink } from "fs/promises";
-import { stripComments } from "jsonc-parser";
 
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
+import { DEFAULT_DB_NAME } from "drizzle.config";
 
 import { di } from "src/injection";
 import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
-import { getRootDir } from "src/util/getRootDir";
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
@@ -16,7 +13,7 @@ export class SettingsService {
 	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
 	private disposerLock = new Lock();
 
-	#config: ServerConfig | undefined;
+	#config: Readonly<ServerConfig> | undefined;
 	private get config() {
 		return this.#config;
 	}
@@ -28,7 +25,6 @@ export class SettingsService {
 
 	constructor(
 		private readonly logger = di.inject("logger"),
-		private readonly settingsFileName = process.env.NOTIFIER_SETTINGS_FILENAME || join(getRootDir(), "config.json"),
 	) {}
 
 	dispose() {
@@ -38,38 +34,40 @@ export class SettingsService {
 		this.dispose();
 	}
 
-	async loadConfig(): Promise<ServerConfig | undefined> {
-		if (!await this.isConfigFileReadable()) {
-			return;
-		}
-
-		const dataString = await readFile(this.settingsFileName, "utf8");
-		const data = JSON.parse(stripComments(dataString, " "));
-		if (!serverConfigSchema.safeParse(data).success) {
-			return this.config = undefined;
-		}
-		return this.config = data;
+	loadConfig(): ServerConfig | undefined {
+		const config: ServerConfig = Object.freeze({
+			botToken: process.env.BOT_TOKEN,
+			jwtSecret: process.env.JWT_SECRET,
+			tgHookSecret: process.env.TG_HOOK_SECRET,
+			publicUrl: process.env.PUBLIC_URL ?? "",
+			databaseFileName: process.env.DB_FILE ?? DEFAULT_DB_NAME,
+		});
+		serverConfigSchema.parse(config);
+		return this.config = config;
 	}
 
-	getConfig(): ServerConfig | undefined {
+	getConfig(): Readonly<ServerConfig> | undefined {
+		if (this.config == null) {
+			this.loadConfig();
+		}
 		return this.config;
 	}
 
-	async setConfig(config: ServerConfig): Promise<void> {
-		let storedConfig: ServerConfig | undefined;
-		serverConfigSchema.parse(config);
-		try {
-			await this.disposerLock.wait();
-			const output = JSON.stringify(config, undefined, 4);
-			await writeFile(this.settingsFileName, output, "utf8");
-			storedConfig = config
-		} finally {
-			this.config = storedConfig;
-		}
+	setConfig(config: ServerConfig): Readonly<ServerConfig> {
+		const validatedConfig = serverConfigSchema.parse(config);
+		return this.config = Object.freeze(validatedConfig);
 	}
 
-	async removeConfig(): Promise<void> {
-		await unlink(this.settingsFileName);
+	patchConfig(config: Partial<ServerConfig>): Readonly<ServerConfig> {
+		const oldConfig = this.getConfig();
+		const patchedConfig: ServerConfig = {
+			...oldConfig!,
+			...config,
+		};
+		return this.setConfig(patchedConfig);
+	}
+
+	removeConfig(): void {
 		this.config = undefined;
 	}
 
@@ -97,9 +95,5 @@ export class SettingsService {
 
 	unsubscribeAll(): void {
 		this.emitter.clear();
-	}
-
-	private isConfigFileReadable(): Promise<boolean> {
-		return access(this.settingsFileName, constants.R_OK).then(() => true, () => false);
 	}
 }

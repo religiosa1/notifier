@@ -24,7 +24,7 @@ services:
       context: .
       dockerfile: ./packages/admin/Dockerfile
       args:
-        - API_URL=http://backend:8085/
+        - API_URL=https://${PUBLIC_URL?:error}/api
     depends_on:
       - backend
     expose:
@@ -41,7 +41,10 @@ services:
       - db-data:/run/backend-data
       - backend-settings:/run/server-settings
     environment:
-      - NOTIFIER_SETTINGS_FILENAME=/run/server-settings/settings.json
+      - PUBLIC_URL=${PUBLIC_URL}
+      - BOT_TOKEN=${BOT_TOKEN:?error}
+      - JWT_SECRET=${JWT_SECRET:?error}
+      - TG_HOOK_SECRET=${TG_HOOK_SECRET}
       - DB_FILE=/run/backend-data/database.sqlite
     expose:
       - 3001:3001

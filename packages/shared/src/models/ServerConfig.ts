@@ -10,9 +10,9 @@ export const telegramSecretRegex = /^[A-Za-z0-9_\-]+$/;
 export const serverConfigSchema = z.object({
 	botToken: z.string().min(46).regex(botTokenRegex),
 	jwtSecret: z.string().min(100).regex(jwtSecretRegex),
-	tgHookSecret:  z.string().min(100).regex(jwtSecretRegex),
+	databaseFileName: z.string().min(1),
 	publicUrl: z.string().url(),
-	databaseUrl: z.string().url(),
+	tgHookSecret: z.string().min(100).regex(jwtSecretRegex).optional(),
 });
 export type ServerConfig = z.infer<typeof serverConfigSchema>;
 
