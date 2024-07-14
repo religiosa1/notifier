@@ -1,8 +1,8 @@
 import type { Config } from "drizzle-kit";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import { getRootDir } from "src/util/getRootDir";
 
-export const DEFAULT_DB_NAME = path.resolve(fileURLToPath(import.meta.url), "../database.sqlite3");
+export const DEFAULT_DB_NAME = resolve(getRootDir(), "./database.sqlite3");
 
 export default {
   schema: "./src/db/schema.ts",

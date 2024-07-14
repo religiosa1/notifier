@@ -86,6 +86,7 @@ describe("getFormData", () => {
 			},
 			"error": "Validation Error",
 			"foo": "qwerty",
+			"success": false,
 		}]);
 	});
 

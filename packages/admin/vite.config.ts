@@ -1,16 +1,11 @@
 import "dotenv/config";
-import { sveltekit } from '@sveltejs/kit/vite';
-import type { UserConfig } from 'vite';
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
 
-const config: UserConfig = {
+export default defineConfig({
 	plugins: [sveltekit()],
-	test: {
-		include: ['src/**/*.{test,spec}.{js,ts}']
-	},
 	envPrefix: [
 		"VITE_",
 		"API_URL",
 	],
-};
-
-export default config;
+});
