@@ -1,37 +1,40 @@
 {
-  "version": "5",
-  "dialect": "pg",
-  "id": "413fac0f-e482-413a-9c68-e12e3d93d00a",
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "47c700bc-6c13-4802-8f2c-7beba5d32418",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "api_keys": {
       "name": "api_keys",
-      "schema": "",
       "columns": {
         "prefix": {
           "name": "prefix",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "hash": {
           "name": "hash",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         }
       },
       "indexes": {},
@@ -46,8 +49,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -55,63 +58,67 @@
     },
     "channels": {
       "name": "channels",
-      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
+      "indexes": {
         "channels_name_unique": {
           "name": "channels_name_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "name"
-          ]
+          ],
+          "isUnique": true
         }
-      }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     },
     "channels_to_groups": {
       "name": "channels_to_groups",
-      "schema": "",
       "columns": {
         "channel_id": {
           "name": "channel_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "group_id": {
           "name": "group_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -126,8 +133,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "channels_to_groups_group_id_groups_id_fk": {
           "name": "channels_to_groups_group_id_groups_id_fk",
@@ -139,159 +146,180 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "channels_to_groups_channel_id_group_id": {
-          "name": "channels_to_groups_channel_id_group_id",
+        "channels_to_groups_channel_id_group_id_pk": {
           "columns": [
             "channel_id",
             "group_id"
-          ]
+          ],
+          "name": "channels_to_groups_channel_id_group_id_pk"
         }
       },
       "uniqueConstraints": {}
     },
     "groups": {
       "name": "groups",
-      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
+      "indexes": {
         "groups_name_unique": {
           "name": "groups_name_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "name"
-          ]
+          ],
+          "isUnique": true
         }
-      }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     },
     "users": {
       "name": "users",
-      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "telegram_id": {
           "name": "telegram_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "password": {
           "name": "password",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "authorization_status": {
           "name": "authorization_status",
-          "type": "authorization_enum",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false,
           "default": "'pending'"
         },
         "role": {
           "name": "role",
-          "type": "user_role_enum",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false,
           "default": "'regular'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
+      "indexes": {
         "users_telegram_id_unique": {
           "name": "users_telegram_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "telegram_id"
-          ]
+          ],
+          "isUnique": true
         }
-      }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     },
     "users_to_channels": {
       "name": "users_to_channels",
-      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "channel_id": {
           "name": "channel_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "users_to_channels_channel_id_user_id_unique": {
+          "name": "users_to_channels_channel_id_user_id_unique",
+          "columns": [
+            "channel_id",
+            "user_id"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "users_to_channels_user_id_users_id_fk": {
           "name": "users_to_channels_user_id_users_id_fk",
@@ -303,8 +331,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "users_to_channels_channel_id_channels_id_fk": {
           "name": "users_to_channels_channel_id_channels_id_fk",
@@ -316,45 +344,29 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {
-        "users_to_channels_user_id_channel_id": {
-          "name": "users_to_channels_user_id_channel_id",
-          "columns": [
-            "user_id",
-            "channel_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "users_to_channels_channel_id_user_id_unique": {
-          "name": "users_to_channels_channel_id_user_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "channel_id",
-            "user_id"
-          ]
-        }
-      }
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     },
     "users_to_groups": {
       "name": "users_to_groups",
-      "schema": "",
       "columns": {
         "group_id": {
           "name": "group_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -369,8 +381,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "users_to_groups_user_id_users_id_fk": {
           "name": "users_to_groups_user_id_users_id_fk",
@@ -382,27 +394,29 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "users_to_groups_user_id_group_id": {
-          "name": "users_to_groups_user_id_group_id",
+        "users_to_groups_user_id_group_id_pk": {
           "columns": [
-            "user_id",
-            "group_id"
-          ]
+            "group_id",
+            "user_id"
+          ],
+          "name": "users_to_groups_user_id_group_id_pk"
         }
       },
       "uniqueConstraints": {}
     }
   },
   "enums": {},
-  "schemas": {},
   "_meta": {
     "schemas": {},
     "tables": {},
     "columns": {}
+  },
+  "internal": {
+    "indexes": {}
   }
 }

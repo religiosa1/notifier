@@ -4,7 +4,7 @@
   "include": [
     "./src/",
     "./scripts/",
-    "./prisma",
+    "./drizzle.config.ts",
     "./index.ts"
   ],
   "compilerOptions": {

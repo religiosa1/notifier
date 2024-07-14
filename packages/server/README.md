@@ -7,7 +7,7 @@ Creates a [Hono](https://hono.dev/) http server, to expose API and
 
 Available endpoints are specified in the [routes](./src/routes/) folder.
 
-Stores information about groups, channels and users in the postgres DB, managed by
+Stores information about groups, channels and users in the sqlite DB, managed by
 [drizzle](https://orm.drizzle.team/). You can see all of the DB connection 
 methods in the [repositories](./src/repositories/) folder.
 

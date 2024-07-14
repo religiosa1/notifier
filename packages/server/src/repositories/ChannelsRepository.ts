@@ -1,7 +1,7 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import type { Channel, ChannelDetail } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
-import { getTableColumns, sql, eq, ilike, isNull, and, inArray } from "drizzle-orm";
+import { getTableColumns, sql, eq, ilike, isNull, and, inArray, count } from "drizzle-orm";
 import { schema } from "src/db";
 import { di } from "src/injection";
 
@@ -20,7 +20,7 @@ export class ChannelsRepository {
 				id: true
 			},
 			where: ( channel, { eq }) => eq(channel.name, sql.placeholder("name"))
-		}).prepare("get_channel_id")
+		}).prepare()
 	);
 	async getChannelId(name: string): Promise<number | undefined> {
 		const { id } = await this.queryGetChannelId.value.execute({ name }) ?? {};
@@ -30,7 +30,7 @@ export class ChannelsRepository {
 	private readonly queryAssertChannelExists = this.dbm.prepare((db) =>
 		db.select({ id: schema.channels.id }).from(schema.channels)
 			.where(eq(schema.channels.id, sql.placeholder("channelId")))
-			.prepare("check_channel")
+			.prepare()
 	);
 	async assertChannelExist(channelId: number): Promise<void> {
 		const [channel] = await this.queryAssertChannelExists.value.execute({ channelId });
@@ -40,21 +40,21 @@ export class ChannelsRepository {
 	//============================================================================
 	// LIST
 
-	private readonly queryCountChannels = this.dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int` })
+	private readonly queryCountChannels = this.dbm.prepare((db) => db.select({ count: count() })
 		.from(schema.channels)
-		.prepare("count_channels_query")
+		.prepare()
 	);
 	private readonly queryListChannels = this.dbm.prepare((db) => db.select({
 		...getTableColumns(schema.channels),
-		usersCount: sql<number>`COUNT(${schema.usersToChannels.userId})::int`,
-		groupsCount: sql<number>`COUNT(${schema.channelsToGroups.groupId})::int`,
+		usersCount: count(schema.usersToChannels.userId),
+		groupsCount: count(schema.channelsToGroups.groupId),
 	}).from(schema.channels)
 		.leftJoin(schema.usersToChannels, eq(schema.usersToChannels.channelId, schema.channels.id))
 		.leftJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
 		.groupBy(schema.channels.id)
 		.limit(sql.placeholder("take"))
 		.offset(sql.placeholder("skip"))
-		.prepare("channels_query")
+		.prepare()
 	);
 
 	async listChannels({ skip = 0, take = 20} = {}): Promise<[
@@ -110,7 +110,7 @@ export class ChannelsRepository {
 				}
 			}
 		})
-		.prepare("get_channel_detail")
+		.prepare()
 	);
 	async getChannelDetail(channelId: number): Promise<ChannelDetail> {
 		const channelDetail = await this.queryGetChannelDetail.value.execute({ channelId });
@@ -127,7 +127,7 @@ export class ChannelsRepository {
 	private readonly queryInsertChannel = this.dbm.prepare((db) => db.insert(schema.channels)
 		.values({ name: sql.placeholder("name")})
 		.returning()
-		.prepare("insert_channel")
+		.prepare()
 	);
 	async insertChannel(name: string): Promise<Channel>{
 		const [channel] = await this.queryInsertChannel.value.execute({ name });
@@ -156,8 +156,8 @@ export class ChannelsRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const {count} = await db.delete(schema.channels).where(inArray(schema.channels.id, ids));
-		return count;
+		const {changes} = await db.delete(schema.channels).where(inArray(schema.channels.id, ids));
+		return changes;
 	}
 
 	//============================================================================
@@ -166,7 +166,7 @@ export class ChannelsRepository {
 	private readonly querySearchChannels = this.dbm.prepare((db) => db.select()
 		.from(schema.channels)
 		.where(ilike(schema.channels.name, sql.placeholder("name")))
-		.prepare("search_channel")
+		.prepare()
 	);
 	async searchChannels({ name = ""}): Promise<Channel[]> {
 		return this.querySearchChannels.value.execute({ name: "%" + name + "%" });
@@ -182,7 +182,7 @@ export class ChannelsRepository {
 				ilike(schema.channels.name, sql.placeholder("name")),
 				isNull(schema.channelsToGroups.groupId)
 			))
-			.prepare("channel_search_query_for_group")
+			.prepare()
 	);
 	async searchChannelsForGroup({ name = "", groupId }: { name: string, groupId: number}): Promise<Channel[]> {
 		return this.querySearchChannelsForGroup.value.execute({ name: "%" + name + "%", groupId });

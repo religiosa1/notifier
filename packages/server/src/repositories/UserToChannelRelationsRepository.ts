@@ -1,5 +1,5 @@
 import type { Channel, ChannelSubscription } from "@shared/models/Channel";
-import { and, eq, getTableColumns, inArray, sql } from "drizzle-orm";
+import { and, count, countDistinct, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { di } from "src/injection";
 
@@ -11,9 +11,9 @@ export class UserToChannelRelationsRepository {
 	// LIST
 
 	private readonly queryCountUserChannels = this.dbm.prepare(
-		(db) => db.select({ count: sql<number>`count(*)::int`}).from(schema.usersToChannels)
+		(db) => db.select({ count: count() }).from(schema.usersToChannels)
 			.where(eq(schema.usersToChannels.userId, sql.placeholder("userId")))
-			.prepare("count_user_channels")
+			.prepare()
 	);
 	private readonly queryListUserChannels = this.dbm.prepare(
 		(db) => db.select(getTableColumns(schema.channels)).from(schema.channels)
@@ -22,6 +22,7 @@ export class UserToChannelRelationsRepository {
 			.orderBy(schema.channels.name, schema.channels.id)
 			.limit(sql.placeholder("take"))
 			.offset(sql.placeholder("skip"))
+			.prepare()
 	);
 
 	async listUserChannels(
@@ -57,7 +58,7 @@ export class UserToChannelRelationsRepository {
 			.orderBy(schema.channels.name, schema.channels.id)
 			.limit(sql.placeholder("take"))
 			.offset(sql.placeholder("skip"))
-			.prepare("list_user_available_unsubscribed_channels")
+			.prepare()
 	);
 	async listAvailableUnsubscribedChannelsForUser(userId: number, { skip = 0, take = 20} = {}): Promise<Channel[]> {
 		return this.queryListAvailableUnsubscribedChannelsForUser.value.execute({ userId, skip, take });
@@ -66,7 +67,7 @@ export class UserToChannelRelationsRepository {
 	// LIST all available channels for user
 
 	private readonly queryCountAllAvailableChannelsForUser = this.dbm.prepare(
-		(db) => db.select({ count: sql<number>`count(distinct ${schema.channels.id})::int`})
+		(db) => db.select({ count: countDistinct(schema.channels.id)})
 			.from(schema.channels)
 			.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
 			.innerJoin(schema.usersToGroups, and(
@@ -77,7 +78,7 @@ export class UserToChannelRelationsRepository {
 				eq(schema.usersToChannels.userId, schema.usersToGroups.userId),
 				eq(schema.usersToChannels.channelId, schema.channels.id),
 			))
-			.prepare("query_count_all_available_channels_for_user")
+			.prepare()
 	);
 
 	private readonly queryListAllAvailableChannelsForUser = this.dbm.prepare(
@@ -99,7 +100,7 @@ export class UserToChannelRelationsRepository {
 			.orderBy(schema.channels.name, schema.channels.id)
 			.limit(sql.placeholder("take"))
 			.offset(sql.placeholder("skip"))
-			.prepare("list_all_available_channels_for_user")
+			.prepare()
 	);
 	async listAllAvailableChannelsForUser(userId: number, { skip = 0, take = 20 } = {}): Promise<[
 		channels: ChannelSubscription[],
@@ -128,7 +129,7 @@ export class UserToChannelRelationsRepository {
 				eq(schema.usersToGroups.userId, sql.placeholder("userId")),
 			))
 			.limit(1)
-			.prepare("get_permission_group")
+			.prepare()
 	);
 
 	async connectUserChannel(userId: number, channelId: number): Promise<void> {
@@ -149,11 +150,11 @@ export class UserToChannelRelationsRepository {
 		}
 		const db = this.dbm.connection;
 		console.table({ userId, channelIds });
-		const {count} = await db.delete(schema.usersToChannels)
+		const {changes} = await db.delete(schema.usersToChannels)
 			.where(and(
 				eq(schema.usersToChannels.userId, userId),
 				inArray(schema.usersToChannels.channelId, channelIds)
 			));
-		return count;
+		return changes;
 	}
 }

@@ -1,6 +1,6 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import type { UserWithGroups } from "@shared/models/User";
-import { eq, inArray, sql } from "drizzle-orm";
+import { count, eq, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { di } from "src/injection";
 
@@ -12,9 +12,9 @@ export class UserConfirmationRequestsRepository {
 	// LIST
 
 	private readonly queryCountConfirmationRequests = this.dbm.prepare(
-		(db) => db.select({ count: sql<number>`count(*)::int` }).from(schema.users)
+		(db) => db.select({ count: count() }).from(schema.users)
 			.where(eq(schema.users.authorizationStatus, AuthorizationEnum.pending))
-			.prepare("count_confirmation_requests")
+			.prepare()
 	);
 	private readonly queryListConfirmationRequests = this.dbm.prepare(
 		(db) => db.query.users.findMany({
@@ -30,7 +30,7 @@ export class UserConfirmationRequestsRepository {
 				}}},
 			}
 		})
-		.prepare("list_confirmation_requests")
+		.prepare()
 	);
 
 	async listConfirmationRequests({ skip = 0, take = 20 } = {}): Promise<[

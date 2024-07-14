@@ -1,32 +1,37 @@
+import { relations, sql } from "drizzle-orm"
 import {
-	pgTable,
+	sqliteTable,
 	text,
 	integer,
 	primaryKey,
-	timestamp,
-	pgEnum,
 	unique,
-	serial
-} from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm"
+} from "drizzle-orm/sqlite-core";
 
 // FIXME @shared imports in drizzle
-import { AuthorizationEnum, authorizationEnumSchema } from "../../../shared/src/models/AuthorizationEnum"
-import { UserRoleEnum, userRoleEnumSchema } from "../../../shared/src/models/UserRoleEnum";
+import { AuthorizationEnum } from "../../../shared/src/models/AuthorizationEnum"
+import { UserRoleEnum } from "../../../shared/src/models/UserRoleEnum";
 
-const authorizationEnum = pgEnum("authorization_enum", authorizationEnumSchema.options);
-const userRoleEnum = pgEnum("user_role_enum", userRoleEnumSchema.options);
-
-export const users = pgTable("users", {
-	id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+	id: integer("id").primaryKey(),
 	telegramId: integer("telegram_id").notNull().unique(),
 	name: text("name"),
 	/** only admin users can have password, so if the password exists it"s an admin	*/
 	password: text("password"),
-	authorizationStatus: authorizationEnum("authorization_status").notNull().default(AuthorizationEnum.pending),
-	role: userRoleEnum("role").notNull().default(UserRoleEnum.regular),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow()
+	authorizationStatus: text("authorization_status", { enum: [
+		AuthorizationEnum.accepted,
+		AuthorizationEnum.declined,
+		AuthorizationEnum.pending,
+	]}).notNull().default(AuthorizationEnum.pending),
+	role: text("role", { enum: [
+		UserRoleEnum.admin,
+		UserRoleEnum.regular,
+	]}).notNull().default(UserRoleEnum.regular),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.notNull(),
 });
 export const userRelations = relations(users, ({ many	}) => ({
 	groups: many(usersToGroups),
@@ -37,22 +42,26 @@ export const userRelations = relations(users, ({ many	}) => ({
 /*============================================================================*/
 /* Groups */
 
-export const groups = pgTable("groups", {
-	id: serial("id").primaryKey(),
+export const groups = sqliteTable("groups", {
+	id: integer("id").primaryKey(),
 	name: text("name").notNull().unique(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.notNull(),
 });
 export const groupsRelations = relations(groups, ({ many }) => ({
 	users: many(usersToGroups),
 	channels: many(channelsToGroups),
 }));
 
-export const usersToGroups = pgTable("users_to_groups", {
+export const usersToGroups = sqliteTable("users_to_groups", {
 	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade", onUpdate: "cascade" }),
 	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
-	pk: primaryKey(t.userId, t.groupId),
+	pk: primaryKey({ columns: [ t.userId, t.groupId] }),
 }));
 export const usersToGroupsRelations = relations(usersToGroups, ({ one }) => ({
 	group: one(groups, {
@@ -68,22 +77,26 @@ export const usersToGroupsRelations = relations(usersToGroups, ({ one }) => ({
 /*============================================================================*/
 /* Channels */
 
-export const channels = pgTable("channels", {
-	id: serial("id").primaryKey(),
+export const channels = sqliteTable("channels", {
+	id: integer("id").primaryKey(),
 	name: text("name").notNull().unique(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.default(sql`(CURRENT_TIMESTAMP)`)
+		.notNull(),
 });
 export const channelRelations = relations(channels, ({ many }) => ({
 	groups: many(channelsToGroups),
 	users: many(usersToChannels),
 }));
 
-export const channelsToGroups = pgTable("channels_to_groups", {
+export const channelsToGroups = sqliteTable("channels_to_groups", {
 	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade", onUpdate: "cascade" }),
 	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
-	pk: primaryKey(t.channelId, t.groupId),
+	pk: primaryKey({ columns: [t.channelId, t.groupId ] }),
 }));
 export const channelsToGroupsRelations = relations(channelsToGroups, ({ one }) => ({
 	channel: one(channels, {
@@ -96,9 +109,9 @@ export const channelsToGroupsRelations = relations(channelsToGroups, ({ one }) =
 	}),
 }));
 
-export const usersToChannels = pgTable("users_to_channels", {
+export const usersToChannels = sqliteTable("users_to_channels", {
 	// with a separate primary key, to make our queries easier
-	id: serial("id").primaryKey(),
+	id: integer("id").primaryKey(),
 	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
 	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
@@ -118,13 +131,15 @@ export const usersToChannelsRelations = relations(usersToChannels, ({ one }) => 
 /*============================================================================*/
 /* API keys */
 
-export const apiKeys = pgTable("api_keys", {
+export const apiKeys = sqliteTable("api_keys", {
 	/** Public part, displayed in user interface */
 	prefix: text("prefix").primaryKey(),
 	// Actual key part, stored as hash
 	hash: text("hash").notNull(),
 	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull()
 });
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
 	user: one(users),

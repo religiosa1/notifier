@@ -1,9 +1,8 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { ResultError } from "@shared/models/Result";
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { di } from "src/injection";
-
 
 export class ApiKeysRepository {
 	private readonly dbm = di.inject("db");
@@ -14,7 +13,7 @@ export class ApiKeysRepository {
 			prefix: sql.placeholder("prefix"),
 			hash: sql.placeholder("hash"),
 		})
-		.prepare("insert_key")
+		.prepare()
 	);
 	async insertKey(userId: number, prefix: string, hashedKey: string): Promise<void> {
 		await this.queryInsertKey.value.execute({
@@ -35,7 +34,7 @@ export class ApiKeysRepository {
 			.innerJoin(schema.users, eq(schema.users.id, schema.apiKeys.userId))
 			.where(eq(schema.apiKeys.prefix, sql.placeholder("prefix")))
 			.limit(1)
-			.prepare("get_key_hash_and_auth_status")
+			.prepare()
 	);
 	async getKeyHashAndAuthStatus(prefix: string): Promise<{
 		hash: string,
@@ -53,7 +52,7 @@ export class ApiKeysRepository {
 			.innerJoin(schema.apiKeys, eq(schema.apiKeys.userId, schema.users.id))
 			.where(eq(schema.apiKeys.prefix, sql.placeholder("prefix")))
 			.limit(1)
-			.prepare("query_get_user_for_key")
+			.prepare()
 	);
 	async getUserForKey(prefix: string): Promise<{
 		name: string | null;
@@ -67,10 +66,10 @@ export class ApiKeysRepository {
 	// LIST
 
 	private readonly queryCountKeys = this.dbm.prepare((db) => db.select({
-		count: sql<number>`count(*)::int`,
+		count: count(),
 	}).from(schema.apiKeys)
 		.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-		.prepare("count_keys")
+		.prepare()
 	);
 	private readonly queryGetKeys = this.dbm.prepare((db) => db.select({
 			prefix: schema.apiKeys.prefix,
@@ -79,7 +78,7 @@ export class ApiKeysRepository {
 			.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
 			.limit(sql.placeholder("take"))
 			.offset(sql.placeholder("skip"))
-			.prepare("list_keys")
+			.prepare()
 	);
 
 	async listKeys(userId: number, { skip = 0, take = 20} = {}): Promise<[
@@ -105,7 +104,7 @@ export class ApiKeysRepository {
 			eq(schema.apiKeys.prefix, sql.placeholder("prefix")),
 		))
 		.returning()
-		.prepare("delete_key")
+		.prepare()
 	);
 	async deleteKey(userId: number, prefix: string): Promise<void> {
 		const data = await this.queryDeleteKey.value.execute({ userId, prefix });
@@ -116,10 +115,10 @@ export class ApiKeysRepository {
 
 	private readonly queryDeleteAllKeys = this.dbm.prepare(db => db.delete(schema.apiKeys)
 		.where(eq(schema.apiKeys.userId, sql.placeholder("userId")))
-		.prepare("delete_key")
+		.prepare()
 	);
 	async deleteAllKeysForUser(userId: number): Promise<number> {
-		const {count} = await this.queryDeleteAllKeys.value.execute({ userId });
-		return count;
+		const {changes} = await this.queryDeleteAllKeys.value.execute({ userId });
+		return changes;
 	}
 }

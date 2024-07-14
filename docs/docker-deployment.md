@@ -19,13 +19,9 @@ The application provides consists of two separate containers:
 
 There are also two separate docker-compose files for easier deployment.
 
-The default [compose.yml](../compose.yml) contains those two containers and an
-instance of [PostgreSQL](https://hub.docker.com/_/postgres) required for the 
-backend, but it leaves for you the setup of reverse-proxy and SSL certificates.
-
-[compose.nginx.yml](../compose.nginx.yml) also handles the reverse-proxy via
-nginx, in case you need to setup a single HTTP connection, but you still need 
-to supply the certificate file to it.
+The default [compose.yml](../compose.yml) contains those two containers 
+and nginx for reverse proxying the request. You still need to supply 
+certificate file to it.
 
 ## Containers args and details
 Please notice that all of the containers should be built out of the root of the
@@ -69,18 +65,6 @@ function. Besides that it also requires:
   for storing the settings file.
 2. PosgresSQL connection. Connection parameters can be specified after the first 
 launch in the settings wizards.
-
-## compose files
-
-### Regular compose file
-
-Provides definitions for admin, backend and PosgtreSQL instance.
-You must provide SSL certificate for backend and admin.
-
-### Built-in Nginx version
-
-Wraps the initial compose setup with a nginx instance, so it exposes only one 
-http connection.
 
 ```sh
 docker compose -f .\compose.nginx.yml up --build

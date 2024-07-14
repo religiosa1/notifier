@@ -3,6 +3,6 @@ import { di } from "src/injection";
 
 /// FIXME pino requires formatting string
 export const logger = honoLogger((...args) => {
-	const loggingSErvice = di.inject("logger");
-	loggingSErvice.debug(...args);
+	const loggingService = di.inject("logger");
+	loggingService.debug(...args);
 });

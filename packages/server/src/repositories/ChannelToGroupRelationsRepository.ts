@@ -24,7 +24,7 @@ export class ChannelToGroupRelationsRepository {
 				channelId,
 				groupId: group.id
 			});
-		});
+		}, { behavior: "immediate" });
 	}
 
 	// CONNECT channel to group
@@ -42,7 +42,7 @@ export class ChannelToGroupRelationsRepository {
 				channelId: channel.id,
 				groupId,
 			});
-		});
+		}, { behavior: "immediate" });
 	}
 
 	//============================================================================
@@ -53,22 +53,22 @@ export class ChannelToGroupRelationsRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const {count} = await db.delete(schema.channelsToGroups)
+		const {changes} = await db.delete(schema.channelsToGroups)
 			.where(and(
 				eq(schema.channelsToGroups.channelId, channelId),
 				inArray(schema.channelsToGroups.groupId, groupIds)
 			));
-		return count;
+		return changes;
 	}
 
 	private readonly queryDisconnectAllGroupsFromChannel = this.dbm.prepare(
 		(db) => db.delete(schema.channelsToGroups)
 			.where(eq(schema.channelsToGroups.channelId, sql.placeholder("channelId")))
-			.prepare("delete_all_channel_groups")
+			.prepare()
 	);
 	async disconnectAllGroupsFromChannel(channelId: number): Promise<number> {
-		const {count} = await this.queryDisconnectAllGroupsFromChannel.value.execute({ channelId });
-		return count;
+		const {changes} = await this.queryDisconnectAllGroupsFromChannel.value.execute({ channelId });
+		return changes;
 	}
 
 	// DELETE channel from group
@@ -78,21 +78,21 @@ export class ChannelToGroupRelationsRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const {count} = await db.delete(schema.channelsToGroups)
+		const {changes} = await db.delete(schema.channelsToGroups)
 			.where(and(
 				eq(schema.channelsToGroups.groupId, groupId),
 				inArray(schema.channelsToGroups.channelId, channelIds),
 			));
-		return count;
+		return changes;
 	}
 
 	private readonly queryDeleteAllChannelsFromGroup = this.dbm.prepare(
 		(db) => db.delete(schema.channelsToGroups)
 			.where(eq(schema.channelsToGroups.groupId, sql.placeholder("groupId")))
-			.prepare("delete_all_channels_from_group")
+			.prepare()
 	);
 	async deleteAllChannelsFromGroup(groupId: number): Promise<number> {
-		const {count} = await this.queryDeleteAllChannelsFromGroup.value.execute({ groupId });
-		return count;
+		const {changes} = await this.queryDeleteAllChannelsFromGroup.value.execute({ groupId });
+		return changes;
 	}
 }

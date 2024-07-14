@@ -1,7 +1,7 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
-import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, isNull } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, isNull, count } from "drizzle-orm";
 import { hashPassword } from "src/services/hash";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
@@ -23,7 +23,7 @@ export class UsersRepository {
 	private queryCheckUserExists = this.dbm.prepare((db) =>  db.select({ id: schema.users.id })
 		.from(schema.users)
 		.where(eq(schema.users.id, sql.placeholder("id")))
-		.prepare("check_user")
+		.prepare()
 	);
 
 	async assertUserExists(id: number): Promise<void> {
@@ -38,7 +38,7 @@ export class UsersRepository {
 			eq(schema.users.authorizationStatus, AuthorizationEnum.accepted)
 		))
 		.limit(1)
-		.prepare("get_userid_by_tgid")
+		.prepare()
 	);
 	async getAuthorizedUserIdByTgId(telegramId: number): Promise<number | undefined> {
 		const [data] = await this.queryGetAuthorizedUserIdByTgId.value.execute({ telegramId });
@@ -49,7 +49,7 @@ export class UsersRepository {
 		(db) => db.select().from(schema.users)
 			.where(eq(schema.users.name, sql.placeholder("userName")))
 			.limit(1)
-			.prepare("get_user_by_name")
+			.prepare()
 	);
 	async getUserByName(userName: string): Promise<User | undefined> {
 		const [user] = await this.queryGetUserByName.value.execute({ userName });
@@ -59,11 +59,9 @@ export class UsersRepository {
 	//============================================================================
 	// LIST
 
-	// All counts in postgres drizzle should have ::int type specifier at the end:
-	// https://github.com/drizzle-team/drizzle-orm/issues/999
-	private queryCountUsers = this.dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
+	private queryCountUsers = this.dbm.prepare((db) => db.select({ count: count() })
 		.from(schema.users)
-		.prepare("count_users_query")
+		.prepare()
 	);
 	private queryListUsers = this.dbm.prepare((db) => db.query.users.findMany({
 			limit: sql.placeholder("take"),
@@ -77,7 +75,7 @@ export class UsersRepository {
 				}}}
 			}
 		})
-		.prepare("get_users_query")
+		.prepare()
 	);
 
 	async listUsers({ skip = 0, take = 20} = {}): Promise<[
@@ -105,7 +103,7 @@ export class UsersRepository {
 		(db) => db.select({ telegramId: schema.users.telegramId })
 			.from(schema.users)
 			.where(eq(schema.users.role, UserRoleEnum.admin))
-			.prepare("query_get_notifiable_admin_chat_ids_query")
+			.prepare()
 	);
 	async getNotifiableAdminsChatIds(): Promise<number[]> {
 		const data = await this.queryGetNotifiableAdminChatIds.value.execute();
@@ -126,7 +124,7 @@ export class UsersRepository {
 				}
 			}
 		}}}
-	}).prepare("get_user_detail"));
+	}).prepare());
 	async getUserDetail(userId: number): Promise<UserDetail> {
 		const user = await this.queryGetUserDetail.value.execute({ userId });
 		assert(user, userNotFound(userId));
@@ -176,7 +174,7 @@ export class UsersRepository {
 				}
 			}
 			return createdUser.id;
-		});
+		}, { behavior: "immediate" });
 
 		return this.getUserDetail(userId);
 	}
@@ -225,7 +223,7 @@ export class UsersRepository {
 				}
 			}
 			return updatedUser.id;
-		});
+		}, { behavior: "immediate" });
 		return this.getUserDetail(updatedUserId);
 	}
 
@@ -237,8 +235,8 @@ export class UsersRepository {
 			return 0;
 		}
 		const db = this.dbm.connection;
-		const data = await db.delete(schema.users).where(inArray(schema.users.id, ids));
-		return data.count;
+		const {changes} = await db.delete(schema.users).where(inArray(schema.users.id, ids));
+		return changes;
 	}
 
 	//============================================================================
@@ -246,7 +244,7 @@ export class UsersRepository {
 
 	private querySearchUsers = this.dbm.prepare((db) => db.select().from(schema.users)
 		.where(ilike(schema.users.name, sql.placeholder("name")))
-		.prepare("search_users")
+		.prepare()
 	);
 
 	// TODO 2 separate queries -- one with group, one without
@@ -261,7 +259,7 @@ export class UsersRepository {
 			ilike(schema.users.name, sql.placeholder("name")),
 			isNull(schema.usersToGroups.groupId)
 		))
-		.prepare("search_users_for_group")
+		.prepare()
 	);
 	async searchUsers({ name = "", groupId }: { name?: string, groupId?: number} = {}): Promise<User[]> {
 		if (groupId) {

@@ -11,6 +11,9 @@ It allows:
 - manage your users, user groups and notification channels through a web-admin
 - allows you and your users to manage their subscription through a telegram bot
 
+If you don't need notification channel, user groups and management, you can 
+also look at the [simple notification bot](https://github.com/religiosa1/tgnotifier).
+
 ## Packages:
 
 - server: backend for providing REST API for sending the messages, storing
@@ -89,7 +92,7 @@ to check all of the available methods.
 
 ### Current project status
 This project initially was created for the personal use. Currently it's in the
-development/underoing feature bloat, as there are a couple of things I still 
+development/undergoing feature bloat, as there are a couple of things I still 
 want to include, mostly quality of life kind of improvents. However, it also 
 means, that there _will_ be bugs.
 

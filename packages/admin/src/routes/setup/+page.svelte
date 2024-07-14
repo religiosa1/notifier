@@ -15,9 +15,9 @@
 		...(form ?? {}),
 	};
 
-	let submitingAction: "testDb" | "default" | undefined;
+	let isSubmitting = false;
+	let migrate = true;
 
-	let migrate = true
 </script>
 
 <h2>Setup</h2>
@@ -42,14 +42,14 @@
 
 <form method="POST" action="?/save" use:enhance={
 	({action}) => {
-		submitingAction = action.search.includes("testDbConfiguration") ? "testDb" : "default";
+		isSubmitting = true;
 		return ({ result }) => {
-			submitingAction = undefined;
+			isSubmitting = false;
 			applyAction(result);
 		}
 	}
 }>
-	<SettingsForm testingDb={submitingAction === "testDb"} data={settings} />
+	<SettingsForm data={settings} />
 	<div class="input-group">
 		<label class="form-input" for={undefined}>
 			<span class="form-label">
@@ -100,8 +100,8 @@
 	</div>
 
 	<div class="input-group">
-		<button disabled={!!submitingAction} class="button">Save</button>
-		{#if submitingAction === "default"}
+		<button disabled={!!isSubmitting} class="button">Save</button>
+		{#if isSubmitting}
 			<Spinner />
 		{/if}
 	</div>

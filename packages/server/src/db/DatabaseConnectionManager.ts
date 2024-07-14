@@ -1,27 +1,29 @@
-import { PreparedQuery } from "drizzle-orm/pg-core";
-import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import Database from 'better-sqlite3';
+import { type SQLitePreparedQuery } from "drizzle-orm/sqlite-core";
+import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { DatabaseNotReady } from "src/error/DatabaseNotReady";
 import { di } from "src/injection";
 
 import { Emitter } from "src/util/Emitter";
 import * as schema from "./schema";
 import { assert } from "src/util/assert";
+import { getDatabase } from 'src/db/db';
 
 export class DatabaseConnectionManager {
 	private dispose: () => void;
-	private emitter = new Emitter<{"change": (c: PostgresJsDatabase<typeof schema> | undefined) => void}>();
+	private emitter = new Emitter<{"change": (c: BetterSQLite3Database<typeof schema> | undefined) => void}>();
 
-	#connection: PostgresJsDatabase<typeof schema> | undefined;
-	#postgresConnection: postgres.Sql | undefined;
-	get connection(): PostgresJsDatabase<typeof schema> {
+	#connection: BetterSQLite3Database<typeof schema> | undefined;
+	#database: Database.Database | undefined;
+
+	get connection(): BetterSQLite3Database<typeof schema> {
 		const conn = this.#connection
 		if (!conn) {
 			throw new DatabaseNotReady();
 		}
 		return conn;
 	}
-	private set connection(c: PostgresJsDatabase<typeof schema> | undefined) {
+	private set connection(c: BetterSQLite3Database<typeof schema> | undefined) {
 		this.#connection = c;
 		this.emitter.emit("change", c);
 	}
@@ -29,32 +31,33 @@ export class DatabaseConnectionManager {
 	constructor() {
 		const settingsService = di.inject("SettingsService")
 		this.dispose = settingsService.subscribe(async (config) => {
-			if (this.#connection || this.#postgresConnection) {
-				await this.#postgresConnection?.end({ timeout: 20 });
+			if (this.#connection || this.#database) {
+				this.#database?.close();
 			}
 			const {databaseUrl} = config ?? {};
 			try {
 				assert(databaseUrl);
-				this.#postgresConnection = postgres(databaseUrl);
-				this.connection = databaseUrl ? drizzle(this.#postgresConnection, { schema }) : undefined;
+				this.#database = getDatabase();
+
+				this.connection = databaseUrl ? drizzle(this.#database, { schema }) : undefined;
 			} catch(e) {
 				const logger = di.inject("logger");
 				logger.error("Unable to connect to DB", e);
 				this.connection = undefined;
-				this.#postgresConnection = undefined;
+				this.#database = undefined;
 			}
 		}, ["databaseUrl"]);
 	}
 
 	async [Symbol.asyncDispose]() {
 		this.dispose?.();
-		await this.#postgresConnection?.end({ timeout: 5 });
-		this.#postgresConnection = undefined;
+		this.#database?.close();
+		this.#database = undefined;
 		this.#connection = undefined;
 		this.emitter.clear();
 	}
 
-	prepare<T extends PreparedQuery<any>>(cb: (db: PostgresJsDatabase<typeof schema>) => T): RefObject<T> {
+	prepare<T extends SQLitePreparedQuery<any>>(cb: (db: BetterSQLite3Database<typeof schema>) => T): RefObject<T> {
 		const ref = new RefObject<T>(
 			this.#connection ? cb(this.#connection) : undefined
 		);

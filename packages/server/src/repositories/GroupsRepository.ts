@@ -1,5 +1,5 @@
 import type { Group, GroupDetail } from "@shared/models/Group";
-import { and, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
 import { di } from "src/injection";
@@ -16,7 +16,7 @@ export class GroupsRepository {
 	private readonly queryCheckGroupExists = this.dbm.prepare((db) =>  db.select({ id: schema.groups.id })
 		.from(schema.groups)
 		.where(eq(schema.groups.id, sql.placeholder("groupId")))
-		.prepare("check_group")
+		.prepare()
 	);
 
 	async assertGroupExists(groupId: number) {
@@ -27,20 +27,20 @@ export class GroupsRepository {
 	//============================================================================
 	// LIST
 
-	private readonly queryCountGroups = this.dbm.prepare((db) => db.select({ count: sql<number>`count(*)::int`})
+	private readonly queryCountGroups = this.dbm.prepare((db) => db.select({ count: count() })
 		.from(schema.groups)
-		.prepare("count_groups")
+		.prepare()
 	);
 
 	private readonly querListGroups = this.dbm.prepare((db) => db.select({
 			...getTableColumns(schema.groups),
-			channelsCount: sql<number>`count(${schema.channelsToGroups.channelId})::int`,
-			usersCount: sql<number>`count(${schema.usersToGroups.userId})::int`
+			channelsCount: count(schema.channelsToGroups.channelId),
+			usersCount: count(schema.usersToGroups.userId)
 		}).from(schema.groups)
 			.leftJoin(schema.channelsToGroups, eq(schema.channelsToGroups.groupId, schema.groups.id))
 			.leftJoin(schema.usersToGroups, eq(schema.usersToGroups.groupId, schema.groups.id))
 			.groupBy(schema.groups.id)
-		.prepare("list_groups")
+		.prepare()
 	);
 
 	async listGroups({ skip = 0, take = 20 } = {}): Promise<[
@@ -62,7 +62,7 @@ export class GroupsRepository {
 
 	private readonly queryGetGroupPreview = this.dbm.prepare((db) => db.query.groups.findFirst({
 		where: eq(schema.groups.id, sql.placeholder("groupId"))
-	}).prepare("get_group_preview"));
+	}).prepare());
 
 	async getGroupPreview(groupId: number): Promise<Group> {
 		const group = await this.queryGetGroupPreview.value.execute({ groupId });
@@ -89,7 +89,7 @@ export class GroupsRepository {
 				}
 			}}}
 		}
-	}).prepare("get_group_detail"))
+	}).prepare())
 
 	async getGroupDetail(groupId: number): Promise<GroupDetail> {
 		const group = await this.queryGetGroupDetail.value.execute({ groupId });
@@ -122,7 +122,7 @@ export class GroupsRepository {
 	private readonly queryInsertGroup = this.dbm.prepare((db) => db.insert(schema.groups)
 		.values({ name: sql.placeholder("name") })
 		.returning({ id: schema.groups.id })
-		.prepare("insert_group")
+		.prepare()
 	);
 
 	async insertGroup(name: string): Promise<{ id: number }> {
@@ -140,10 +140,10 @@ export class GroupsRepository {
 		}
 		const db = this.dbm.connection;
 		// orphaned user-to-channel relations handled by a db trigger
-		const {count} = await db.delete(schema.groups)
+		const {changes} = await db.delete(schema.groups)
 			.where(inArray(schema.groups.id, ids));
 
-		return count;
+		return changes;
 	}
 
 	//============================================================================

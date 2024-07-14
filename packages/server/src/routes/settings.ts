@@ -1,5 +1,4 @@
 import { Hono } from "hono"
-import z from "zod";
 import { zValidator } from "@hono/zod-validator"
 import { validationErrorHook } from "src/middleware/validationErrorHandlers";
 
@@ -67,17 +66,6 @@ controller.put(
 		}
 
 		return c.json(null);
-	}
-);
-
-controller.post(
-	"/test-database-configuration", 
-	zValidator("json", z.object({ databaseUrl: z.string() }), validationErrorHook), 
-	async (c) => {
-		const settingsService = di.inject("SettingsService");
-		const body = c.req.valid("json");
-		const isDbOk: boolean = await settingsService.testConfigsDatabaseConnection(body.databaseUrl);
-		return c.json(isDbOk);
 	}
 );
 

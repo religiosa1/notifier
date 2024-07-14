@@ -35,7 +35,7 @@ git clone git@github.com:religiosa1/notifier.git
 ## 3d party software requirements
 
 The application requires [node js](https://nodejs.org/en) (version 20 or above) 
-and [postgresql](https://www.postgresql.org/) to operate.
+to operate.
 
 Besides that, it will be both easier and more effective for us to use 
 [nginx](https://www.nginx.com/) as a reverse proxy, [certbot](https://certbot.eff.org/) 
@@ -45,40 +45,13 @@ the server went for a reboot (among other good things it provides).
 
 In this document, this kind of setup is described.
 
-### Installing node and postgres
+### Installing node
 
 Follow node's [official instruction](https://nodejs.org/en/download/package-manager) to 
 install node version 20 on your server. 
 
 After the installation check that both `npm --version` and `node --version` commands run
 successfully, and node's version is 20.x.x or higher.
-
-Postgresql can be installed through the package manager directly. 
-```sh
-sudo apt install postgresql
-```
-
-After the installation you need to create a user and database for the service.
-
-```sh
-sudo -u postgres psql # this will open postgres console
-```
-
-```sql
-CREATE USER notifier;
-CREATE DATABASE notifierdb; 
-ALTER USER notifier with encrypted password 'qwerty';
-GRANT all privileges on DATABASE notifierdb to notifier;
-```
-
-After running each of those lines you should see the success message from the 
-psql console, after which you can type exit.
-
-You can check, that db was created successfully by trying to log into it:
-
-```sh
-psql -d postgres://notifier:qwerty@127.0.0.1:5432/notifierdb
-```
 
 ### Installing nginx and certbot
 

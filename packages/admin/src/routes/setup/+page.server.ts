@@ -34,11 +34,6 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		tgHookSecret,
 	};
 
-	const dbUrl = import.meta.env.DB_URL;
-	if (dbUrl) {
-		settings.databaseUrl = dbUrl;
-	}
-
 	return { settings }
 }
 
@@ -59,28 +54,6 @@ export const actions: Actions = {
 		}
 
 		redirect(303, base + "/login?referer=%2F");
-	},
-	testDbConfiguration: async ({request, fetch}) => {
-		const formData = await request.formData();
-		const databaseUrl = formData.get("databaseUrl");
-		const [isDbOk, error] = await serverAction(() => {
-			return fetch(serverUrl("/settings/test-database-configuration"), {
-				method: "POST",
-				body: JSON.stringify({ databaseUrl }),
-			}).then(unwrapResult<ServerConfig>)
-		});
-		if (error) {
-			return error;
-		}
-		if (!isDbOk) {
-			return { ...Object.fromEntries(formData), isDatabaseUrlOk: false };
-		}
-		const data = getFormData(formData, setupFormSchema);
-		const retobj = {
-			...data,
-			isDatabaseUrlOk: true,
-		};
-		return retobj
 	},
 
 	import: importConfigAction,

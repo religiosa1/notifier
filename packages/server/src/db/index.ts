@@ -1,12 +1,13 @@
-import type { PostgresJsDatabase, PostgresJsQueryResultHKT } from "drizzle-orm/postgres-js";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ExtractTablesWithRelations } from "drizzle-orm";
-import { PgTransaction } from "drizzle-orm/pg-core";
+import { SQLiteTransaction } from "drizzle-orm/sqlite-core";
 
 import * as schema from "./schema";
 export { schema };
 
-export type DbTransactionClient = PostgresJsDatabase<typeof schema> | PgTransaction<
-	PostgresJsQueryResultHKT,
+export type DbTransactionClient = BetterSQLite3Database<typeof schema> | SQLiteTransaction<
+	"sync",
+	any,
 	typeof schema,
 	ExtractTablesWithRelations<typeof schema>
 >;

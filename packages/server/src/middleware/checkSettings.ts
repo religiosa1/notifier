@@ -5,7 +5,7 @@ import { createMiddleware } from "hono/factory";
 
 export const checkSettings = createMiddleware((c, next) => {
 	const serverSettings = di.inject("SettingsService");
-	if (c.req.path !== "/settings/setup" && c.req.path !== "/settings/test-database-configuration") {
+	if (c.req.path !== "/settings/setup") {
 		const config = serverSettings.getConfig();
 		if (!config) {
 			throw new ConfigUnavailableError();

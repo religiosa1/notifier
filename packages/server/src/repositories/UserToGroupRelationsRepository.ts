@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql, count } from "drizzle-orm";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
 import { di } from "src/injection";
@@ -23,11 +23,11 @@ export class UserToGroupRelationsRepository {
 				whereClauses.push(inArray(schema.usersToGroups.userId, userIds));
 			}
 			// orphaned user-to-channel relations handled by a db trigger
-			const [{count = -1} = {}] = await tx.delete(schema.usersToGroups)
+			const [{value = -1} = {}] = await tx.delete(schema.usersToGroups)
 				.where(and(...whereClauses))
-				.returning({ count: sql<number>`count(*)::int` });
-			return count;
-		});
+				.returning({ value: count() });
+			return value;
+		}, { behavior: "immediate" });
 	}
 
 	// DELETE group from user
@@ -38,7 +38,7 @@ export class UserToGroupRelationsRepository {
 				eq(schema.usersToGroups.groupId, sql.placeholder("groupId")),
 			))
 			.returning()
-			.prepare("delete_group_from_user")
+			.prepare()
 	);
 
 	async deleteGroupFromUser(userId: number, groupId: number): Promise<void> {
@@ -64,7 +64,7 @@ export class UserToGroupRelationsRepository {
 				groupId,
 				userId: user.id
 			});
-		});
+		}, { behavior: "immediate" });
 	}
 
 	// CONNECT group to user
@@ -82,6 +82,6 @@ export class UserToGroupRelationsRepository {
 				userId,
 				groupId: group?.id
 			});
-		});
+		}, { behavior: "immediate" });
 	}
 }

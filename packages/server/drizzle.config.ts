@@ -1,13 +1,15 @@
 import type { Config } from "drizzle-kit";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { databaseUrl } from "./config.json";
+export const DEFAULT_DB_NAME = path.resolve(fileURLToPath(import.meta.url), "../database.sqlite3");
 
 export default {
   schema: "./src/db/schema.ts",
   out: "./drizzle",
 	verbose: true,
-	driver: "pg",
-	dbCredentials: {
-    connectionString: databaseUrl,
-  }
+  dialect: "sqlite",
+  dbCredentials: {
+    url: process.env['DB_FILE'] ?? DEFAULT_DB_NAME,
+  },
 } satisfies Config;

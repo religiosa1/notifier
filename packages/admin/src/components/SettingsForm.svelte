@@ -1,10 +1,8 @@
 
 <script lang="ts">
 	import type { ServerConfig } from "@shared/models";
-	import Spinner from "./Spinner.svelte";
 	import CryptoKeyInput from "./CryptoKeyInput.svelte";
 	export let data: Partial<ServerConfig & { isDatabaseUrlOk?: boolean }> | undefined = undefined;
-	export let testingDb = false;
 </script>
 
 <div class="input-group">
@@ -39,41 +37,6 @@
 			This is your <em>backend</em> public url -- internet address.
 			This is where the telegram bot webhook will be placed and where public REST-API 
 			is accessible.
-		</small>
-	</label>
-</div>
-
-<div class="input-group">
-	<label class="form-input">
-		<span class="form-label">Database url</span>
-		<input
-			name="databaseUrl"
-			type="url"
-			placeholder="postgres://postgres:1234567@127.0.0.1:5432/postgres"
-			value={data?.databaseUrl ?? "postgres://postgres:1234567@127.0.0.1:5432/postgres"}
-			required
-		/>
-		<p>
-			<button type="submit" class="secondary" formnovalidate formaction="?/testDbConfiguration">
-				Test provided DB configuration
-			</button>
-			{#if testingDb}
-				<Spinner />
-			{/if}
-			{#if data?.isDatabaseUrlOk === true}
-				<output>Database URL is ok</output>
-			{:else if data?.isDatabaseUrlOk === false}
-				<output class="error">Can't connect using provided URL</output>
-			{/if}
-		</p>
-		<small>
-			<a
-				href="https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING"
-				target="_blank"
-				rel="noopener"
-			>
-				Database URL
-			</a>, which should be accessible to your server.
 		</small>
 	</label>
 </div>
@@ -116,8 +79,5 @@
 <style>
 details {
 	margin-bottom: 1.5em;
-}
-.error {
-	color: var(--clr-error, red);
 }
 </style>

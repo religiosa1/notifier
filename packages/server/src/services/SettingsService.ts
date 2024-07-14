@@ -3,14 +3,11 @@ import { writeFile, readFile, access, constants, unlink } from "fs/promises";
 import { stripComments } from "jsonc-parser";
 
 import { serverConfigSchema, type ServerConfig } from "@shared/models/ServerConfig";
-import { ResultError } from "@shared/models/Result";
 
 import { di } from "src/injection";
 import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
 import { getRootDir } from "src/util/getRootDir";
-import { DatabaseConnectionTester } from "src/db/DatabaseConnectionTester";
-
 
 type MaybePromise<T> = Promise<T> | T;
 type Disposer = () => MaybePromise<void>;
@@ -31,7 +28,6 @@ export class SettingsService {
 
 	constructor(
 		private readonly logger = di.inject("logger"),
-		private readonly dbConnectionTester = new DatabaseConnectionTester(),
 		private readonly settingsFileName = process.env.NOTIFIER_SETTINGS_FILENAME || join(getRootDir(), "config.json"),
 	) {}
 
@@ -62,10 +58,6 @@ export class SettingsService {
 	async setConfig(config: ServerConfig): Promise<void> {
 		let storedConfig: ServerConfig | undefined;
 		serverConfigSchema.parse(config);
-		const isDbOk = await this.dbConnectionTester.checkConnectionString(config.databaseUrl);
-		if (!isDbOk) {
-			throw new ResultError(422, "Cannot connect to the DB with the provided 'databaseUrl' string");
-		}
 		try {
 			await this.disposerLock.wait();
 			const output = JSON.stringify(config, undefined, 4);
@@ -74,10 +66,6 @@ export class SettingsService {
 		} finally {
 			this.config = storedConfig;
 		}
-	}
-
-	testConfigsDatabaseConnection(connectionString: string): Promise<boolean> {
-		return this.dbConnectionTester.checkConnectionString(connectionString);
 	}
 
 	async removeConfig(): Promise<void> {

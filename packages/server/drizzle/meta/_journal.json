@@ -1,20 +1,13 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1695157152282,
-      "tag": "0000_init",
+      "version": "6",
+      "when": 1720982474612,
+      "tag": "0000_boring_lady_deathstrike",
       "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1695407927465,
-      "tag": "0001_delete_user_groups_trigger",
-      "breakpoints": false
     }
   ]
 }

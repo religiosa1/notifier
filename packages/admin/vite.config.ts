@@ -10,7 +10,6 @@ const config: UserConfig = {
 	envPrefix: [
 		"VITE_",
 		"API_URL",
-		"DB_URL",
 	],
 };
 

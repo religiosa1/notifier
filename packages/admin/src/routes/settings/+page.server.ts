@@ -36,25 +36,6 @@ export const actions: Actions = {
 			settings: serverSettings,
 		};
 	},
-	testDbConfiguration: async({request, fetch}) => {
-		const formData = await request.formData();
-		const databaseUrl = formData.get("databaseUrl");
-		const [isDbOk, error] = await serverAction(() => fetch(serverUrl("/settings/test-database-configuration"), {
-			method: "POST",
-			body: JSON.stringify({ databaseUrl }),
-		}).then(unwrapResult<ServerConfig>));
-		if (error) { 
-			return error;
-		}
-		if (!isDbOk) {
-			return fail(400, { ...Object.fromEntries(formData), isDatabaseUrlOk: false })
-		}
-		const retobj = {
-			...Object.fromEntries(formData),
-			isDatabaseUrlOk: true,
-		};
-		return retobj
-	},
 
 	import: importConfigAction,
 }
