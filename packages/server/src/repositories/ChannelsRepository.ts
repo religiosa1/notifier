@@ -1,7 +1,7 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import type { Channel, ChannelDetail } from "@shared/models/Channel";
 import { ResultError } from "@shared/models/Result";
-import { getTableColumns, sql, eq, ilike, isNull, and, inArray, count } from "drizzle-orm";
+import { getTableColumns, sql, eq, like, isNull, and, inArray, count } from "drizzle-orm";
 import { schema } from "src/db";
 import { di } from "src/injection";
 
@@ -165,7 +165,7 @@ export class ChannelsRepository {
 
 	private readonly querySearchChannels = this.dbm.prepare((db) => db.select()
 		.from(schema.channels)
-		.where(ilike(schema.channels.name, sql.placeholder("name")))
+		.where(like(schema.channels.name, sql.placeholder("name")))
 		.prepare()
 	);
 	async searchChannels({ name = ""}): Promise<Channel[]> {
@@ -179,7 +179,7 @@ export class ChannelsRepository {
 				eq(schema.channelsToGroups.groupId, sql.placeholder("groupId"))
 			))
 			.where(and(
-				ilike(schema.channels.name, sql.placeholder("name")),
+				like(schema.channels.name, sql.placeholder("name")),
 				isNull(schema.channelsToGroups.groupId)
 			))
 			.prepare()

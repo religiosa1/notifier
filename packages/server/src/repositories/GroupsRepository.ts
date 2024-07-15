@@ -1,5 +1,5 @@
 import type { Group, GroupDetail } from "@shared/models/Group";
-import { and, count, eq, getTableColumns, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, eq, getTableColumns, like, inArray, isNull, sql } from "drizzle-orm";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
 import { di } from "src/injection";
@@ -158,7 +158,7 @@ export class GroupsRepository {
 
 		const groupsQuery = db.select(getTableColumns(schema.groups)).from(schema.groups);
 		const whereClasues = [
-			ilike(schema.groups.name, "%" + name + "%"),
+			like(schema.groups.name, "%" + name + "%"),
 		];
 
 		if (channelId) {

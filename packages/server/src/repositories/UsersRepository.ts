@@ -1,7 +1,7 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
-import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, ilike, isNull, count } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, like, isNull, count } from "drizzle-orm";
 import { hashPassword } from "src/services/hash";
 import { schema } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
@@ -243,7 +243,7 @@ export class UsersRepository {
 	// SEARCH
 
 	private querySearchUsers = this.dbm.prepare((db) => db.select().from(schema.users)
-		.where(ilike(schema.users.name, sql.placeholder("name")))
+		.where(like(schema.users.name, sql.placeholder("name")))
 		.prepare()
 	);
 
@@ -256,7 +256,7 @@ export class UsersRepository {
 			eq(schema.usersToGroups.groupId, sql.placeholder("groupId"))
 		))
 		.where(and(
-			ilike(schema.users.name, sql.placeholder("name")),
+			like(schema.users.name, sql.placeholder("name")),
 			isNull(schema.usersToGroups.groupId)
 		))
 		.prepare()

@@ -16,5 +16,6 @@ export function getDatabase(dbFile: string): Database.Database {
 	// Temp store in memory
 	db.exec("PRAGMA temp_store = memory");
 	db.exec("PRAGMA foreign_keys = true");
+	db.exec("PRAGMA case_sensitive_like=OFF");
 	return db;
 }
