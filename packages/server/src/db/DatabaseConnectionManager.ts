@@ -28,9 +28,11 @@ export class DatabaseConnectionManager {
 		this.emitter.emit("change", c);
 	}
 
-	constructor() {
-		const settingsService = di.inject("SettingsService")
-		this.dispose = settingsService.subscribe(async (config) => {
+	constructor(
+		private readonly settingsService = di.inject("SettingsService"),
+		private readonly logger = di.inject("logger")
+	) {
+		this.dispose = this.settingsService.subscribe(async (config) => {
 			if (this.#connection || this.#database) {
 				this.#database?.close();
 			}
@@ -40,8 +42,7 @@ export class DatabaseConnectionManager {
 				this.#database = getDatabase(databaseFileName);
 				this.connection = databaseFileName ? drizzle(this.#database, { schema }) : undefined;
 			} catch(e) {
-				const logger = di.inject("logger");
-				logger.error("Unable to connect to DB", e);
+				this.logger.error("Unable to connect to DB", e);
 				this.connection = undefined;
 				this.#database = undefined;
 			}

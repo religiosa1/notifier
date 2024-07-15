@@ -1,36 +1,26 @@
 import { di } from "src/injection";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "src/db/schema";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { hashPassword } from "src/services/hash";
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
-import { getDatabase } from "src/db/db";
 
 export class DatabaseMigrator {
 	constructor(
-		private readonly settingsService = di.inject("SettingsService"),
+		private readonly db = di.inject("db"),
 		private readonly logger = di.inject("logger"),
 	) { }
 
-	private getDbConnection(): BetterSQLite3Database<typeof schema> & Disposable {
-		const { databaseFileName } = this.settingsService.getConfig() ?? {};
-		const database = getDatabase(databaseFileName!);
-		const db = drizzle(database, { schema }) as BetterSQLite3Database<typeof schema> & Disposable;
-		db[Symbol.dispose] ??= () => database.close();
-		return db;
-	}
-
 	async migrate(): Promise<void> {
-		using db = this.getDbConnection();
+		const connection = this.db.connection;
 		this.logger.info("Migrating the DB...");
 		// FIX FOLDER
-		await migrate(db as any, { migrationsFolder: "drizzle" });
+		await migrate(connection, { migrationsFolder: "drizzle" });
 		this.logger.info("Migration complete");
 	}
 
 	async seed(adminPassword: string, telegramId: number): Promise<void> {
-		using db = this.getDbConnection();
+		const db = this.db.connection;
 		this.logger.info("Seedin the db, creating groups...");
 		await db.transaction(async () => {
 			await db.insert(schema.groups)
