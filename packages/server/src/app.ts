@@ -15,24 +15,28 @@ import notifyController from "src/routes/notify";
 import loginController from "src/routes/login";
 import botController from "src/routes/bot";
 
-export const app = new Hono();
-app.onError((err) => {
-	di.inject("logger").error(err);
-	const resultError = ResultError.from(err);
-	return  new Response(resultError.toJson(), {
-		status: resultError.statusCode,
-		headers: { "Content-Type": "application/json; charset=UTF-8" }
+export function buildApp(): Hono {
+	const app = new Hono();
+	app.onError((err) => {
+		di.inject("logger").error(err);
+		const resultError = ResultError.from(err);
+		return  new Response(resultError.toJson(), {
+			status: resultError.statusCode,
+			headers: { "Content-Type": "application/json; charset=UTF-8" }
+		});
 	});
-});
-app.use("*", logger);
-app.use("*", responseHandler);
-app.use("*", checkSettings);
-app.route("/settings", settings);
-app.route("/users", usersController);
-app.route("/groups", groupsController);
-app.route("/channels", channelsController);
-app.route("/user-confirmation-request", authRequestController);
-app.route("/notify", notifyController);
-app.route("/login", loginController);
-app.route("/bot", botController);
-app.get("/", (c) => c.body(null, 204));
+	app.use("*", logger);
+	app.use("*", responseHandler);
+	app.use("*", checkSettings);
+	app.route("/settings", settings);
+	app.route("/users", usersController);
+	app.route("/groups", groupsController);
+	app.route("/channels", channelsController);
+	app.route("/user-confirmation-request", authRequestController);
+	app.route("/notify", notifyController);
+	app.route("/login", loginController);
+	app.route("/bot", botController);
+	app.get("/", (c) => c.body(null, 204));
+
+	return app;
+}
