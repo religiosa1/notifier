@@ -17,7 +17,6 @@ import type { ContextVariables } from "src/ContextVariables";
 const controller = new Hono<{ Variables: ContextVariables }>();
 controller.use("*", authorizeJWT);
 
-
 controller.get(
 	"/", 
 	zValidator("query", pageinationQuerySchema, validationErrorHook), 

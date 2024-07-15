@@ -5,6 +5,18 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug Server Current Test File",
+      "autoAttachChildProcesses": true,
+      "cwd": "${workspaceFolder}/packages/server",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "program": "${workspaceRoot}/packages/server/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${file}"],
+      "smartStep": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Debug Current Test File",
       "autoAttachChildProcesses": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"],

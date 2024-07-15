@@ -86,31 +86,41 @@ export class DatabaseConnectionManager implements Disposable {
 		this.connection = undefined;
 	}
 
-	prepare<T extends SQLitePreparedQuery<any>>(cb: (db: BetterSQLite3Database<typeof schema>) => T): RefObject<T> {
-		const ref = new RefObject<T>(
-			this.#connection ? cb(this.#connection) : undefined
+	prepare<T extends SQLitePreparedQuery<any>>(
+		cb: (db: BetterSQLite3Database<typeof schema>) => T
+	): LazyQueryRef<T, [BetterSQLite3Database<typeof schema> | undefined]> {
+		const ref = new LazyQueryRef<T, [BetterSQLite3Database<typeof schema> | undefined]>(
+			(db) => {
+				if (db == null) {
+					return undefined;
+				}
+				return cb(db);
+			},
+			[this.#connection]
 		);
-		this.emitter.on("change", (db) => {
-			ref.value = db ? cb(db) : undefined;
-		})
+		this.emitter.on("change", (db) => ref.push(db));
 		return ref;
 	}
 }
 
-export class RefObject<T extends {}> {
+export class LazyQueryRef<T extends {}, TDeps extends ReadonlyArray<unknown>> {
 	#value: T | undefined;
-	set value(value: T | undefined) {
-		this.#value = value;
-	}
+
 	get value(): T {
-		const value = this.#value;
-		if (value === undefined) {
+		this.#value ??= this.init(...this.deps);
+		if (this.#value === undefined) {
 			throw new DatabaseNotReady();
 		}
-		return value;
+		return this.#value;
 	}
 
-	constructor (value: T | undefined = undefined) {
-		this.#value = value;
+	constructor (
+		private readonly init: (...deps: TDeps) => T | undefined,
+		private deps: TDeps,
+	) {}
+
+	push(...deps: TDeps) {
+		this.deps = deps;
+		this.#value = this.init(...this.deps);
 	}
 }

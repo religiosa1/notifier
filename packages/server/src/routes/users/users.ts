@@ -25,12 +25,11 @@ controller.route("/:userId/channels", userChannelsController);
 controller.route("/:userId/groups", userGroupsController);
 controller.route("/:userId/api-keys", userKeysController);
 
-const usersRepository = di.inject("UsersRepository");
-
 controller.get(
 	"/", 
 	zValidator("query", pageinationQuerySchema, validationErrorHook), 
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
 		const [data, count] = await usersRepository.listUsers({ skip, take });
 
@@ -45,6 +44,7 @@ controller.post(
 	"/", 
 	zValidator("json", UserModel.userCreateSchema, validationErrorHook), 
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const logger = di.inject("logger");
 		const body = c.req.valid("json");
 		const user = await usersRepository.insertUser(body);
@@ -57,6 +57,7 @@ controller.delete(
 	"/", 
 	zValidator("query", z.object({ id: batchIdsSchema }), validationErrorHook), 
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const logger = di.inject("logger");
 		const ids = parseIds(c.req.valid("query").id);
 		const count = await usersRepository.deleteUsers(ids);
@@ -76,6 +77,7 @@ controller.get(
 		group: z.string().refine(...intGt(0)).transform(toInt).optional(),
 	}), validationErrorHook),
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const { name, group } = c.req.valid("query");
 		const users = await usersRepository.searchUsers({ name, groupId: group });
 		return c.json(users satisfies UserModel.User[]);
@@ -86,6 +88,7 @@ controller.get(
 	"/:userId",
 	zValidator("param", userIdParamsSchema, paramErrorHook),
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const { userId } = c.req.valid("param");
 		const user = await usersRepository.getUserDetail(userId);
 		return c.json(user satisfies UserModel.UserDetail);
@@ -97,6 +100,7 @@ controller.put(
 	zValidator("param", userIdParamsSchema, paramErrorHook),
 	zValidator("json",  UserModel.userUpdateSchema, validationErrorHook),
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const logger = di.inject("logger");
 		const { userId } = c.req.valid("param");
 		const body = c.req.valid("json");
@@ -111,6 +115,7 @@ controller.delete(
 	"/:userId",
 	zValidator("param", userIdParamsSchema, paramErrorHook),
 	async (c) => {
+		const usersRepository = di.inject("UsersRepository");
 		const logger = di.inject("logger");
 		const {userId} = c.req.valid("param");
 		await usersRepository.assertUserExists(userId);
