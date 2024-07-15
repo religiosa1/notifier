@@ -8,6 +8,7 @@ export const resultFailureSchema = z.object({
 	statusCode: z.number().int().gte(400).lt(600),
 	message: z.string(),
 	details: z.unknown().optional(),
+	stack: z.string().optional(),
 	ts: z.number().int(),
 });
 
@@ -45,16 +46,18 @@ export class ResultError extends Error implements ResultFaliure {
 			error: this.error,
 			message: this.message,
 			details: this.details,
+			stack: this.stack,
 			ts: this.ts,
 		} satisfies ResultFaliure);
 	}
 
-	static from(err: unknown): ResultError{
+	static from(err: unknown): ResultError {
 		const e = new ResultError();
 		if (isResultErrorLike(err)) {
 			Object.assign(e, err);
 			// need to do that separately, as it comes from the proto
 			e.message = err.message;
+			e.stack =  err.stack;
 			if ("cause" in err) {
 				e.details = err.cause;
 			} 
@@ -62,6 +65,7 @@ export class ResultError extends Error implements ResultFaliure {
 			e.error = err.name;
 			e.message = err.message;
 			e.details = "cause" in err ? err.cause : undefined;
+			e.stack = e.stack;
 			if ("statusCode" in err && typeof err.statusCode === "number") {
 				e.statusCode = err.statusCode;
 			}

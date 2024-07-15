@@ -9,12 +9,34 @@ import * as schema from "./schema";
 import { assert } from "src/util/assert";
 import { getDatabase } from 'src/db/db';
 
-export class DatabaseConnectionManager {
-	private dispose: () => void;
+export class DatabaseConnectionManager implements Disposable {
+	private unsubscribeSettings: () => void;
 	private emitter = new Emitter<{"change": (c: BetterSQLite3Database<typeof schema> | undefined) => void}>();
 
 	#connection: BetterSQLite3Database<typeof schema> | undefined;
 	#database: Database.Database | undefined;
+
+ 	get ready(): Promise<void> {
+		if (this.#connection) {
+			return Promise.resolve();
+		}
+		return new Promise<void>((res, rej) => {
+			const to = setTimeout(() => {
+				this.emitter.off("change", handleChange);
+				rej(new Error("Timeout error while obtaining a db connection"));
+			}, 15_000);
+			this.emitter.on("change", handleChange);
+			const self = this;
+			function handleChange(c: BetterSQLite3Database<typeof schema> | undefined) {
+				if (c == null) {
+					return;
+				}
+				clearTimeout(to);
+				self.emitter.off("change", handleChange);
+				res();
+			}
+		});
+	}
 
 	get connection(): BetterSQLite3Database<typeof schema> {
 		const conn = this.#connection
@@ -32,7 +54,7 @@ export class DatabaseConnectionManager {
 		private readonly settingsService = di.inject("SettingsService"),
 		private readonly logger = di.inject("logger")
 	) {
-		this.dispose = this.settingsService.subscribe(async (config) => {
+		this.unsubscribeSettings = this.settingsService.subscribe(async (config) => {
 			if (this.#connection || this.#database) {
 				this.#database?.close();
 			}
@@ -49,12 +71,19 @@ export class DatabaseConnectionManager {
 		}, ["databaseFileName"]);
 	}
 
-	async [Symbol.asyncDispose]() {
-		this.dispose?.();
+	async [Symbol.dispose]() {
+		this.dispose();
+	}
+	dispose() {
+		this.unsubscribeSettings?.();
+		this.close();
+		this.emitter.clear();
+	}
+
+	close() {
 		this.#database?.close();
 		this.#database = undefined;
-		this.#connection = undefined;
-		this.emitter.clear();
+		this.connection = undefined;
 	}
 
 	prepare<T extends SQLitePreparedQuery<any>>(cb: (db: BetterSQLite3Database<typeof schema>) => T): RefObject<T> {

@@ -13,7 +13,11 @@ export const responseHandler = createMiddleware(async (c, next) => {
 	if (!c.error && mimeType === MIME_JSON) {
 		const oldResponse = await c.res.json();
 		if (oldResponse && typeof oldResponse === "object" && "success" in oldResponse && !oldResponse.success) {
-			c.res = new Response(JSON.stringify({ ...oldResponse, ts: Date.now() }), {
+			const payload = { ...oldResponse, ts: Date.now() };
+			if (process.env.NODE_ENV === "production" && "stack" in payload) {
+				payload.stack = undefined;
+			}
+			c.res = new Response(JSON.stringify(payload), {
 				...COMMON_RESPONSE_INIT,
 				status: 400
 			});
@@ -21,7 +25,6 @@ export const responseHandler = createMiddleware(async (c, next) => {
 			// TODO successfull Result handling, to avoid wrapped results
 			c.res = new Response(JSON.stringify(result(oldResponse)), COMMON_RESPONSE_INIT);
 		}
-	
 	} else if (c.res.status === 404 && mimeType !== MIME_JSON) {
 		throw new ResultError(404, `Not Found: ${c.req.url}`);
 	}

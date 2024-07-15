@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import "dotenv/config";
 import "../src/polyfill";
 
 import { DatabaseMigrator } from "src/db/DatabaseMigrator";
@@ -6,13 +7,12 @@ import { ConsoleLogger } from "src/services/ConsoleLogger";
 import { DatabaseConnectionManager } from "src/db/DatabaseConnectionManager";
 import { SettingsService } from "src/services/SettingsService";
 
-const consoleLogger = new ConsoleLogger();
-const dataBaseMigrator = new DatabaseMigrator(
-	new DatabaseConnectionManager(
-		new SettingsService(),
-		consoleLogger
-	),
-	consoleLogger
-);
+{
+	const consoleLogger = new ConsoleLogger();	
+	using settingsService = new SettingsService(consoleLogger);
+	using dbm = new DatabaseConnectionManager(settingsService, consoleLogger);
+	using dataBaseMigrator = new DatabaseMigrator(dbm, consoleLogger);
 
-dataBaseMigrator.migrate();
+	await dataBaseMigrator.migrate();
+}
+process.exit();

@@ -7,9 +7,10 @@ import { Emitter } from "src/util/Emitter";
 import { Lock } from "src/util/Lock";
 
 type MaybePromise<T> = Promise<T> | T;
-type Disposer = () => MaybePromise<void>;
+type Disposer = () => void;
+type AsyncDisposer = () => MaybePromise<void>;
 
-export class SettingsService {
+export class SettingsService implements Disposable {
 	private emitter = new Emitter<{ change(config?: ServerConfig, oldConfig?: ServerConfig): unknown }>();
 	private disposerLock = new Lock();
 
@@ -25,13 +26,15 @@ export class SettingsService {
 
 	constructor(
 		private readonly logger = di.inject("logger"),
-	) {}
-
-	dispose() {
-		this.unsubscribeAll();
+	) {
+		this.loadConfig();
 	}
+
 	[Symbol.dispose]() {
 		this.dispose();
+	}
+	dispose() {
+		this.unsubscribeAll();
 	}
 
 	loadConfig(): ServerConfig | undefined {
@@ -42,7 +45,9 @@ export class SettingsService {
 			publicUrl: process.env.PUBLIC_URL ?? "",
 			databaseFileName: process.env.DB_FILE ?? DEFAULT_DB_NAME,
 		});
-		serverConfigSchema.parse(config);
+		if (!serverConfigSchema.safeParse(config).success) {
+			return;
+		};
 		return this.config = config;
 	}
 
@@ -72,11 +77,11 @@ export class SettingsService {
 	}
 
 	subscribe(
-		cb: (config?: ServerConfig, oldConfig?: ServerConfig) => MaybePromise<Disposer | void>,
+		cb: (config?: ServerConfig, oldConfig?: ServerConfig) => MaybePromise<AsyncDisposer | void>,
 		fields?: Array<keyof ServerConfig>
-	): () => void {
-		let disposer: Disposer | void;
-		const handler = async (config?: ServerConfig, oldConfig?: ServerConfig):  Promise<Disposer | void> => {
+	): Disposer {
+		let disposer: AsyncDisposer | void;
+		const handler = async (config?: ServerConfig, oldConfig?: ServerConfig):  Promise<AsyncDisposer | void> => {
 			try {			
 				if (typeof disposer === "function") {
 					using _lock = this.disposerLock.lock();

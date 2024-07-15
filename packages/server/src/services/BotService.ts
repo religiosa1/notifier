@@ -19,8 +19,7 @@ export class BotService {
 	) {
 		settingsService.subscribe(async (settings) => {
 			const { botToken, publicUrl, tgHookSecret } = settings || {};
-			logger.info("Initializing the bot");
-			if (!botToken || !publicUrl || !tgHookSecret) {
+			if (!botToken || !publicUrl) {
 				this.#instanceData = undefined;
 				logger.warn("Bot token or publicUrl is missing in the settings, bot is NOT initialized");
 				return;

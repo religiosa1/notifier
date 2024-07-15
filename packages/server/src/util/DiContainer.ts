@@ -27,6 +27,8 @@ export class DiContainer<T extends Record<string, {}>> implements AsyncDisposabl
 		return new DiContainer(this.containerInit, this.asyncStorage);
 	}
 
+	run<K>(cb: () => K): K;
+	run<K>(cb: () => Promise<K>): Promise<K>;
 	run<K>(cb: () => K | Promise<K>): K | Promise<K> {
 		return this.asyncStorage.run(this, cb);
 	}
