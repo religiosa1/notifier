@@ -23,8 +23,8 @@ export class DiContainer<T extends Record<string, {}>> implements AsyncDisposabl
 		return self.container[key] as T[TItem] ;
 	}
 
-	clone(): DiContainer<T> {
-		return new DiContainer(this.containerInit, this.asyncStorage);
+	clone(overrides?: Partial<ContainerInit<T>>): DiContainer<T> {
+		return new DiContainer({...this.containerInit, ...overrides }, this.asyncStorage);
 	}
 
 	run<K>(cb: () => K): K;

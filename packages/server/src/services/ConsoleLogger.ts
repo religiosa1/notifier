@@ -1,10 +1,10 @@
-import type { BaseLogger, pino } from "pino";
+import type { BaseLogger, LevelWithSilentOrString } from "pino";
 
 /** Mock for pino, instead just loggin as simple as possible into console
  * No merge objects or arguments interpolation is supported.
  */
 export class ConsoleLogger implements BaseLogger {
-	level: pino.LevelWithSilentOrString = "trace";
+	level: LevelWithSilentOrString = "trace";
 
 	fatal(...args: unknown[]) {
 		if (this.level === "silent") {

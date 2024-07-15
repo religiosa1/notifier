@@ -2,6 +2,7 @@ import type { ServerConfig } from "@shared/models";
 import { di } from "src/injection";
 import { buildApp } from "src/app";
 import type { Hono } from "hono";
+import { NullLogger } from "src/services/NullLogger";
 
 
 // Config with fake tokens and secrets for testing
@@ -21,7 +22,7 @@ interface WithIsolatedAppEnv {
 export function withIsolatedAppEnv(cb: (app: Hono, headers: RequestInit['headers']) => void | Promise<void>, {
 	omitAuth = false
 }: WithIsolatedAppEnv = {}): () => Promise<void> {
-	return () => di.clone().run(async () => {
+	return () => di.clone({ logger: () => new NullLogger() }).run(async () => {
 		const ADMIN_PWD = "123456";
 		di.inject("SettingsService").setConfig(testConfig);
 		const dbMigrator = di.inject("DatabaseMigrator");

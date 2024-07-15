@@ -144,7 +144,9 @@ export class UsersRepository {
 		const userId = await db.transaction(async (tx) => {
 			const [createdUser] = await db.insert(schema.users).values({
 				...user,
-				password
+				password,
+				createdAt: new Date(),
+				updatedAt: new Date(),
 			}).returning();
 			assert(createdUser);
 			if (user.groups?.length) {
@@ -187,7 +189,7 @@ export class UsersRepository {
 		const password = user.password ? await hashPassword(user.password) : undefined;
 		const updatedUserId = await db.transaction(async (tx) => {
 			const [updatedUser] = await tx.update(schema.users)
-				.set({ ...user, password, updatedAt: sql`CURRENT_TIMESTAMP`})
+				.set({ ...user, password, updatedAt: new Date()})
 				.where(eq(schema.users.id, id))
 				.returning();
 			assert(updatedUser, userNotFound(id));
