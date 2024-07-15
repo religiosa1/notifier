@@ -5,6 +5,7 @@ import {
 	integer,
 	primaryKey,
 	unique,
+	index
 } from "drizzle-orm/sqlite-core";
 
 // FIXME @shared imports in drizzle
@@ -32,7 +33,9 @@ export const users = sqliteTable("users", {
 	updatedAt: integer("updated_at", { mode: "timestamp" })
 		.default(sql`(CURRENT_TIMESTAMP)`)
 		.notNull(),
-});
+}, (t) => ({
+	userNameIdx: index("user_name_idx").on(t.name),
+}));
 export const userRelations = relations(users, ({ many	}) => ({
 	groups: many(usersToGroups),
 	channels: many(usersToChannels),
@@ -62,6 +65,7 @@ export const usersToGroups = sqliteTable("users_to_groups", {
 	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
 	pk: primaryKey({ columns: [ t.userId, t.groupId] }),
+	userToGroupUserIdIdx: index('user_to_groups_userid_idx').on(t.userId),
 }));
 export const usersToGroupsRelations = relations(usersToGroups, ({ one }) => ({
 	group: one(groups, {
@@ -97,6 +101,7 @@ export const channelsToGroups = sqliteTable("channels_to_groups", {
 	groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
 	pk: primaryKey({ columns: [t.channelId, t.groupId ] }),
+	channelsToGroupGroupIdIdx: index("channels_to_group_groupid_idx").on(t.groupId)
 }));
 export const channelsToGroupsRelations = relations(channelsToGroups, ({ one }) => ({
 	channel: one(channels, {
@@ -116,6 +121,7 @@ export const usersToChannels = sqliteTable("users_to_channels", {
 	channelId: integer("channel_id").notNull().references(() => channels.id, { onDelete: "cascade", onUpdate: "cascade" }),
 }, (t) => ({
 	uniq: unique().on(t.channelId, t.userId),
+	channelIdIdx: index("user_to_channels_userId_idx").on(t.userId),
 }));
 export const usersToChannelsRelations = relations(usersToChannels, ({ one }) => ({
 	user: one(users, {
