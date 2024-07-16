@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "47c700bc-6c13-4802-8f2c-7beba5d32418",
+  "id": "40d29109-0da7-4450-899a-7ef0b3c4ce9a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "api_keys": {
@@ -121,7 +121,15 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "channels_to_group_groupid_idx": {
+          "name": "channels_to_group_groupid_idx",
+          "columns": [
+            "group_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "channels_to_groups_channel_id_channels_id_fk": {
           "name": "channels_to_groups_channel_id_channels_id_fk",
@@ -241,19 +249,19 @@
         },
         "authorization_status": {
           "name": "authorization_status",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'pending'"
+          "default": 0
         },
         "role": {
           "name": "role",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'regular'"
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -279,6 +287,13 @@
             "telegram_id"
           ],
           "isUnique": true
+        },
+        "user_name_idx": {
+          "name": "user_name_idx",
+          "columns": [
+            "name"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -311,6 +326,13 @@
         }
       },
       "indexes": {
+        "user_to_channels_userId_idx": {
+          "name": "user_to_channels_userId_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        },
         "users_to_channels_channel_id_user_id_unique": {
           "name": "users_to_channels_channel_id_user_id_unique",
           "columns": [
@@ -369,7 +391,15 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "user_to_groups_userid_idx": {
+          "name": "user_to_groups_userid_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "users_to_groups_group_id_groups_id_fk": {
           "name": "users_to_groups_group_id_groups_id_fk",

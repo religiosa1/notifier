@@ -1,12 +1,17 @@
 import z from "zod";
 
-export const userRoleEnumSchema = z.enum(["regular", "admin"]);
-export const UserRoleEnum = userRoleEnumSchema.Enum;
-export type UserRoleEnum = z.infer<typeof userRoleEnumSchema>;
+export const UserRoleEnum = Object.freeze({
+	regular: 0,
+	admin: 1,
+});
+export type UserRoleEnum = typeof UserRoleEnum[keyof typeof UserRoleEnum];
+export const userRoleEnumSchema = z.nativeEnum(UserRoleEnum);
 
 export function getRoleName(val: UserRoleEnum): string {
-	if (userRoleEnumSchema.options.includes(val)) {
-		return val;
+	for (const [key, value] of Object.entries(UserRoleEnum)) {
+		if (value === val) {
+			return key;
+		}
 	}
 	return `invalid user role value: '${val}'`;
 }

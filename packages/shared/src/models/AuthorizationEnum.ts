@@ -1,12 +1,18 @@
 import z from "zod";
 
-export const authorizationEnumSchema = z.enum(["pending", "accepted", "declined"]);
-export const AuthorizationEnum = authorizationEnumSchema.Enum;
-export type AuthorizationEnum = z.infer<typeof authorizationEnumSchema>;
+export const AuthorizationEnum = Object.freeze({
+	pending: 0,
+	accepted: 1,
+	declined: 2,
+});
+export type AuthorizationEnum = typeof AuthorizationEnum[keyof typeof AuthorizationEnum];
+export const authorizationEnumSchema = z.nativeEnum(AuthorizationEnum);
 
 export function getAuthorizationStatusName(val: AuthorizationEnum): string {
-	if (authorizationEnumSchema.options.includes(val)){
-		return val;
+	for (const [key, value] of Object.entries(AuthorizationEnum)) {
+		if (value === val) {
+			return key;
+		}
 	}
 	return `invalid authorization status value: '${val}'`;
 }

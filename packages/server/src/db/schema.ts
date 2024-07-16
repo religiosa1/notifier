@@ -18,15 +18,8 @@ export const users = sqliteTable("users", {
 	name: text("name"),
 	/** only admin users can have password, so if the password exists it"s an admin	*/
 	password: text("password"),
-	authorizationStatus: text("authorization_status", { enum: [
-		AuthorizationEnum.accepted,
-		AuthorizationEnum.declined,
-		AuthorizationEnum.pending,
-	]}).notNull().default(AuthorizationEnum.pending),
-	role: text("role", { enum: [
-		UserRoleEnum.admin,
-		UserRoleEnum.regular,
-	]}).notNull().default(UserRoleEnum.regular),
+	authorizationStatus: integer("authorization_status").$type<AuthorizationEnum>().notNull().default(AuthorizationEnum.pending),
+	role: integer("role").$type<UserRoleEnum>().notNull().default(UserRoleEnum.regular),
   createdAt: integer("created_at", { mode: "timestamp" })
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),

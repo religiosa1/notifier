@@ -33,8 +33,8 @@ CREATE TABLE `users` (
 	`telegram_id` integer NOT NULL,
 	`name` text,
 	`password` text,
-	`authorization_status` text DEFAULT 'pending' NOT NULL,
-	`role` text DEFAULT 'regular' NOT NULL,
+	`authorization_status` integer DEFAULT 0 NOT NULL,
+	`role` integer DEFAULT 0 NOT NULL,
 	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
 	`updated_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL
 );
@@ -56,9 +56,13 @@ CREATE TABLE `users_to_groups` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `channels_name_unique` ON `channels` (`name`);--> statement-breakpoint
+CREATE INDEX `channels_to_group_groupid_idx` ON `channels_to_groups` (`group_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `groups_name_unique` ON `groups` (`name`);--> statement-breakpoint
 CREATE UNIQUE INDEX `users_telegram_id_unique` ON `users` (`telegram_id`);--> statement-breakpoint
+CREATE INDEX `user_name_idx` ON `users` (`name`);--> statement-breakpoint
+CREATE INDEX `user_to_channels_userId_idx` ON `users_to_channels` (`user_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `users_to_channels_channel_id_user_id_unique` ON `users_to_channels` (`channel_id`,`user_id`);--> statement-breakpoint
+CREATE INDEX `user_to_groups_userid_idx` ON `users_to_groups` (`user_id`);--> statement-breakpoint
 -- on delete trigger for controlling removal of useChannels that a user doesn't have access to
 -- after removing of a group or user to group relation
 CREATE TRIGGER `delete_user_groups_trigger` AFTER DELETE ON `users_to_groups`
