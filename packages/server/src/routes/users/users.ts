@@ -49,7 +49,7 @@ controller.post(
 		const body = c.req.valid("json");
 		const user = await usersRepository.insertUser(body);
 		logger.info(`User create by ${c.get("user").id}-${c.get("user").name}`,body);
-		return c.json(user satisfies UserModel.UserDetail);
+		return c.json(user satisfies UserModel.UserDetail, 201);
 	}
 );
 
@@ -66,7 +66,9 @@ controller.delete(
 			outOf: ids.length,
 		};
 		logger.info(`User batch delete by ${c.get("user").id}-${c.get("user").name}`, ids, data);
-		return c.json(data satisfies BatchOperationStats);
+
+		const status = count === 0 ? 404 : count !== ids.length ? 207 : 200;
+		return c.json(data satisfies BatchOperationStats, status);
 	}
 );
 
@@ -75,6 +77,9 @@ controller.get(
 	zValidator("query",  z.object({
 		name: z.string().optional(),
 		group: z.string().refine(...intGt(0)).transform(toInt).optional(),
+	}).refine(q => q.name || q.group, {
+			message: "Either name or group should be present in the search params",
+			path: ["name", "group"]
 	}), validationErrorHook),
 	async (c) => {
 		const usersRepository = di.inject("UsersRepository");

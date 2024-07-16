@@ -23,7 +23,10 @@ export const responseHandler = createMiddleware(async (c, next) => {
 			});
 		} else {
 			// TODO successfull Result handling, to avoid wrapped results
-			c.res = new Response(JSON.stringify(result(oldResponse)), COMMON_RESPONSE_INIT);
+			c.res = new Response(JSON.stringify(result(oldResponse)), {
+				...COMMON_RESPONSE_INIT,
+				status: c.res.status
+			});
 		}
 	} else if (c.res.status === 404 && mimeType !== MIME_JSON) {
 		throw new ResultError(404, `Not Found: ${c.req.url}`);
