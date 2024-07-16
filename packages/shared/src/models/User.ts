@@ -36,5 +36,10 @@ export const userCreateSchema = userSchema.omit({ id: true }).partial({
 });
 export type UserCreate = z.infer<typeof userCreateSchema>;
 
-export const userUpdateSchema = userCreateSchema.partial();
+export const userUpdateSchema = userCreateSchema.partial().refine(
+	data => Object.keys(data).length > 0, 
+	{
+		message: "Update dataset must contain at least one valid field",
+	}
+);
 export type UserUpdate = z.infer<typeof userUpdateSchema>
