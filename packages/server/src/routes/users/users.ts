@@ -76,15 +76,15 @@ controller.get(
 	"/search",
 	zValidator("query",  z.object({
 		name: z.string().optional(),
-		group: z.string().refine(...intGt(0)).transform(toInt).optional(),
-	}).refine(q => q.name || q.group, {
+		notInGroup: z.string().refine(...intGt(0)).transform(toInt).optional(),
+	}).refine(q => q.name || q.notInGroup, {
 			message: "Either name or group should be present in the search params",
 			path: ["name", "group"]
 	}), validationErrorHook),
 	async (c) => {
 		const usersRepository = di.inject("UsersRepository");
-		const { name, group } = c.req.valid("query");
-		const users = await usersRepository.searchUsers({ name, groupId: group });
+		const { name, notInGroup } = c.req.valid("query");
+		const users = await usersRepository.searchUsers({ name, notInGroup });
 		return c.json(users satisfies UserModel.User[]);
 	} 
 );

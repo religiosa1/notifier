@@ -8,14 +8,14 @@ import { batchDelete } from '~/actions/batchDelete';
 import { serverAction } from '~/actions/serverAction';
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
-	const [ group, users, channels ] = await Promise.all([
+	const [ group, availableUsers, channels ] = await Promise.all([
 			fetch(serverUrl(uri`/groups/${params.id}`)).then(unwrapResult<GroupDetail>),
-			fetch(serverUrl(uri`/users/search?group=${params.id}`)).then(unwrapResult<Channel[]>),
+			fetch(serverUrl(uri`/users/search?notInGroup=${params.id}`)).then(unwrapResult<Channel[]>),
 			fetch(serverUrl(uri`/channels/search?group=${params.id}`)).then(unwrapResult<Channel[]>),
 	]);
 	return {
 		group,
-		users,
+		availableUsers,
 		channels
 	};
 };

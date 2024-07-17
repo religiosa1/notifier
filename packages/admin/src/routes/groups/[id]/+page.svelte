@@ -66,7 +66,7 @@
 		<p>
 			<input required name="name" autocomplete="off" list="available-users"/>
 			<datalist id="available-users">
-				{#each data.users as user}
+				{#each data.availableUsers as user}
 					<option value={user.name} />
 				{/each}
 			</datalist>

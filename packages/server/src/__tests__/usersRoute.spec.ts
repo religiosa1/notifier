@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from "vitest";
 import { withIsolatedAppEnv } from "src/__tests__/withIsolatedAppEnv";
-import { AuthorizationEnum, type ResultSuccess, type UserCreate, type UserDetail } from "@shared/models";
+import { AuthorizationEnum, type Counted, type ResultSuccess, type User, type UserCreate, type UserDetail } from "@shared/models";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { di } from "src/injection";
 import { schema } from "src/db";
@@ -29,6 +29,13 @@ describe("users route", () => {
 		},
 	];
 
+	async function insertUsersBulk(users = bulkUsers) {
+		const usersRepo = di.inject("UsersRepository");
+		for (const user of users) {
+			await usersRepo.insertUser(user);
+		}
+	}
+
 	async function countUsers(): Promise<number> {
 		const db = di.inject("db");
 		const [{count = 0} = {}] = await db.connection.all<{count: number}>(
@@ -46,13 +53,37 @@ describe("users route", () => {
 		return channels;
 	}
 
-	test("GET /users", withIsolatedAppEnv(async (app, headers) => {
-		const res = await app.request("/users", { headers });
-		const body: any = await res.json();
-		expect(res.status).toBe(200);
-		expect(body.data.count).toBe(1);
-		expect(body.data.data[0].name).toBe("admin");
-	}));
+	describe("GET /users", () => {
+		test("returns a list of users", withIsolatedAppEnv(async (app, headers) => {
+			await insertUsersBulk();
+			const res = await app.request("/users", { headers });
+			const body = await res.json() as ResultSuccess<Counted<User[]>>;
+			expect(res.status).toBe(200);
+			expect(body.data.count).toBe(4);
+			expect(body.data.data.length).toBe(4);
+			expect(body.data.data[0]!.name).toBe("admin");
+		}));
+
+		test("allows control of page size", withIsolatedAppEnv(async (app, headers) => {
+			await insertUsersBulk();
+			const res = await app.request("/users?take=2", { headers });
+			const body = await res.json() as ResultSuccess<Counted<User[]>>;
+			expect(res.status).toBe(200);
+			expect(body.data.count).toBe(4);
+			expect(body.data.data.length).toBe(2);
+			expect(body.data.data[0]!.name).toBe("admin");
+		}));
+
+		test("allows specifying skip param", withIsolatedAppEnv(async (app, headers) => {
+			await insertUsersBulk();
+			const res = await app.request("/users?take=2&skip=1", { headers });
+			const body = await res.json() as ResultSuccess<Counted<User[]>>;
+			expect(res.status).toBe(200);
+			expect(body.data.count).toBe(4);
+			expect(body.data.data.length).toBe(2);
+			expect(body.data.data[0]!.name).toBe(bulkUsers[0]!.name);
+		}));
+	});
 
 	describe("GET /users/:ID", () => {
 		test("returns a user", withIsolatedAppEnv(async (app, headers) => {
@@ -70,8 +101,7 @@ describe("users route", () => {
 
 	describe("GET /users/search", () => {
 		test("case-insensitive name search", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			await db.connection.insert(schema.users).values(bulkUsers);
+			await insertUsersBulk();
 			expect(await countUsers()).toBe(4);
 			
 			const res = await app.request("/users/search?name=adm", { headers });
@@ -80,13 +110,46 @@ describe("users route", () => {
 			expect(body.data.length).toBe(3);
 		}));
 
-		test("no name o group param is 422", withIsolatedAppEnv(async (app, headers) => {
+		test("no name or notInGroup param is 422", withIsolatedAppEnv(async (app, headers) => {
 			const res = await app.request("/users/search", { headers });
 			expect(res.status).toBe(422);
 		}));
+		
+		test("search omitting a group", withIsolatedAppEnv(async (app, headers) => {
+			await insertUsersBulk(bulkUsers.map((user, i) => { 
+				if (i % 2) {
+					return {...user, groups: [1] };
+				}
+				return user;
+			}));
+			expect(await countUsers()).toBe(4);
+			
+			const res = await app.request("/users/search?name=adm&notInGroup=1", { headers });
+			const body: any = await res.json();
+			expect(res.status).toBe(200);
+			 // "admin" and "paqadmin" are filtered out by group, and "johny" filtered out by name
+			expect(body.data.length).toBe(1);
+			expect(body.data[0]!.name).toBe("aAdMiNoS"); 
+		}));
 
-		test.todo("search with a group")
-	});	
+		test("search by notInGroup only", withIsolatedAppEnv(async (app, headers) => {
+			await insertUsersBulk(bulkUsers.map((user, i) => { 
+				if (i % 2) {
+					return {...user, groups: [1] };
+				}
+				return user;
+			}));
+			expect(await countUsers()).toBe(4);
+			
+			const res = await app.request("/users/search?notInGroup=1", { headers });
+			const body: any = await res.json();
+			expect(res.status).toBe(200);
+			 // "admin" and "paqadmin" are filtered out by group
+			expect(body.data.length).toBe(2);
+			expect(body.data[0]!.name).toBe("aAdMiNoS");
+			expect(body.data[1]!.name).toBe("johny"); 
+		}));
+	});
 
 	describe("POST /users", () => {
 		test("creates a new user", withIsolatedAppEnv(async (app, headers) => {
@@ -115,7 +178,6 @@ describe("users route", () => {
 			});
 			const body = await res.json() as ResultSuccess<UserDetail>;
 			expect(res.status).toBe(201);
-
 			expect(body.data.groups).toEqual([
 				{ id: 1, name: "default" }
 			]);
@@ -160,7 +222,6 @@ describe("users route", () => {
 			});
 			const body = await res.json() as ResultSuccess<UserDetail>;
 			expect(res.status).toBe(200);
-	
 			expect(body.data.name).toBe("Jane Doe");
 		}));
 
@@ -350,8 +411,7 @@ describe("users route", () => {
 
 	describe("DELETE /users | batch delete", () => {
 		test("full hit in ids", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			await db.connection.insert(schema.users).values(bulkUsers);
+			await insertUsersBulk();
 			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=2,3,4`, {
 				method: "DELETE",
@@ -369,8 +429,7 @@ describe("users route", () => {
 		}));
 
 		test("partial hit in ids", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			await db.connection.insert(schema.users).values(bulkUsers);
+			await insertUsersBulk();
 			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=2,3,4,32167`, { // one non-existing id
 				method: "DELETE",
@@ -388,8 +447,7 @@ describe("users route", () => {
 		}));
 
 		test("no hit in ids", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			await db.connection.insert(schema.users).values(bulkUsers);
+			await insertUsersBulk();
 			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=32167,12332`, { // all ids non-existing
 				method: "DELETE",

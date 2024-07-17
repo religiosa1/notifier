@@ -206,14 +206,12 @@ export class UsersRepository {
 		.where(like(schema.users.name, sql.placeholder("name")))
 		.prepare()
 	);
-
-	// TODO 2 separate queries -- one with group, one without
 	private querySearchUsersForGroup = this.dbm.prepare((db) => db.select(
 		getTableColumns(schema.users)
 	).from(schema.users)
 		.leftJoin(schema.usersToGroups, and(
 			eq(schema.usersToGroups.userId, schema.users.id),
-			eq(schema.usersToGroups.groupId, sql.placeholder("groupId"))
+			eq(schema.usersToGroups.groupId, sql.placeholder("notInGroup"))
 		))
 		.where(and(
 			like(schema.users.name, sql.placeholder("name")),
@@ -221,9 +219,9 @@ export class UsersRepository {
 		))
 		.prepare()
 	);
-	async searchUsers({ name = "", groupId }: { name?: string, groupId?: number} = {}): Promise<User[]> {
-		if (groupId) {
-			return this.querySearchUsersForGroup.value.execute({ groupId, name: "%" + name + "%"});
+	async searchUsers({ name = "", notInGroup }: { name?: string, notInGroup?: number} = {}): Promise<User[]> {
+		if (notInGroup != null) {
+			return this.querySearchUsersForGroup.value.execute({ notInGroup, name: "%" + name + "%"});
 		}
 		return this.querySearchUsers.value.execute({ name: "%" + name + "%" });
 	}
