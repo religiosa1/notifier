@@ -3,6 +3,7 @@ import type { ExtractTablesWithRelations } from "drizzle-orm";
 import { SQLiteTransaction } from "drizzle-orm/sqlite-core";
 
 import * as schema from "./schema";
+import type Database from "better-sqlite3";
 export { schema };
 
 export type DbTransactionClient = BetterSQLite3Database<typeof schema> | SQLiteTransaction<
@@ -11,3 +12,5 @@ export type DbTransactionClient = BetterSQLite3Database<typeof schema> | SQLiteT
 	typeof schema,
 	ExtractTablesWithRelations<typeof schema>
 >;
+
+export type Transaction = SQLiteTransaction<"sync", Database.RunResult, typeof schema, ExtractTablesWithRelations<typeof schema>>;

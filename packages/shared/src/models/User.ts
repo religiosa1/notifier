@@ -2,7 +2,6 @@ import z from "zod";
 import { AuthorizationEnum, authorizationEnumSchema } from "./AuthorizationEnum";
 import { UserRoleEnum, userRoleEnumSchema } from "./UserRoleEnum";
 import { userPreviewSchema } from "./UserPreview";
-import { groupNameSchema } from "./Group";
 
 export const passwordSchema = z.string().min(6).nullable();
 
@@ -24,14 +23,17 @@ export const userWithGroupsSchema = userSchema.extend({
 });
 export type UserWithGroups = z.infer<typeof userWithGroupsSchema>;
 
-export const userDetailSchema = userWithGroupsSchema;
+export const userDetailSchema = userWithGroupsSchema.extend({
+	createdAt: z.string().datetime(),
+	updatedAt: z.string().datetime(),
+});
 export type UserDetail = z.infer<typeof userDetailSchema>;
 
 export const userCreateSchema = userSchema.omit({ id: true }).partial({
 	authorizationStatus: true,
 	role: true,
 }).extend({
-	groups: z.array(groupNameSchema).optional(),
+	groups:  z.array(z.number().int().gt(0)).optional(),
 	channels: z.array(z.number().int().gt(0)).optional()
 });
 export type UserCreate = z.infer<typeof userCreateSchema>;

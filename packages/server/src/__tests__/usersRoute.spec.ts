@@ -1,13 +1,14 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { withIsolatedAppEnv } from "src/__tests__/withIsolatedAppEnv";
-import { AuthorizationEnum, type UserCreate } from "@shared/models";
+import { AuthorizationEnum, type ResultSuccess, type UserCreate, type UserDetail } from "@shared/models";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import { di } from "src/injection";
 import { schema } from "src/db";
-import { sql } from "drizzle-orm";
-import type { DatabaseConnectionManager } from "src/db/DatabaseConnectionManager";
+import { eq, sql } from "drizzle-orm";
 
 describe("users route", () => {
+	const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/;
+
 	const testUser: UserCreate = {
 		telegramId: 654321,
 		name: "John Doe",
@@ -28,11 +29,21 @@ describe("users route", () => {
 		},
 	];
 
-	async function countUsers(db: DatabaseConnectionManager): Promise<number> {
+	async function countUsers(): Promise<number> {
+		const db = di.inject("db");
 		const [{count = 0} = {}] = await db.connection.all<{count: number}>(
 			sql`SELECT COUNT(*) as count FROM USERS`
 		);
 		return count;
+	}
+
+	async function getUserChannels(userId: number): Promise<Array<{ id: number }>> {
+		const db = di.inject("db");
+		const channels = await db.connection
+			.select({ id: schema.usersToChannels.channelId })
+			.from(schema.usersToChannels)
+			.where(eq(schema.usersToChannels.userId, userId));
+		return channels;
 	}
 
 	test("GET /users", withIsolatedAppEnv(async (app, headers) => {
@@ -61,7 +72,7 @@ describe("users route", () => {
 		test("case-insensitive name search", withIsolatedAppEnv(async (app, headers) => {
 			const db = di.inject("db");
 			await db.connection.insert(schema.users).values(bulkUsers);
-			expect(await countUsers(db)).toBe(4);
+			expect(await countUsers()).toBe(4);
 			
 			const res = await app.request("/users/search?name=adm", { headers });
 			const body: any = await res.json();
@@ -77,61 +88,105 @@ describe("users route", () => {
 		test.todo("search with a group")
 	});	
 
-	test("POST /users", withIsolatedAppEnv(async (app, headers) => {
-		const res = await app.request("/users", {
-			method: "POST",
-			headers,
-			body: JSON.stringify(testUser)
-		});
-		expect(res.status).toBe(201);
+	describe("POST /users", () => {
+		test("creates a new user", withIsolatedAppEnv(async (app, headers) => {
+			const res = await app.request("/users", {
+				method: "POST",
+				headers,
+				body: JSON.stringify(testUser)
+			});
+			expect(res.status).toBe(201);
+			const body = await res.json() as ResultSuccess<UserDetail>;
+	
+			expect(body.data.name).toBe(testUser.name);
+			expect(body.data.telegramId).toBe(testUser.telegramId);
+			expect(body.data.password).toBe(null);
+			expect(body.data.role).toBe(UserRoleEnum.regular);
+			expect(body.data.authorizationStatus).toBe(AuthorizationEnum.pending);
+			expect(body.data.createdAt).toMatch(isoDateRegex);
+			expect(body.data.updatedAt).toMatch(isoDateRegex);
+		}));
 
-		const getRes = await app.request("/users/2", { headers })
-		const body: any = await getRes.json();
+		test("allows to specify initial groups", withIsolatedAppEnv(async (app, headers) => {
+			const res = await app.request("/users", {
+				method: "POST",
+				headers,
+				body: JSON.stringify({...testUser, groups: [ 1 ] } satisfies UserCreate)
+			});
+			const body = await res.json() as ResultSuccess<UserDetail>;
+			expect(res.status).toBe(201);
 
-		expect(body.data.name).toBe(testUser.name);
-		expect(body.data.telegramId).toBe(testUser.telegramId);
-		expect(body.data.password).toBe(null);
-		expect(body.data.role).toBe(UserRoleEnum.regular);
-		expect(body.data.authorizationStatus).toBe(AuthorizationEnum.pending);
-		expect(body.data.createdAt).toBeTypeOf("string");
-		expect(body.data.updatedAt).toBeTypeOf("string");
-	}));
+			expect(body.data.groups).toEqual([
+				{ id: 1, name: "default" }
+			]);
+		}));
+
+		test("allows to specify initial channels", withIsolatedAppEnv(async (app, headers) => {
+			const res = await app.request("/users", {
+				method: "POST",
+				headers,
+				body: JSON.stringify({
+					...testUser, 
+					groups: [ 1 ], 
+					channels: [ 1 ] 
+				} satisfies UserCreate)
+			});
+			expect(res.status).toBe(201);
+			const channels = await getUserChannels(1);
+			expect(channels).toEqual([ { id: 1 }])
+		}));
+
+		test("bad input results in 422 error", withIsolatedAppEnv(async (app, headers) => {
+			const res = await app.request("/users", {
+				method: "POST",
+				headers,
+				body: JSON.stringify({ name: "123" }) // telegramId is ommited
+			});
+			expect(res.status).toBe(422);
+		}));
+	});
+	
 
 	describe("PUT /users/:ID", () => {
 		test("successfully modifies the selected user", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			const result = await db.connection.insert(schema.users).values(testUser);
-			const url = `/users/${result.lastInsertRowid}`;
+			const usersRepo = di.inject("UsersRepository");
+			const { id } = await usersRepo.insertUser(testUser);
+			const url = `/users/${id}`;
 	
 			const res = await app.request(url, {
 				method: "PUT",
 				headers,
 				body: JSON.stringify({ ...testUser, name: "Jane Doe" })
 			});
+			const body = await res.json() as ResultSuccess<UserDetail>;
 			expect(res.status).toBe(200);
-	
-			const getRes = await app.request(url, { headers });
-			const body: any = await getRes.json();
 	
 			expect(body.data.name).toBe("Jane Doe");
 		}));
 
 		test("updates modified at time", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			const result = await db.connection.insert(schema.users).values(testUser);
-			const url = `/users/${result.lastInsertRowid}`;
+			try {
+				vi.useFakeTimers();
+				const usersRepo = di.inject("UsersRepository");
+				const { id } = await usersRepo.insertUser(testUser);
+				const url = `/users/${id}`;
 	
-			const res = await app.request(url, {
-				method: "PUT",
-				headers,
-				body: JSON.stringify({ ...testUser, name: "Jane Doe" })
-			});
-			expect(res.status).toBe(200);
-	
-			const getRes = await app.request(url, { headers });
-			const body: any = await getRes.json();
-	
-			expect(body.data.createdAt).not.toBe(body.data.updatedAt);
+				vi.advanceTimersByTime(1000);
+		
+				const res = await app.request(url, {
+					method: "PUT",
+					headers,
+					body: JSON.stringify({ ...testUser, name: "Jane Doe" })
+				});
+				const body = await res.json() as ResultSuccess<UserDetail>;
+				expect(res.status).toBe(200);
+		
+				expect(body.data.updatedAt).toMatch(isoDateRegex);
+				expect(body.data.createdAt).toMatch(isoDateRegex);
+				expect(body.data.createdAt).not.toBe(body.data.updatedAt);
+			} finally {
+				vi.useRealTimers();
+			}
 		}));
 
 		test("returns 422 on invalid on bad request", withIsolatedAppEnv(async (app, headers) => {	
@@ -152,15 +207,122 @@ describe("users route", () => {
 			});
 			expect(res.status).toBe(404);
 		}));
+
+		test("setting groups", withIsolatedAppEnv(async (app, headers) => {
+			const usersRepo = di.inject("UsersRepository");
+			const user = await usersRepo.insertUser(testUser);
+			expect(user.groups).toEqual([]);
+
+			const res = await app.request(`/users/${user.id}`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({
+					...testUser,
+					groups: [ 1 ],
+				})
+			});
+			const body = await res.json() as ResultSuccess<UserDetail>;
+			expect(res.status).toBe(200);
+			expect(body.data.groups).toEqual([
+				{ id: 1, name: "default" }
+			]);
+		}));
+
+		test("removing groups if empty array is passed", withIsolatedAppEnv(async (app, headers) => {
+			const usersRepo = di.inject("UsersRepository");
+			const user = await usersRepo.insertUser({ ...testUser, groups: [1] });
+			expect(user.groups.length).toBe(1);
+
+			const res = await app.request(`/users/${user.id}`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({
+					...testUser,
+					groups: [],
+				})
+			});
+			const body = await res.json() as ResultSuccess<UserDetail>;
+			expect(res.status).toBe(200);
+			expect(body.data.groups).toEqual([]);
+		}));
+
+		test("doesn't modify groups if groups is not specifed in payload", withIsolatedAppEnv(async (app, headers) => {
+			const usersRepo = di.inject("UsersRepository");
+			const user = await usersRepo.insertUser({ ...testUser, groups: [1] });
+			expect(user.groups.length).toBe(1);
+
+			const res = await app.request(`/users/${user.id}`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({
+					...testUser,
+					groups: undefined,
+				})
+			});
+			const body = await res.json() as ResultSuccess<UserDetail>;
+			expect(res.status).toBe(200);
+			expect(body.data.groups.length).toBe(1);
+		}));
+
+		test("setting channels", withIsolatedAppEnv(async (app, headers) => {
+			const usersRepo = di.inject("UsersRepository");
+			const user = await usersRepo.insertUser({ ...testUser, groups: [1] });
+			expect(await getUserChannels(user.id)).toEqual([]);
+
+			const res = await app.request(`/users/${user.id}`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({
+					...testUser,
+					channels: [ 1 ]
+				})
+			});
+			expect(res.status).toBe(200);
+			expect(await getUserChannels(user.id)).toEqual([{id: 1}]);
+		}));
+
+		test("removing channels", withIsolatedAppEnv(async (app, headers) => {
+			const usersRepo = di.inject("UsersRepository");
+			const user = await usersRepo.insertUser({ ...testUser, groups: [1], channels: [1] });
+			expect(await getUserChannels(user.id)).toEqual([{id: 1}]);
+
+			const res = await app.request(`/users/${user.id}`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({
+					...testUser,
+					channels: []
+				})
+			});
+			expect(res.status).toBe(200);
+			expect(await getUserChannels(user.id)).toEqual([]);
+		}));
+
+		test("doesn't modify channels if channels is not specifed in payload", withIsolatedAppEnv(async (app, headers) => {
+			const usersRepo = di.inject("UsersRepository");
+			const user = await usersRepo.insertUser({ ...testUser, groups: [1], channels: [1] });
+			expect(await getUserChannels(user.id)).toEqual([{id: 1}]);
+
+			const res = await app.request(`/users/${user.id}`, {
+				method: "PUT",
+				headers,
+				body: JSON.stringify({
+					...testUser,
+					channels: undefined
+				})
+			});
+			expect(res.status).toBe(200);
+			expect(await getUserChannels(user.id)).toEqual([{id: 1}]);
+		}));
 	});
 
 	describe("DELETE /users/:ID", () => {
 		test("successfully deletes the selected user", withIsolatedAppEnv(async (app, headers) => {
-			const db = di.inject("db");
-			const result = await db.connection.insert(schema.users).values(testUser);
-			const url = `/users/${result.lastInsertRowid}`;
+			const usersRepo = di.inject("UsersRepository");
+			const { id } = await usersRepo.insertUser(testUser);
+			const url = `/users/${id}`;
 	
-			let count = await countUsers(db);
+			let count = await countUsers();
 			expect(count).toBe(2);
 			const res = await app.request(url, {
 				method: "DELETE",
@@ -168,7 +330,7 @@ describe("users route", () => {
 			});
 			expect(res.status).toBe(200);
 	
-			count = await countUsers(db);
+			count = await countUsers();
 			expect(count).toBe(1);
 	
 			const getRes = await app.request("/users/1", { headers });
@@ -190,7 +352,7 @@ describe("users route", () => {
 		test("full hit in ids", withIsolatedAppEnv(async (app, headers) => {
 			const db = di.inject("db");
 			await db.connection.insert(schema.users).values(bulkUsers);
-			expect(await countUsers(db)).toBe(4);
+			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=2,3,4`, {
 				method: "DELETE",
 				headers,
@@ -199,7 +361,7 @@ describe("users route", () => {
 			expect(res.status).toBe(200);
 			expect(body.data.count).toBe(3);
 			expect(body.data.outOf).toBe(3);
-			expect(await countUsers(db)).toBe(1);
+			expect(await countUsers()).toBe(1);
 			const getRes = await app.request(`/users/1`, { headers });
 			const getBody: any = await getRes.json();
 			expect(getRes.status).toBe(200);
@@ -209,7 +371,7 @@ describe("users route", () => {
 		test("partial hit in ids", withIsolatedAppEnv(async (app, headers) => {
 			const db = di.inject("db");
 			await db.connection.insert(schema.users).values(bulkUsers);
-			expect(await countUsers(db)).toBe(4);
+			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=2,3,4,32167`, { // one non-existing id
 				method: "DELETE",
 				headers,
@@ -218,7 +380,7 @@ describe("users route", () => {
 			expect(res.status).toBe(207);
 			expect(body.data.count).toBe(3);
 			expect(body.data.outOf).toBe(4);
-			expect(await countUsers(db)).toBe(1);
+			expect(await countUsers()).toBe(1);
 			const getRes = await app.request(`/users/1`, { headers });
 			const getBody: any = await getRes.json();
 			expect(getRes.status).toBe(200);
@@ -228,7 +390,7 @@ describe("users route", () => {
 		test("no hit in ids", withIsolatedAppEnv(async (app, headers) => {
 			const db = di.inject("db");
 			await db.connection.insert(schema.users).values(bulkUsers);
-			expect(await countUsers(db)).toBe(4);
+			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=32167,12332`, { // all ids non-existing
 				method: "DELETE",
 				headers,
@@ -237,7 +399,7 @@ describe("users route", () => {
 			expect(res.status).toBe(404);
 			expect(body.data.count).toBe(0);
 			expect(body.data.outOf).toBe(2);
-			expect(await countUsers(db)).toBe(4);
+			expect(await countUsers()).toBe(4);
 		}));
 
 		test("no providing any id will result in 422",  withIsolatedAppEnv(async (app, headers) => {

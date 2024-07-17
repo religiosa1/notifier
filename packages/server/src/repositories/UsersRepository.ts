@@ -1,9 +1,9 @@
 import { AuthorizationEnum } from "@shared/models/AuthorizationEnum";
 import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
-import { and, eq, getTableColumns, inArray, isNotNull, notInArray, sql, like, isNull, count } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNotNull, sql, like, isNull, count } from "drizzle-orm";
 import { hashPassword } from "src/services/hash";
-import { schema } from "src/db";
+import { schema, type Transaction } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
 import { di } from "src/injection";
 
@@ -130,6 +130,8 @@ export class UsersRepository {
 		assert(user, userNotFound(userId));
 		return {
 			...user,
+			createdAt: user.createdAt.toISOString(),
+			updatedAt: user.updatedAt.toISOString(),
 			groups: user.groups.map(g => g.group),
 		};
 	}
@@ -150,30 +152,10 @@ export class UsersRepository {
 			}).returning();
 			assert(createdUser);
 			if (user.groups?.length) {
-				// FIXME select or insert
-				const groupIds = await tx.select({ id: schema.groups.id }).from(schema.groups);
-				await tx.insert(schema.usersToGroups).values(groupIds.map(g => ({
-					groupId: g.id,
-					userId: createdUser.id
-				})));
+				await this.setUserGroups(tx, createdUser.id, user.groups) !== user.groups.length;
 			}
 			if (user.channels?.length) {
-				const allowedChannels = await tx.select({ id: schema.channels.id }).from(schema.channels)
-					.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
-					.leftJoin(schema.usersToGroups, and(
-						eq(schema.usersToGroups.groupId, schema.channelsToGroups.groupId),
-						eq(schema.usersToGroups.userId, createdUser.id)
-					))
-					.where(and(
-						inArray(schema.channels.id, user.channels),
-						isNotNull(schema.usersToGroups.userId)
-					));
-				if (allowedChannels.length) {
-					await tx.insert(schema.usersToChannels).values(allowedChannels.map(c => ({
-						channelId: c.id,
-						userId: createdUser.id
-					})));
-				}
+				await this.setUserChannels(tx, createdUser.id, user.channels);
 			}
 			return createdUser.id;
 		}, { behavior: "immediate" });
@@ -189,43 +171,19 @@ export class UsersRepository {
 		const password = user.password ? await hashPassword(user.password) : undefined;
 		const updatedUserId = await db.transaction(async (tx) => {
 			const [updatedUser] = await tx.update(schema.users)
-				.set({ ...user, password, updatedAt: new Date()})
+				.set({ ...user, password, updatedAt: new Date() })
 				.where(eq(schema.users.id, id))
 				.returning();
 			assert(updatedUser, userNotFound(id));
-			if (user.groups?.length) {
-				const groupsToUpsert = await tx.select({ id: schema.groups.id }).from(schema.groups)
-					.where(inArray(schema.groups.name, user.groups )).then(groups => groups.map(i => i.id));
-
-				if (!groupsToUpsert.length) {
-					await tx.delete(schema.usersToGroups).where(eq(schema.usersToGroups.userId, id));
-				} else {
-					await tx.delete(schema.usersToGroups).where(and(
-						eq(schema.usersToGroups.userId, id),
-						notInArray(schema.usersToGroups.groupId, groupsToUpsert)
-					));
-					await tx.insert(schema.usersToGroups).values(
-						groupsToUpsert.map(g => ({ userId: id, groupId: g}))
-					).onConflictDoNothing();
-				}
+			if (user.groups != null) {
+				await this.setUserGroups(tx, updatedUser.id, user.groups);
 			}
-			if (user.channels?.length) {
-				const channelsToUpsert = await tx.select({ id: schema.channels.id }).from(schema.channels)
-					.where(inArray(schema.channels.id, user.channels )).then(groups => groups.map(i => i.id));
-				if (!channelsToUpsert.length) {
-					await tx.delete(schema.usersToChannels).where(eq(schema.usersToChannels.userId, id));
-				} else {
-					await tx.delete(schema.usersToChannels).where(and(
-						eq(schema.usersToChannels.userId, id),
-						notInArray(schema.usersToChannels.channelId, channelsToUpsert)
-					));
-					await tx.insert(schema.usersToChannels).values(
-						channelsToUpsert.map(c => ({ userId: id, channelId: c }))
-					);
-				}
+			if (user.channels != null) {
+				await this.setUserChannels(tx, updatedUser.id, user.channels);
 			}
 			return updatedUser.id;
 		}, { behavior: "immediate" });
+
 		return this.getUserDetail(updatedUserId);
 	}
 
@@ -268,5 +226,56 @@ export class UsersRepository {
 			return this.querySearchUsersForGroup.value.execute({ groupId, name: "%" + name + "%"});
 		}
 		return this.querySearchUsers.value.execute({ name: "%" + name + "%" });
+	}
+
+	//============================================================================
+	// Helpers
+
+	private async setUserGroups(tx: Transaction, userId: number, groupIds: number[]): Promise<number> {
+		// Removing existing user groups first
+		await tx.delete(schema.usersToGroups).where(eq(schema.usersToGroups.userId, userId));
+
+		if (!groupIds?.length) {
+			return 0
+		}
+
+		const groupsToUpsert = await tx.select({ id: schema.groups.id }).from(schema.groups)
+			.where(inArray(schema.groups.id, groupIds ));
+
+		if (!groupsToUpsert.length) {
+			return 0;
+		}
+		await tx.insert(schema.usersToGroups).values(groupsToUpsert.map(g => ({ userId, groupId: g.id })));
+
+		return groupsToUpsert.length;
+	}
+
+	private async setUserChannels(tx: Transaction, userId: number, channels: number[]): Promise<number> {
+		await tx.delete(schema.usersToChannels).where(eq(schema.usersToChannels.userId, userId));
+
+		if (!channels?.length) {
+			return 0;
+		}
+
+		const allowedChannels = await tx.select({ id: schema.channels.id }).from(schema.channels)
+			.innerJoin(schema.channelsToGroups, eq(schema.channelsToGroups.channelId, schema.channels.id))
+			.leftJoin(schema.usersToGroups, and(
+				eq(schema.usersToGroups.groupId, schema.channelsToGroups.groupId),
+				eq(schema.usersToGroups.userId, userId)
+			))
+			.where(and(
+				inArray(schema.channels.id, channels),
+				isNotNull(schema.usersToGroups.userId)
+			));
+		
+		if (!allowedChannels.length) {
+			return 0;
+		}
+
+		await tx.insert(schema.usersToChannels).values(allowedChannels.map(c => ({
+			channelId: c.id,
+			userId
+		})));
+		return allowedChannels.length;
 	}
 }
