@@ -91,7 +91,7 @@ describe("/users/:userId/channels route", () => {
 			expect(count).toBe(2);
 		}));
 
-		test("return 404 on non-existing user", withIsolatedAppEnv(async (app, headers) => {
+		test("returns 404 on non-existing user", withIsolatedAppEnv(async (app, headers) => {
 			const res = await app.request(`/users/100500/channels`, { 
 				method: "POST",
 				headers,
@@ -100,7 +100,7 @@ describe("/users/:userId/channels route", () => {
 			expect(res.status).toBe(404);
 		}));
 
-		test("return 404 on non-existing channel", withIsolatedAppEnv(async (app, headers) => {
+		test("returns 404 on non-existing channel", withIsolatedAppEnv(async (app, headers) => {
 			const res = await app.request(`/users/1/channels`, { 
 				method: "POST",
 				headers,
@@ -109,7 +109,7 @@ describe("/users/:userId/channels route", () => {
 			expect(res.status).toBe(404);
 		}));
 
-		test("attempt to connect a channel, with unsufficient groups results in 400", withIsolatedAppEnv(async (app, headers) => {
+		test("returns 400 on connecting a channel, with unsufficient groups", withIsolatedAppEnv(async (app, headers) => {
 			const db = di.inject("db");
 			await db.connection.insert(schema.groups).values({
 				name: "test"
@@ -123,7 +123,7 @@ describe("/users/:userId/channels route", () => {
 			expect(res.status).toBe(400);
 		}));
 
-		test("misformed data results in 422", withIsolatedAppEnv(async (app, headers) => {
+		test("returns 422 on misformed data", withIsolatedAppEnv(async (app, headers) => {
 			const res = await app.request(`/users/1/channels`, { 
 				method: "POST",
 				headers,
@@ -198,7 +198,7 @@ describe("/users/:userId/channels route", () => {
 			const { count } = await getUserChannels(1);
 			expect(count).toBe(4);
 		}));
-		test("no ids in searchQuery", withIsolatedAppEnv(async (app, headers) => {
+		test("returns 422 on no ids in searchQuery", withIsolatedAppEnv(async (app, headers) => {
 			const res = await app.request(`/users/1/channels`, { 
 				method: "DELETE",
 				headers

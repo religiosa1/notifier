@@ -59,7 +59,7 @@ CREATE UNIQUE INDEX `channels_name_unique` ON `channels` (`name`);--> statement-
 CREATE INDEX `channels_to_group_groupid_idx` ON `channels_to_groups` (`group_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `groups_name_unique` ON `groups` (`name`);--> statement-breakpoint
 CREATE UNIQUE INDEX `users_telegram_id_unique` ON `users` (`telegram_id`);--> statement-breakpoint
-CREATE INDEX `user_name_idx` ON `users` (`name`);--> statement-breakpoint
+CREATE UNIQUE INDEX `user_name_unique_idx` ON `users` (`name`) WHERE "users"."name" is not null;--> statement-breakpoint
 CREATE INDEX `user_to_channels_userId_idx` ON `users_to_channels` (`user_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `users_to_channels_channel_id_user_id_unique` ON `users_to_channels` (`channel_id`,`user_id`);--> statement-breakpoint
 CREATE INDEX `user_to_groups_userid_idx` ON `users_to_groups` (`user_id`);--> statement-breakpoint

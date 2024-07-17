@@ -1,11 +1,12 @@
-import { relations, sql } from "drizzle-orm"
+import { isNotNull, relations, sql } from "drizzle-orm"
 import {
 	sqliteTable,
 	text,
 	integer,
 	primaryKey,
 	unique,
-	index
+	index,
+	uniqueIndex
 } from "drizzle-orm/sqlite-core";
 
 // FIXME @shared imports in drizzle
@@ -21,13 +22,14 @@ export const users = sqliteTable("users", {
 	authorizationStatus: integer("authorization_status").$type<AuthorizationEnum>().notNull().default(AuthorizationEnum.pending),
 	role: integer("role").$type<UserRoleEnum>().notNull().default(UserRoleEnum.regular),
   createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`strftime('%s', 'now')`)
+    .default(sql`(strftime('%s', 'now'))`)
     .notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" })
-		.default(sql`strftime('%s', 'now')`)
+		.default(sql`(strftime('%s', 'now'))`)
 		.notNull(),
 }, (t) => ({
-	userNameIdx: index("user_name_idx").on(t.name),
+	// sqlite-specific, partial unique index
+	uniqueNameIndex: uniqueIndex("user_name_unique_idx").on(t.name).where(isNotNull(t.name))
 }));
 export const userRelations = relations(users, ({ many	}) => ({
 	groups: many(usersToGroups),

@@ -3,11 +3,12 @@ import { UserRoleEnum } from "@shared/models/UserRoleEnum";
 import type { User, UserCreate, UserDetail, UserUpdate, UserWithGroups } from "@shared/models/User";
 import { and, eq, getTableColumns, inArray, isNotNull, sql, like, isNull, count } from "drizzle-orm";
 import { hashPassword } from "src/services/hash";
-import { schema, type Transaction } from "src/db";
+import { isUniqueConstraintError, schema, type Transaction } from "src/db";
 import { NotFoundError } from "src/error/NotFoundError";
 import { di } from "src/injection";
 
 import { assert } from "src/util/assert";
+import { ResultError } from "@shared/models";
 
 const userNotFound = (id: string | number) => () => new NotFoundError(`user with id '${id}' doesn't exist`);
 
@@ -158,7 +159,12 @@ export class UsersRepository {
 				await this.setUserChannels(tx, createdUser.id, user.channels);
 			}
 			return createdUser.id;
-		}, { behavior: "immediate" });
+		}, { behavior: "immediate" }).catch(e => {
+			if (isUniqueConstraintError(e)) {
+				throw new ResultError(400, e.message);
+			}
+			throw e;
+		});
 
 		return this.getUserDetail(userId);
 	}
@@ -182,7 +188,12 @@ export class UsersRepository {
 				await this.setUserChannels(tx, updatedUser.id, user.channels);
 			}
 			return updatedUser.id;
-		}, { behavior: "immediate" });
+		}, { behavior: "immediate" }).catch(e => {
+			if (isUniqueConstraintError(e)) {
+				throw new ResultError(400, e.message);
+			}
+			throw e;
+		});
 
 		return this.getUserDetail(updatedUserId);
 	}
