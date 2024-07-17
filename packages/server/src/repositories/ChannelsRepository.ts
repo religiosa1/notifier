@@ -141,7 +141,7 @@ export class ChannelsRepository {
 	async updateChannel(channelId: number, name: string): Promise<Channel> {
 		const db = this.dbm.connection;
 		const [channel] = await db.update(schema.channels)
-			.set({ name, updatedAt: sql`CURRENT_TIMESTAMP` })
+			.set({ name, updatedAt: sql`strftime('%s', 'now')` })
 			.where(eq(schema.channels.id, channelId))
 			.returning();
 		assert(channel, channelNotFound(channelId));

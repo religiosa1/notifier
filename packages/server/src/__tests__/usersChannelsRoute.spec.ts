@@ -87,7 +87,7 @@ describe("/users/:userId/channels route", () => {
 				body: JSON.stringify({ id: 2 }),
 			});
 			expect(res.status).toBe(200);
-			const [,count] = await getUserChannels(1);
+			const { count } = await getUserChannels(1);
 			expect(count).toBe(2);
 		}));
 
@@ -141,7 +141,7 @@ describe("/users/:userId/channels route", () => {
 				headers
 			});
 			expect(res.status).toBe(200);
-			const [channels] = await getUserChannels(1);
+			const { data: channels } = await getUserChannels(1);
 			expect(channels).toEqual([ 
 				{
 					id: 1,
@@ -164,7 +164,7 @@ describe("/users/:userId/channels route", () => {
 				headers
 			});
 			expect(res.status).toBe(207);
-			const [channels] = await getUserChannels(1);
+			const { data: channels } = await getUserChannels(1);
 			expect(channels).toEqual([ 
 				{
 					id: 1,
@@ -195,7 +195,7 @@ describe("/users/:userId/channels route", () => {
 				headers
 			});
 			expect(res.status).toBe(404);
-			const [,count] = await getUserChannels(1);
+			const { count } = await getUserChannels(1);
 			expect(count).toBe(4);
 		}));
 		test("no ids in searchQuery", withIsolatedAppEnv(async (app, headers) => {
@@ -204,7 +204,7 @@ describe("/users/:userId/channels route", () => {
 				headers
 			});
 			expect(res.status).toBe(422);
-			const [,count] = await getUserChannels(1);
+			const { count } = await getUserChannels(1);
 			expect(count).toBe(1);
 		}));
 	});

@@ -62,7 +62,7 @@ export class UserConfirmationRequestsRepository {
 		}
 		const db = this.dbm.connection;
 		const updated = await db.update(schema.users)
-				.set({ authorizationStatus: AuthorizationEnum.accepted, updatedAt: sql`CURRENT_TIMESTAMP` })
+				.set({ authorizationStatus: AuthorizationEnum.accepted, updatedAt: sql`strftime('%s', 'now')` })
 				.where(inArray(schema.users.id, userIds))
 				.returning({ id: schema.users.id });
 		return updated.length;
@@ -77,7 +77,7 @@ export class UserConfirmationRequestsRepository {
 		}
 		const db = this.dbm.connection;
 		const updated = await db.update(schema.users)
-			.set({ authorizationStatus: AuthorizationEnum.declined, updatedAt: sql`CURRENT_TIMESTAMP` })
+			.set({ authorizationStatus: AuthorizationEnum.declined, updatedAt: sql`strftime('%s', 'now')` })
 			.where(inArray(schema.users.id, userIds))
 			.returning({ id: schema.users.id });
 		return updated.length;

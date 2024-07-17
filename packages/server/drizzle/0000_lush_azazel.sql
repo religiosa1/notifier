@@ -2,15 +2,15 @@ CREATE TABLE `api_keys` (
 	`prefix` text PRIMARY KEY NOT NULL,
 	`hash` text NOT NULL,
 	`user_id` integer NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `channels` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL
+	`created_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
+	`updated_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `channels_to_groups` (
@@ -24,8 +24,8 @@ CREATE TABLE `channels_to_groups` (
 CREATE TABLE `groups` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL
+	`created_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
+	`updated_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `users` (
@@ -35,8 +35,8 @@ CREATE TABLE `users` (
 	`password` text,
 	`authorization_status` integer DEFAULT 0 NOT NULL,
 	`role` integer DEFAULT 0 NOT NULL,
-	`created_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-	`updated_at` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL
+	`created_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
+	`updated_at` integer DEFAULT (strftime('%s', 'now')) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `users_to_channels` (
@@ -67,13 +67,12 @@ CREATE INDEX `user_to_groups_userid_idx` ON `users_to_groups` (`user_id`);--> st
 -- after removing of a group or user to group relation
 CREATE TRIGGER `delete_user_groups_trigger` AFTER DELETE ON `users_to_groups`
 BEGIN
-	DELETE FROM users_to_channels WHERE id IN (
-		SELECT users_to_channels.id FROM users_to_channels
-		JOIN channels ON channels.id = users_to_channels.channel_id
-		JOIN users ON users.id = users_to_channels.user_id
-		LEFT JOIN channels_to_groups ON channels_to_groups.channel_id = channels.id
-		LEFT JOIN groups ON groups.id = channels_to_groups.group_id
-		LEFT JOIN users_to_groups ON users_to_groups.user_id = users.id AND users_to_groups.group_id = groups.id
-		WHERE users_to_groups.user_id is NULL
+	DELETE FROM users_to_channels WHERE NOT EXISTS (
+		SELECT 1 FROM channels_to_groups
+			JOIN users_to_groups ON 
+				users_to_groups.user_id = users_to_channels.user_id
+		WHERE
+			channels_to_groups.group_id = users_to_groups.group_id
+			AND channels_to_groups.channel_id = users_to_channels.channel_id
 	);
 END;

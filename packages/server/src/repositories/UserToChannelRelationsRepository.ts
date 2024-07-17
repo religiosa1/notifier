@@ -1,7 +1,8 @@
-import { ResultError } from "@shared/models";
+import { ResultError, type Counted } from "@shared/models";
 import type { Channel, ChannelSubscription } from "@shared/models/Channel";
 import { and, count, countDistinct, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
+import { NotFoundError } from "src/error/NotFoundError";
 import { di } from "src/injection";
 
 
@@ -32,7 +33,7 @@ export class UserToChannelRelationsRepository {
 			skip = 0,
 			take = 20,
 		} = {},
-	): Promise<[channels: Channel[], totalCount: number]> {
+	): Promise<Counted<Channel[]>> {
 		await this.assertUserExist(userId);
 		const [
 			[{count = -1} = {}],
@@ -41,7 +42,7 @@ export class UserToChannelRelationsRepository {
 			this.queryCountUserChannels.value.execute({ userId }),
 			this.queryListUserChannels.value.execute({ userId, skip, take })
 		]);
-		return [ channels, count ];
+		return { data: channels, count };
 	}
 
 	// LIST available unsubscribed channels for user
@@ -123,15 +124,12 @@ export class UserToChannelRelationsRepository {
 	//============================================================================
 	// CONNECT
 	private queryGetPermissionGroup = this.dbm.prepare(
-		(db) => db.select({ id: schema.groups.id }).from(schema.groups)
+		(db) => db.select({ id: schema.usersToGroups.groupId }).from(schema.usersToGroups)
 			.innerJoin(schema.channelsToGroups, and(
-				eq(schema.channelsToGroups.groupId, schema.groups.id),
+				eq(schema.channelsToGroups.groupId, schema.usersToGroups.groupId),
 				eq(schema.channelsToGroups.channelId, sql.placeholder("channelId"))
 			))
-			.innerJoin(schema.usersToGroups, and(
-				eq(schema.usersToGroups.groupId, schema.groups.id),
-				eq(schema.usersToGroups.userId, sql.placeholder("userId")),
-			))
+			.where(eq(schema.usersToGroups.userId, sql.placeholder("userId")))
 			.limit(1)
 			.prepare()
 	);
@@ -139,8 +137,8 @@ export class UserToChannelRelationsRepository {
 	async connectUserChannel(userId: number, channelId: number): Promise<void> {
 		const db = this.dbm.connection;
 		await Promise.all([ this.assertUserExist(userId), this.assertChannelExist(channelId) ]);
-		const [permisionGroup] = await this.queryGetPermissionGroup.value.execute({ userId, channelId});
-		if (!permisionGroup) {
+		const [permisionGroupId] = await this.queryGetPermissionGroup.value.execute({ userId, channelId});
+		if (!permisionGroupId) {
 			throw new ResultError(400, "The user doesn't have the required permissions to join the channel");
 		}
 		await db.insert(schema.usersToChannels).values({ userId, channelId }).returning();
@@ -175,7 +173,7 @@ export class UserToChannelRelationsRepository {
 	private async assertUserExist(userId: number): Promise<void> {
 		const result = await this.checkUserId.value.execute({ userId });
 		if (!result.length) {
-			throw new ResultError(404, `User ID=${userId} doesn't exist`);
+			throw new NotFoundError(`User ID=${userId} doesn't exist`);
 		}
 	}
 
@@ -188,7 +186,7 @@ export class UserToChannelRelationsRepository {
 	private async assertChannelExist(channelId: number): Promise<void> {
 		const result = await this.checkChannelId.value.execute({ channelId });
 		if (!result.length) {
-			throw new ResultError(404, `Channel ID=${channelId} doesn't exist`);
+			throw new NotFoundError(`Channel ID=${channelId} doesn't exist`);
 		}
 	}
 }

@@ -6,11 +6,6 @@ import * as schema from "./schema";
 import type Database from "better-sqlite3";
 export { schema };
 
-export type DbTransactionClient = BetterSQLite3Database<typeof schema> | SQLiteTransaction<
-	"sync",
-	any,
-	typeof schema,
-	ExtractTablesWithRelations<typeof schema>
->;
-
 export type Transaction = SQLiteTransaction<"sync", Database.RunResult, typeof schema, ExtractTablesWithRelations<typeof schema>>;
+
+export type DbTransactionClient = BetterSQLite3Database<typeof schema> | Transaction;

@@ -108,7 +108,7 @@ export class GroupsRepository {
 		const db = this.dbm.connection;
 		const [group] = await db.update(schema.groups).set({
 			name,
-			updatedAt: sql`CURRENT_TIMESTAMP`
+			updatedAt: sql`strftime('%s', 'now')`
 		})
 			.where(eq(schema.groups.id, id))
 			.returning();

@@ -21,10 +21,10 @@ export const users = sqliteTable("users", {
 	authorizationStatus: integer("authorization_status").$type<AuthorizationEnum>().notNull().default(AuthorizationEnum.pending),
 	role: integer("role").$type<UserRoleEnum>().notNull().default(UserRoleEnum.regular),
   createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`(CURRENT_TIMESTAMP)`)
+    .default(sql`strftime('%s', 'now')`)
     .notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" })
-		.default(sql`(CURRENT_TIMESTAMP)`)
+		.default(sql`strftime('%s', 'now')`)
 		.notNull(),
 }, (t) => ({
 	userNameIdx: index("user_name_idx").on(t.name),
@@ -42,10 +42,10 @@ export const groups = sqliteTable("groups", {
 	id: integer("id").primaryKey(),
 	name: text("name").notNull().unique(),
   createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`(CURRENT_TIMESTAMP)`)
+    .default(sql`(strftime('%s', 'now'))`)
     .notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" })
-		.default(sql`(CURRENT_TIMESTAMP)`)
+		.default(sql`(strftime('%s', 'now'))`)
 		.notNull(),
 });
 export const groupsRelations = relations(groups, ({ many }) => ({
@@ -78,10 +78,10 @@ export const channels = sqliteTable("channels", {
 	id: integer("id").primaryKey(),
 	name: text("name").notNull().unique(),
   createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`(CURRENT_TIMESTAMP)`)
+    .default(sql`(strftime('%s', 'now'))`)
     .notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" })
-		.default(sql`(CURRENT_TIMESTAMP)`)
+		.default(sql`(strftime('%s', 'now'))`)
 		.notNull(),
 });
 export const channelRelations = relations(channels, ({ many }) => ({
@@ -137,7 +137,7 @@ export const apiKeys = sqliteTable("api_keys", {
 	hash: text("hash").notNull(),
 	userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
   createdAt: integer("created_at", { mode: "timestamp" })
-    .default(sql`(CURRENT_TIMESTAMP)`)
+    .default(sql`(strftime('%s', 'now'))`)
     .notNull()
 });
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({

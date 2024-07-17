@@ -23,8 +23,8 @@ controller.get(
 		const userToChannelRelationsRepository = di.inject("UserToChannelRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { skip, take } = { ...paginationDefaults, ...c.req.valid("query") };
-		const [data, count] = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
-		return c.json({ data, count } satisfies Counted<ChannelModel.Channel[]>);
+		const resp = await userToChannelRelationsRepository.listUserChannels(userId, { skip, take });
+		return c.json(resp satisfies Counted<ChannelModel.Channel[]>);
 	}
 );
 

@@ -21,9 +21,9 @@ controller.post(
 		const userToGroupRelationsRepository = di.inject("UserToGroupRelationsRepository");
 		const { userId } = c.req.valid("param");
 		const { name } = c.req.valid("json");
-		await userToGroupRelationsRepository.connectGroupToUser(userId, name);
+		const [,groupCreated] = await userToGroupRelationsRepository.connectGroupToUser(userId, name);
 		logger.info(`Group added to user ${userId} edit by ${c.get("user").id}-${c.get("user").name}`, name);
-		return c.json(null);
+		return c.json(null, groupCreated ? 201 : 200);
 	}
 );
 
