@@ -23,10 +23,9 @@ controller.post(
 		const { groupId } = c.req.valid("param");
 		const { name } = c.req.valid("json");
 
-		await channelToGroupRelationsRepository.connectOrCreateChannelToGroup(groupId, name);
-
+		const [channelId, created] = await channelToGroupRelationsRepository.connectOrCreateChannelToGroup(groupId, name);
 		logger.info(`Group channel connected by ${c.get("user").id}-${c.get("user").name}`, groupId, name);
-		return c.json(null);
+		return c.json({ channelId }, created ? 201 : 200);
 	}
 );
 

@@ -428,7 +428,7 @@ describe("users route", () => {
 			expect(getBody.data.name).toBe('admin');
 		}));
 
-		test("partial hit in ids", withIsolatedAppEnv(async (app, headers) => {
+		test("partial hit in ids returns 207", withIsolatedAppEnv(async (app, headers) => {
 			await insertUsersBulk();
 			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=2,3,4,32167`, { // one non-existing id
@@ -446,7 +446,7 @@ describe("users route", () => {
 			expect(getBody.data.name).toBe('admin');
 		}));
 
-		test("no hit in ids", withIsolatedAppEnv(async (app, headers) => {
+		test("no hit in ids returns 404", withIsolatedAppEnv(async (app, headers) => {
 			await insertUsersBulk();
 			expect(await countUsers()).toBe(4);
 			const res = await app.request(`/users?id=32167,12332`, { // all ids non-existing

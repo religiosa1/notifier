@@ -1,3 +1,4 @@
+import { ResultError } from "@shared/models";
 import type { Channel, ChannelSubscription } from "@shared/models/Channel";
 import { and, count, countDistinct, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { schema } from "src/db";
@@ -32,6 +33,7 @@ export class UserToChannelRelationsRepository {
 			take = 20,
 		} = {},
 	): Promise<[channels: Channel[], totalCount: number]> {
+		await this.assertUserExist(userId);
 		const [
 			[{count = -1} = {}],
 			channels
@@ -61,6 +63,7 @@ export class UserToChannelRelationsRepository {
 			.prepare()
 	);
 	async listAvailableUnsubscribedChannelsForUser(userId: number, { skip = 0, take = 20} = {}): Promise<Channel[]> {
+		await this.assertUserExist(userId);
 		return this.queryListAvailableUnsubscribedChannelsForUser.value.execute({ userId, skip, take });
 	}
 
@@ -106,6 +109,7 @@ export class UserToChannelRelationsRepository {
 		channels: ChannelSubscription[],
 		totalCount: number,
 	]> {
+		await this.assertUserExist(userId);
 		const [
 			channels,
 			[{count = -1} = {}]
@@ -134,9 +138,10 @@ export class UserToChannelRelationsRepository {
 
 	async connectUserChannel(userId: number, channelId: number): Promise<void> {
 		const db = this.dbm.connection;
+		await Promise.all([ this.assertUserExist(userId), this.assertChannelExist(channelId) ]);
 		const [permisionGroup] = await this.queryGetPermissionGroup.value.execute({ userId, channelId});
 		if (!permisionGroup) {
-			throw new Error("The user doesn't have the required permissions to join the channel");
+			throw new ResultError(400, "The user doesn't have the required permissions to join the channel");
 		}
 		await db.insert(schema.usersToChannels).values({ userId, channelId }).returning();
 	};
@@ -148,13 +153,42 @@ export class UserToChannelRelationsRepository {
 		if (!channelIds?.length) {
 			return 0;
 		}
+		await this.assertUserExist(userId);
 		const db = this.dbm.connection;
-		console.table({ userId, channelIds });
 		const {changes} = await db.delete(schema.usersToChannels)
 			.where(and(
 				eq(schema.usersToChannels.userId, userId),
 				inArray(schema.usersToChannels.channelId, channelIds)
 			));
 		return changes;
+	}
+
+	//============================================================================
+	// helpers
+	
+	private readonly checkUserId = this.dbm.prepare(
+		(db) => db.select({ id: schema.users.id }).from(schema.users)
+			.where(eq(schema.users.id, sql.placeholder("userId")))
+			.prepare()
+	);
+
+	private async assertUserExist(userId: number): Promise<void> {
+		const result = await this.checkUserId.value.execute({ userId });
+		if (!result.length) {
+			throw new ResultError(404, `User ID=${userId} doesn't exist`);
+		}
+	}
+
+	private readonly checkChannelId = this.dbm.prepare(
+		(db) => db.select({ id: schema.channels.id }).from(schema.channels)
+			.where(eq(schema.channels.id, sql.placeholder("channelId")))
+			.prepare()
+	);
+
+	private async assertChannelExist(channelId: number): Promise<void> {
+		const result = await this.checkChannelId.value.execute({ channelId });
+		if (!result.length) {
+			throw new ResultError(404, `Channel ID=${channelId} doesn't exist`);
+		}
 	}
 }

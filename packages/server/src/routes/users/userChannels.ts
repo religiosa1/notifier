@@ -66,13 +66,13 @@ controller.delete(
 		const ids = parseIds(c.req.valid("query").id);
 
 		const count = await userToChannelRelationsRepository.disconnectUserChannels(userId, ids)
-			// .catch(handlerDbNotFound(userNotFound(userId)))
 
 		const data = {
 			count,
 			outOf: ids.length,
 		};
-		return c.json(data satisfies BatchOperationStats);
+		const status = count === 0 ? 404 : count !== ids.length ? 207 : 200;
+		return c.json(data satisfies BatchOperationStats, status);
 	}
 )
 

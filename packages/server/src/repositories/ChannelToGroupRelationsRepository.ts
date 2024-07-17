@@ -28,21 +28,30 @@ export class ChannelToGroupRelationsRepository {
 	}
 
 	// CONNECT channel to group
-	async connectOrCreateChannelToGroup(groupId: number, channelName: string): Promise<void> {
+	async connectOrCreateChannelToGroup(groupId: number, channelName: string): Promise<[ channelId: number, created: boolean]> {
 		const db = this.dbm.connection;
-		await db.transaction(async (tx) => {
+		let isNewChannelCreated = false;
+		const channelId = await db.transaction(async (tx) => {
 			let [channel] = await tx.select({ id: schema.channels.id }).from(schema.channels)
 				.where(eq(schema.channels.name, channelName));
 			if (!channel) {
-				[channel] = await tx.insert(schema.channels).values({ name: channelName })
+				[channel] = await tx.insert(schema.channels)
+					.values({ 
+						name: channelName,
+						createdAt: new Date(), 
+						updatedAt: new Date() 
+					})
 					.returning({ id: schema.channels.id });
+				isNewChannelCreated = true;
 			}
 			assert(channel);
 			await tx.insert(schema.channelsToGroups).values({
 				channelId: channel.id,
 				groupId,
 			});
+			return channel.id;
 		}, { behavior: "immediate" });
+		return [channelId, isNewChannelCreated];
 	}
 
 	//============================================================================
