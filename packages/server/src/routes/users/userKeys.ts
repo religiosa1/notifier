@@ -29,7 +29,7 @@ controller.post(
 	async (c) => {
 		const { userId } = c.req.valid("param");
 		const apiKey: string = await ApiKeyService.createKey(userId);
-		return c.json({ apiKey });
+		return c.json({ apiKey }, 201);
 	}
 );
 
