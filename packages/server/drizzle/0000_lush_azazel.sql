@@ -67,12 +67,14 @@ CREATE INDEX `user_to_groups_userid_idx` ON `users_to_groups` (`user_id`);--> st
 -- after removing of a group or user to group relation
 CREATE TRIGGER `delete_user_groups_trigger` AFTER DELETE ON `users_to_groups`
 BEGIN
-	DELETE FROM users_to_channels WHERE NOT EXISTS (
-		SELECT 1 FROM channels_to_groups
-			JOIN users_to_groups ON 
-				users_to_groups.user_id = users_to_channels.user_id
-		WHERE
-			channels_to_groups.group_id = users_to_groups.group_id
-			AND channels_to_groups.channel_id = users_to_channels.channel_id
+	DELETE FROM users_to_channels WHERE id IN (
+		SELECT users_to_channels.id FROM users_to_channels
+			LEFT JOIN channels_to_groups ON channels_to_groups.channel_id = users_to_channels.channel_id
+			LEFT JOIN users_to_groups ON 
+				users_to_groups.group_id = channels_to_groups.group_id 
+				AND users_to_groups.user_id = users_to_channels.user_id
+			WHERE users_to_channels.user_id = old.user_id
+			GROUP BY users_to_channels.id
+			HAVING count(users_to_groups.user_id) = 0
 	);
 END;
